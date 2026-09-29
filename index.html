@@ -6,7 +6,7 @@
 @media(max-width:560px){.item,.dish-head{align-items:flex-start;flex-direction:column}.actions{width:100%}.actions .btn{flex:1}.toolbar .btn{flex:1}.page-head{align-items:flex-start}.allergen{min-height:52px}}
 </style>
 <style id="cloud-auth-styles">
-.cloud-gate{position:fixed;inset:0;z-index:250;background:linear-gradient(135deg,#0b3522,#147a46);display:grid;place-items:center;padding:20px}.cloud-gate.hidden{display:none}.cloud-card{width:min(470px,100%);background:#fff;border-radius:20px;padding:26px;box-shadow:0 28px 80px rgba(0,0,0,.3)}.cloud-card h1{margin:0;color:#103e2a;font-size:24px}.cloud-card p{color:#637168;line-height:1.5}.cloud-tabs{display:flex;gap:8px;margin:15px 0}.cloud-message{display:none;padding:10px 12px;border-radius:9px;margin:10px 0;font-size:13px}.cloud-message.show{display:block}.cloud-message.error{background:#fde8e5;color:#b42318}.cloud-message.ok{background:#ddf4e6;color:#0f6338}.cloud-setup{padding:13px;border:1px solid #dce5df;border-radius:12px;background:#f7faf8}.cloud-status{position:fixed;right:14px;top:14px;z-index:80;padding:7px 11px;border-radius:999px;background:#fff6df;color:#6d4705;font-size:12px;font-weight:850;box-shadow:0 4px 14px rgba(0,0,0,.12)}.cloud-status.online{background:#ddf4e6;color:#0f6338}.cloud-small{font-size:12px;color:#637168}.cloud-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.cloud-actions .btn{flex:1}.cloud-hidden{display:none!important}.cloud-employee-hidden{display:none!important}.auth-layer,.registration-layer,.recovery-layer{display:none!important}
+.cloud-gate{position:fixed;inset:0;z-index:250;background:linear-gradient(135deg,#0b3522,#147a46);display:grid;place-items:center;padding:20px}.cloud-gate.hidden{display:none}.cloud-card{width:min(470px,100%);background:#fff;border-radius:20px;padding:26px;box-shadow:0 28px 80px rgba(0,0,0,.3)}.cloud-card h1{margin:0;color:#103e2a;font-size:24px}.cloud-card p{color:#637168;line-height:1.5}.cloud-tabs{display:flex;gap:8px;margin:15px 0}.cloud-message{display:none;padding:10px 12px;border-radius:9px;margin:10px 0;font-size:13px}.cloud-message.show{display:block}.cloud-message.error{background:#fde8e5;color:#b42318}.cloud-message.ok{background:#ddf4e6;color:#0f6338}.cloud-setup{padding:13px;border:1px solid #dce5df;border-radius:12px;background:#f7faf8}.cloud-status{position:fixed;right:14px;top:14px;z-index:80;padding:7px 11px;border-radius:999px;background:#fff6df;color:#6d4705;font-size:12px;font-weight:850;box-shadow:0 4px 14px rgba(0,0,0,.12)}.cloud-status.online{background:#ddf4e6;color:#0f6338}.cloud-small{font-size:12px;color:#637168}.cloud-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.cloud-actions .btn{flex:1}.cloud-hidden{display:none!important}#cloudSetup,#cloudForgetConfig{display:none!important}.cloud-employee-hidden{display:none!important}.auth-layer,.registration-layer,.recovery-layer{display:none!important}
 </style>
 </head><body>
 <div id="cloudStatus" class="cloud-status">Lokale veilige modus</div>
@@ -64,6 +64,7 @@
 (function(){
 'use strict';
 const CONFIG_KEY='favv-supabase-public-config-v1';
+const PUBLIC_SUPABASE_CONFIG={url:'https://zimzsovvtdmrthrflkgm.supabase.co',key:'PASTE_YOUR_SB_PUBLISHABLE_KEY_HERE'};
 const get=id=>document.getElementById(id);
 let cloudClient=null,cloudBusiness=null,saveTimer=null;
 function setMessage(text,type='error'){const el=get('cloudMessage');el.textContent=text;el.className='cloud-message show '+type}
@@ -120,7 +121,7 @@ async function finishPendingBusinessRegistration(){
   localStorage.removeItem('favv-pending-business-registration-v1');localStorage.setItem('favv-force-clean-new-business-v1','true');return true;
 }
 get('cloudForgetConfig').addEventListener('click',()=>{if(!confirm('Lokale Supabase-instellingen wissen?'))return;localStorage.removeItem(CONFIG_KEY);cloudClient=null;get('cloudUrl').value='';get('cloudKey').value='';setStatus('Lokale veilige modus');showSetup()});
-const config=readConfig();if(validConfig(config)){get('cloudUrl').value=config.url;initClient(config)}else showSetup();
+const config=validConfig(PUBLIC_SUPABASE_CONFIG)?PUBLIC_SUPABASE_CONFIG:readConfig();if(validConfig(config)){localStorage.setItem(CONFIG_KEY,JSON.stringify(config));initClient(config)}else{get('cloudSetup').classList.add('cloud-hidden');get('cloudLoginForm').classList.add('cloud-hidden');get('cloudSignupForm').classList.add('cloud-hidden');get('cloudSessionBox').classList.add('cloud-hidden');setStatus('Configuratie ontbreekt');const card=document.querySelector('.cloud-card');card.insertAdjacentHTML('beforeend','<div class="cloud-message error show">De publieke appconfiguratie is nog niet voltooid.</div>')}
 })();
 </script>
 <script>
