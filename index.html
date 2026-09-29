@@ -64,8 +64,7 @@
 (function(){
 'use strict';
 const CONFIG_KEY='favv-supabase-public-config-v1';
-const PUBLIC_SUPABASE_CONFIG={url:'https://zimzsovvtdmrthrflkgm.supabase.co',key:'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k
-'};
+const PUBLIC_SUPABASE_CONFIG={url:'https://zimzsovvtdmrthrflkgm.supabase.co',key:'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k'
 const get=id=>document.getElementById(id);
 let cloudClient=null,cloudBusiness=null,saveTimer=null;
 function setMessage(text,type='error'){const el=get('cloudMessage');el.textContent=text;el.className='cloud-message show '+type}
