@@ -31,7 +31,7 @@ jobs:
           cp admin-dashboard.html site/admin-dashboard.html
           cp onboarding-form.html site/onboarding-form.html
           cp onboarding-dashboard.html site/onboarding-dashboard.html
-
+          cp onboarding-activation.js site/onboarding-activation.js
           if [ -f staticwebapp.config.json ]; then
             cp staticwebapp.config.json site/staticwebapp.config.json
           fi
