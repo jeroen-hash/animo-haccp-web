@@ -39,5 +39,6 @@ function tab(name){document.querySelectorAll('.tab').forEach(b=>b.classList.togg
 $('loginForm').onsubmit=async e=>{e.preventDefault();const {data,error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){$('loginMsg').textContent=error.message;$('loginMsg').classList.remove('hidden');return}logged(true,data.user.email);await load()};$('logout').onclick=async()=>{await sb.auth.signOut();logged(false)};$('refresh').onclick=load;['search','filterStatus','sort'].forEach(id=>$(id).addEventListener(id==='search'?'input':'change',render));document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>tab(b.dataset.tab));$('reviewBtn').onclick=()=>changeStatus('in_review');$('approveBtn').onclick=()=>changeStatus('approved');$('returnBtn').onclick=()=>changeStatus('rejected');(async()=>{const {data}=await sb.auth.getSession();if(data.session){logged(true,data.session.user.email);await load()}else logged(false)})();
 </script>
   <script src="./onboarding-activation.js"></script>
+<script src="./onboarding-bulk-import.js"></script>
 </body>
 </html>
