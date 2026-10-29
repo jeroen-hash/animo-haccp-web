@@ -34,6 +34,8 @@ jobs:
           cp onboarding-activation-complete.js site/onboarding-activation-complete.js
           cp onboarding-bulk-import-v3.js site/onboarding-bulk-import-v3.js
           cp onboarding-bulk-import-fix.js site/onboarding-bulk-import-fix.js
+          cp onboarding-activation-complete.js site/onboarding-activation.js
+          cp onboarding-bulk-import-v3.js site/onboarding-bulk-import.js
           if [ -f staticwebapp.config.json ]; then
             cp staticwebapp.config.json site/staticwebapp.config.json
           fi
@@ -43,6 +45,11 @@ jobs:
 
           test -f site/index.html
           test -f site/admin-dashboard.html
+          test -f site/onboarding-form.html
+          test -f site/onboarding-dashboard.html
+          test -f site/onboarding-activation.js
+          test -f site/onboarding-bulk-import.js
+          test -f site/onboarding-bulk-import-fix.js
 
       - name: Publiceren naar Azure Static Web Apps
         id: builddeploy
