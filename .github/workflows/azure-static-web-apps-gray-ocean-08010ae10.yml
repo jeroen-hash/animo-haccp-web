@@ -32,6 +32,7 @@ jobs:
           cp onboarding-form.html site/onboarding-form.html
           cp onboarding-dashboard.html site/onboarding-dashboard.html
           cp onboarding-activation.js site/onboarding-activation.js
+          <script src="./onboarding-bulk-import.js"></script>
           if [ -f staticwebapp.config.json ]; then
             cp staticwebapp.config.json site/staticwebapp.config.json
           fi
