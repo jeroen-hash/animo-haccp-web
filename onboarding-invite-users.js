@@ -15,7 +15,7 @@
     button.disabled = true;
     button.textContent = 'Uitnodigingen versturen...';
     try {
-      const { data, error } = await sb.functions.invoke('onboarding-invite-users', {
+      const { data, error } = await sb.functions.invoke('onboarding-invite-user', {
         body: { intake_id: intakeId }
       });
       if (error) {
