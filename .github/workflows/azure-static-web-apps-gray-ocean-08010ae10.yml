@@ -27,17 +27,29 @@ jobs:
         run: |
           rm -rf site
           mkdir -p site
-         cp index.html site/index.html
-         cp admin-dashboard.html site/admin-dashboard.html
-         cp onboarding-form.html site/onboarding-form.html
-         cp onboarding-dashboard.html site/onboarding-dashboard.html
-         cp onboarding-activation.js site/onboarding-activation.js
-         cp onboarding-bulk-import.js site/onboarding-bulk-import.js
-         cp onboarding-bulk-import-fix.js site/onboarding-bulk-import-fix.js
+
+          cp index.html site/index.html
+          cp admin-dashboard.html site/admin-dashboard.html
+          cp onboarding-form.html site/onboarding-form.html
+          cp onboarding-dashboard.html site/onboarding-dashboard.html
+          cp onboarding-activation.js site/onboarding-activation.js
+          cp onboarding-bulk-import.js site/onboarding-bulk-import.js
+          cp onboarding-bulk-import-fix.js site/onboarding-bulk-import-fix.js
+
           if [ -f staticwebapp.config.json ]; then
             cp staticwebapp.config.json site/staticwebapp.config.json
           fi
 
+          echo "Bestanden die naar Azure worden gepubliceerd:"
+          ls -la site
+
+          test -f site/index.html
+          test -f site/admin-dashboard.html
+          test -f site/onboarding-form.html
+          test -f site/onboarding-dashboard.html
+          test -f site/onboarding-activation.js
+          test -f site/onboarding-bulk-import.js
+          test -f site/onboarding-bulk-import-fix.js
           echo "Bestanden die naar Azure worden gepubliceerd:"
           ls -la site
 
