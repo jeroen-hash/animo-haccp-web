@@ -201,24 +201,10 @@
   document.addEventListener('keydown', e => { if(e.key === 'Escape') closeLogin(); });
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  document.getElementById('loginForm').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const message = document.getElementById('loginMessage');
-    message.textContent = 'Koppel hier jouw bestaande Supabase signInWithPassword-code.';
-
-    /*
-    VOORBEELD: vervang window.supabaseClient door de variabele uit jouw huidige app.
-
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-    const { error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) {
-      message.textContent = error.message;
-      return;
-    }
-    window.location.href = ROUTES.appAfterLogin;
-    */
-  });
+document.getElementById('loginForm').addEventListener('submit', function (event) {
+  event.preventDefault();
+  window.location.href = '/';
+});
 </script>
 </body>
 </html>
