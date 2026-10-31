@@ -20,7 +20,40 @@
     const button=document.getElementById('activateEnvironmentCompleteBtn');
     button.disabled=true;button.textContent='Activeren...';
     try{
-      const {data,error}=await sb.rpc('activate_platform_onboarding_complete',{p_intake_id:selected.id});
+      let data;
+let error;
+
+if (selected.source === 'lead') {
+
+  const result = await sb.functions.invoke(
+    'activate-onboarding-lead',
+    {
+      body: {
+        lead_id: selected.id
+      }
+    }
+  );
+
+  data = result.data;
+  error = result.error;
+
+  if (!error && data && data.error) {
+    error = new Error(data.error);
+  }
+
+} else {
+
+  const result = await sb.rpc(
+    'activate_platform_onboarding_complete',
+    {
+      p_intake_id: selected.id
+    }
+  );
+
+  data = result.data;
+  error = result.error;
+}
+
       if(error)throw error;
       alert(`Klantomgeving bijgewerkt.\n\nKuistaken: ${data.cleaning}\nTemperatuurpunten: ${data.temperature_points}\nGerechten: ${data.dishes}\nVoorraadproducten: ${data.stock}\nGebruikers klaar voor uitnodiging: ${data.pending_users}\n\nLaat de klant de app vernieuwen.`);
       if(typeof load==='function')await load();
