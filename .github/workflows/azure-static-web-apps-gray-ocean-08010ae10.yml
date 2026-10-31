@@ -29,6 +29,7 @@ jobs:
           mkdir -p site
 
           cp index.html site/index.html
+          cp landing.html site/landing.html
           cp admin-dashboard.html site/admin-dashboard.html
           cp onboarding-form.html site/onboarding-form.html
           cp onboarding-dashboard.html site/onboarding-dashboard.html
