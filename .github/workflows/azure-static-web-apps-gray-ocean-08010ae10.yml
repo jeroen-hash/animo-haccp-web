@@ -36,6 +36,7 @@ jobs:
           cp onboarding-activation.js site/onboarding-activation.js
           cp onboarding-bulk-import.js site/onboarding-bulk-import.js
           cp onboarding-bulk-import-fix.js site/onboarding-bulk-import-fix.js
+          cp onboarding-temperature-templates.js site/onboarding-temperature-templates.js
           cp onboarding-invite-users.js site/onboarding-invite-users.js
 
           if [ -f staticwebapp.config.json ]; then
