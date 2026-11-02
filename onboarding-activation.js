@@ -55,11 +55,16 @@ if (selected.source === 'lead') {
 }
 
       if(error)throw error;
-      alert(`Klantomgeving bijgewerkt.\n\nKuistaken: ${data.cleaning}\nTemperatuurpunten: ${data.temperature_points}\nGerechten: ${data.dishes}\nVoorraadproducten: ${data.stock}\nGebruikers klaar voor uitnodiging: ${data.pending_users}\n\nLaat de klant de app vernieuwen.`);
-      if(typeof load==='function')await load();
-    }catch(error){alert('Activeren mislukt: '+(error?.message||error));}
-    finally{button.disabled=false;button.textContent='Omgeving volledig activeren';}
-  }
-  new MutationObserver(addButton).observe(document.documentElement,{childList:true,subtree:true});
-  addButton();
-})();
+    const result = data.activation || data;
+
+alert(
+`Klantomgeving bijgewerkt.
+
+✅ Kuistaken: ${result.cleaning ?? 0}
+✅ Temperatuurpunten: ${result.temperature_points ?? result.temperature_points_pending ?? 0}
+✅ Gerechten: ${result.dishes ?? 0}
+✅ Voorraadproducten: ${result.stock ?? 0}
+✅ Gebruikers klaar voor uitnodiging: ${result.pending_users ?? result.users_pending ?? 0}
+
+Laat de klant de app vernieuwen.`
+);
