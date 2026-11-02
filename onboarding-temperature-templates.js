@@ -1,87 +1,171 @@
 /* ==========================================
    ANIMO HACCP
-   Automatische temperatuurtemplates
-   VEILIGE UITBREIDING
+   DEFAULT ONBOARDING TEMPLATES
 ========================================== */
 
 (function () {
 
-  const TEMPLATES = {
+  const DEFAULT_TEMPLATES = {
 
-    restaurant: [
-      {
-        name: "Koeling 1",
-        type: "Koeling",
-        min: "0",
-        max: "4",
-        frequency: "Dagelijks"
-      },
-      {
-        name: "Koeling 2",
-        type: "Koeling",
-        min: "0",
-        max: "4",
-        frequency: "Dagelijks"
-      },
-      {
-        name: "Diepvries 1",
-        type: "Diepvries",
-        min: "-25",
-        max: "-18",
-        frequency: "Dagelijks"
-      }
-    ],
+    restaurant: {
 
-    frituur: [
-      {
-        name: "Koeling",
-        type: "Koeling",
-        min: "0",
-        max: "4",
-        frequency: "Dagelijks"
-      },
-      {
-        name: "Diepvries",
-        type: "Diepvries",
-        min: "-25",
-        max: "-18",
-        frequency: "Dagelijks"
-      },
-      {
-        name: "Warme houdkast",
-        type: "Warmhouden",
-        min: "60",
-        max: "90",
-        frequency: "Dagelijks"
-      }
-    ],
+      temperature_points: [
+        {
+          name: "Koeling 1",
+          type: "Koeling",
+          min: "0",
+          max: "4",
+          frequency: "Dagelijks"
+        },
+        {
+          name: "Koeling 2",
+          type: "Koeling",
+          min: "0",
+          max: "4",
+          frequency: "Dagelijks"
+        },
+        {
+          name: "Diepvries 1",
+          type: "Diepvries",
+          min: "-25",
+          max: "-18",
+          frequency: "Dagelijks"
+        }
+      ],
 
-    broodjeszaak: [
-      {
-        name: "Koeling beleg",
-        type: "Koeling",
-        min: "0",
-        max: "4",
-        frequency: "Dagelijks"
-      },
-      {
-        name: "Koeling dranken",
-        type: "Koeling",
-        min: "0",
-        max: "7",
-        frequency: "Dagelijks"
-      }
-    ],
+      cleaning_plan: [
+        {
+          task: "Werkbladen reinigen",
+          zone: "Keuken",
+          frequency: "Dagelijks"
+        },
+        {
+          task: "Koelkasten reinigen",
+          zone: "Keuken",
+          frequency: "Dagelijks"
+        },
+        {
+          task: "Vloeren reinigen",
+          zone: "Keuken",
+          frequency: "Dagelijks"
+        },
+        {
+          task: "Afvalbakken reinigen",
+          zone: "Keuken",
+          frequency: "Dagelijks"
+        },
+        {
+          task: "Dieptereiniging keuken",
+          zone: "Keuken",
+          frequency: "Wekelijks"
+        }
+      ]
+    },
 
-    cafe: [
-      {
-        name: "Koeling dranken",
-        type: "Koeling",
-        min: "0",
-        max: "7",
-        frequency: "Dagelijks"
-      }
-    ]
+    frituur: {
+
+      temperature_points: [
+        {
+          name: "Koeling",
+          type: "Koeling",
+          min: "0",
+          max: "4",
+          frequency: "Dagelijks"
+        },
+        {
+          name: "Diepvries",
+          type: "Diepvries",
+          min: "-25",
+          max: "-18",
+          frequency: "Dagelijks"
+        },
+        {
+          name: "Warme houdkast",
+          type: "Warmhouden",
+          min: "60",
+          max: "90",
+          frequency: "Dagelijks"
+        }
+      ],
+
+      cleaning_plan: [
+        {
+          task: "Frituur reinigen",
+          zone: "Baklijn",
+          frequency: "Dagelijks"
+        },
+        {
+          task: "Werkbladen reinigen",
+          zone: "Baklijn",
+          frequency: "Dagelijks"
+        },
+        {
+          task: "Oliecontrole",
+          zone: "Baklijn",
+          frequency: "Dagelijks"
+        }
+      ]
+    },
+
+    broodjeszaak: {
+
+      temperature_points: [
+        {
+          name: "Koeling beleg",
+          type: "Koeling",
+          min: "0",
+          max: "4",
+          frequency: "Dagelijks"
+        },
+        {
+          name: "Koeling dranken",
+          type: "Koeling",
+          min: "0",
+          max: "7",
+          frequency: "Dagelijks"
+        }
+      ],
+
+      cleaning_plan: [
+        {
+          task: "Toog reinigen",
+          zone: "Verkoop",
+          frequency: "Dagelijks"
+        },
+        {
+          task: "Koeling reinigen",
+          zone: "Verkoop",
+          frequency: "Dagelijks"
+        }
+      ]
+    },
+
+    cafe: {
+
+      temperature_points: [
+        {
+          name: "Koeling dranken",
+          type: "Koeling",
+          min: "0",
+          max: "7",
+          frequency: "Dagelijks"
+        }
+      ],
+
+      cleaning_plan: [
+        {
+          task: "Toog reinigen",
+          zone: "Bar",
+          frequency: "Dagelijks"
+        },
+        {
+          task: "Glazen spoelen",
+          zone: "Bar",
+          frequency: "Dagelijks"
+        }
+      ]
+    }
+
   };
 
   function applyTemplate(type) {
@@ -94,13 +178,15 @@
       return;
     }
 
-    const current =
-      selected?.payload?.prepared_setup?.temperature_points || [];
+    const tpl = DEFAULT_TEMPLATES[type];
+
+    if (!tpl) {
+      return;
+    }
 
     if (
-      current.length > 0 &&
       !confirm(
-        "Bestaande temperatuurpunten vervangen?"
+        "Standaard temperatuurpunten en kuisplan toevoegen?"
       )
     ) {
       return;
@@ -116,26 +202,33 @@
 
     selected.payload.prepared_setup.temperature_points =
       structuredClone(
-        TEMPLATES[type] || []
+        tpl.temperature_points
+      );
+
+    selected.payload.prepared_setup.cleaning_plan =
+      structuredClone(
+        tpl.cleaning_plan
       );
 
     if (typeof dirty !== "undefined") {
       dirty = true;
     }
 
-    alert(
-      `${selected.payload.prepared_setup.temperature_points.length} temperatuurpunten toegevoegd.`
-    );
-
     if (typeof renderPrepare === "function") {
       renderPrepare();
     }
+
+    alert(
+      `Template geladen:
+${tpl.temperature_points.length} temperatuurpunten
+${tpl.cleaning_plan.length} kuistaken`
+    );
   }
 
-  window.applyTemperatureTemplate =
+  window.applyDefaultTemplate =
     applyTemplate;
 
-  function injectButtons() {
+  function insertButtons() {
 
     const preparePanel =
       document.getElementById("p-prepare");
@@ -146,7 +239,7 @@
 
     if (
       document.getElementById(
-        "temperature-template-buttons"
+        "default-template-buttons"
       )
     ) {
       return;
@@ -156,27 +249,35 @@
       document.createElement("div");
 
     wrapper.id =
-      "temperature-template-buttons";
+      "default-template-buttons";
 
     wrapper.style.display = "flex";
     wrapper.style.flexWrap = "wrap";
-    wrapper.style.gap = "8px";
+    wrapper.style.gap = "10px";
     wrapper.style.marginBottom = "15px";
 
     wrapper.innerHTML = `
-      <button class="btn secondary" type="button" onclick="applyTemperatureTemplate('restaurant')">
+      <button class="btn secondary"
+        type="button"
+        onclick="applyDefaultTemplate('restaurant')">
         🍽️ Restaurant
       </button>
 
-      <button class="btn secondary" type="button" onclick="applyTemperatureTemplate('frituur')">
+      <button class="btn secondary"
+        type="button"
+        onclick="applyDefaultTemplate('frituur')">
         🍟 Frituur
       </button>
 
-      <button class="btn secondary" type="button" onclick="applyTemperatureTemplate('broodjeszaak')">
+      <button class="btn secondary"
+        type="button"
+        onclick="applyDefaultTemplate('broodjeszaak')">
         🥪 Broodjeszaak
       </button>
 
-      <button class="btn secondary" type="button" onclick="applyTemperatureTemplate('cafe')">
+      <button class="btn secondary"
+        type="button"
+        onclick="applyDefaultTemplate('cafe')">
         ☕ Café
       </button>
     `;
@@ -194,7 +295,7 @@
   }
 
   new MutationObserver(
-    injectButtons
+    insertButtons
   ).observe(
     document.documentElement,
     {
@@ -203,6 +304,6 @@
     }
   );
 
-  injectButtons();
+  insertButtons();
 
 })();
