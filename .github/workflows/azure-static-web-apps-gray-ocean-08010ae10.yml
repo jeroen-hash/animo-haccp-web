@@ -26,12 +26,11 @@ jobs:
       - name: Publicatiemap voorbereiden
         run: |
           rm -rf site
-          mkdir -p site
-          
           mkdir -p site/images
 
-          cp images/animo-logo.png.png site/images/animo-logo.png.png
-          cp images/animo-icon.png.png site/images/animo-icon.png.png
+          # Alle afbeeldingen uit de map images (logo, icoon, app-schermen)
+          cp -r images/. site/images/
+
           cp index.html site/index.html
           cp landing.html site/landing.html
           cp admin-dashboard.html site/admin-dashboard.html
@@ -42,26 +41,23 @@ jobs:
           cp onboarding-bulk-import-fix.js site/onboarding-bulk-import-fix.js
           cp onboarding-temperature-templates.js site/onboarding-temperature-templates.js
           cp onboarding-invite-users.js site/onboarding-invite-users.js
-          
+
+          # Optionele pagina's: alleen meenemen als ze bestaan
+          for f in privacy.html algemene-voorwaarden.html verwerkersovereenkomst.html wachtwoord-vergeten.html; do
+            if [ -f "$f" ]; then
+              cp "$f" "site/$f"
+            fi
+          done
 
           if [ -f staticwebapp.config.json ]; then
             cp staticwebapp.config.json site/staticwebapp.config.json
           fi
 
           echo "Bestanden die naar Azure worden gepubliceerd:"
-          ls -la site
+          ls -la site site/images
 
           test -f site/index.html
-          test -f site/admin-dashboard.html
-          test -f site/onboarding-form.html
-          test -f site/onboarding-dashboard.html
-          test -f site/onboarding-activation.js
-          test -f site/onboarding-bulk-import.js
-          test -f site/onboarding-bulk-import-fix.js
-          echo "Bestanden die naar Azure worden gepubliceerd:"
-          ls -la site
-
-          test -f site/index.html
+          test -f site/landing.html
           test -f site/admin-dashboard.html
           test -f site/onboarding-form.html
           test -f site/onboarding-dashboard.html
