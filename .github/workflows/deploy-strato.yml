@@ -1,0 +1,109 @@
+name: Deploy naar Strato (animo-apps.com)
+
+# Dit bestand staat los van de Azure-workflow. Zolang de geheimen
+# STRATO_SFTP_HOST, STRATO_SFTP_USER en STRATO_SFTP_PASSWORD niet bestaan,
+# slaat deze workflow het uploaden over (groen, zonder iets te doen).
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Bouwen en uploaden naar Strato
+
+    steps:
+      - name: Repository ophalen
+        uses: actions/checkout@v4
+
+      - name: Controleren of de SFTP-geheimen bestaan
+        id: guard
+        env:
+          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
+          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
+          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+        run: |
+          if [ -z "$SFTP_HOST" ] || [ -z "$SFTP_USER" ] || [ -z "$SFTP_PASS" ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::SFTP-geheimen ontbreken. Uploaden naar Strato wordt overgeslagen."
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Mappen voor landing en app klaarzetten
+        if: steps.guard.outputs.present == 'true'
+        run: |
+          set -e
+          rm -rf out
+          mkdir -p out/landing out/app
+
+          test -f index.html
+          test -f landing.html
+          test -f onboarding-form.html
+
+          # Afbeeldingen (logo, icoon, app-schermen)
+          cp -r images out/landing/images
+          cp -r images out/app/images
+
+          # Landing page: landing.html wordt index.html met adressen voor het nieuwe domein
+          python3 - <<'PY'
+          s = open('landing.html', encoding='utf-8').read()
+          app = 'https://app.animo-apps.com'
+          s = s.replace('href="/"', 'href="' + app + '/"')
+          s = s.replace('href="/onboarding-form.html"', 'href="' + app + '/onboarding-form.html"')
+          s = s.replace('https://app.freelance-animo.com/landing.html', 'https://animo-apps.com/')
+          s = s.replace('https://app.freelance-animo.com/images/', 'https://animo-apps.com/images/')
+          s = s.replace('<link rel="icon"', '<link rel="canonical" href="https://animo-apps.com/">\n<link rel="icon"', 1)
+          assert 'freelance-animo' not in s, 'Oud adres staat nog in landing.html'
+          open('out/landing/index.html', 'w', encoding='utf-8').write(s)
+          PY
+
+          # Juridische pagina's (alleen als ze bestaan)
+          for f in privacy.html algemene-voorwaarden.html verwerkersovereenkomst.html; do
+            if [ -f "$f" ]; then cp "$f" "out/landing/$f"; fi
+          done
+
+          # App
+          cp index.html out/app/index.html
+          for f in admin-dashboard.html onboarding-form.html onboarding-dashboard.html wachtwoord-vergeten.html; do
+            if [ -f "$f" ]; then cp "$f" "out/app/$f"; fi
+          done
+          for f in onboarding-*.js; do
+            if [ -f "$f" ]; then cp "$f" "out/app/$f"; fi
+          done
+
+          echo "== Te uploaden: landing =="
+          ls -la out/landing
+          echo "== Te uploaden: app =="
+          ls -la out/app
+
+      - name: Controle op oude adressen (alleen informatie)
+        if: steps.guard.outputs.present == 'true'
+        run: |
+          echo "Verwijzingen naar het oude domein in de te uploaden bestanden:"
+          grep -rIn "freelance-animo" out || echo "Geen gevonden."
+
+      - name: Uploaden via SFTP
+        if: steps.guard.outputs.present == 'true'
+        env:
+          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
+          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
+          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+        run: |
+          set -e
+          sudo apt-get update -y
+          sudo apt-get install -y lftp
+          # Alleen uploaden, nooit verwijderen op de server
+          lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<'LFTP'
+          set sftp:auto-confirm yes
+          set net:max-retries 3
+          set net:timeout 30
+          mirror -R --verbose out/landing /landing
+          mirror -R --verbose out/app /app
+          bye
+          LFTP
