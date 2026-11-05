@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ANIMO HACCP | Facturatie</title>
+<link rel="icon" type="image/png" href="./images/animo-icon.png.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--nav:#103e2a;--primary:#147a46;--primary2:#0f6338;--soft:#eaf6ef;--bg:#f3f6f4;--surface:#fff;--text:#17231c;--muted:#637168;--line:#dce5df;--danger:#b42318;--dangerbg:#fff0ee;--warning:#9a5b05;--warningbg:#fff6df;--info:#245b91;--infobg:#e8f1fb;--shadow:0 8px 24px rgba(25,62,40,.08)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text);background:var(--bg)}
+button{font:inherit;cursor:pointer}a{color:inherit}.hidden{display:none!important}
+
+/* Layout: dezelfde zijbalk en pagina-opbouw als de app */
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:100vh}
+.sidebar{position:sticky;top:0;height:100vh;background:linear-gradient(180deg,#124d32,#0b3522);padding:24px 16px;color:#fff}
+.brand{display:flex;gap:12px;align-items:center;padding:0 8px 26px}
+.mark{position:relative;width:46px;height:46px;display:grid;place-items:center;border-radius:14px;background:#fff;color:var(--nav);font-weight:950;font-size:22px;overflow:hidden;flex:0 0 46px}
+.mark img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;display:block}
+.brand strong{display:block;font-size:18px}.brand small{opacity:.72}
+.nav{display:grid;gap:7px}
+.nav-btn{display:block;border:0;border-radius:11px;padding:12px 13px;text-decoration:none;background:transparent;color:#dcebe2;font-weight:700}
+.nav-btn:hover,.nav-btn.active{background:rgba(255,255,255,.14);color:#fff}
+.nav-btn span{display:inline-block;width:25px}
+.sidebar-note{position:absolute;left:16px;right:16px;bottom:18px;padding:12px;border-radius:11px;background:rgba(255,255,255,.1);font-size:12px;line-height:1.5}
+.sidebar-note a{color:#fff;font-weight:700}
+.main{width:100%;max-width:1100px;margin:0 auto;padding:26px 32px 90px}
+.page-head{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:20px}
+.page-head h1{margin:0;font-size:27px}.page-head p{margin:4px 0 0;color:var(--muted)}
+
+/* Basiscomponenten */
+.card{background:var(--surface);border:1px solid #e5ece7;border-radius:16px;padding:19px;box-shadow:var(--shadow)}
+.card h2{margin:0 0 6px;font-size:19px}.card h3{margin:0 0 8px}
+.muted{color:var(--muted)}
+.btn{border:0;border-radius:10px;padding:10px 14px;background:var(--primary);color:#fff;font-weight:800;text-decoration:none;display:inline-block;text-align:center}
+.btn:hover{background:var(--primary2)}
+.btn.secondary{background:var(--soft);color:var(--primary2)}.btn.secondary:hover{background:#dcefe3}
+.btn.danger{background:var(--dangerbg);color:var(--danger)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:900;background:#ddf4e6;color:#0f6338}
+.badge.trialing{background:var(--infobg);color:var(--info)}
+.badge.past_due,.badge.expired,.badge.canceled{background:#fde8e5;color:var(--danger)}
+.badge.incomplete{background:var(--warningbg);color:var(--warning)}
+
+/* Abonnement */
+.hero{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;margin-bottom:16px}
+.status{padding:20px;border-radius:16px;background:linear-gradient(135deg,#103e2a,#147a46);color:#fff;box-shadow:var(--shadow)}
+.status h2{margin:12px 0 4px;font-size:23px;color:#fff}
+.metric{font-size:31px;font-weight:950;margin:8px 0}.metric small{font-size:14px;font-weight:700;opacity:.85}
+.meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:14px}
+.meta>div{padding:10px;border-radius:10px;background:rgba(255,255,255,.12)}
+.meta span{display:block;font-size:11px;opacity:.8}.meta strong{display:block;margin-top:2px}
+.alert{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 16px;border-radius:12px;margin-bottom:16px;font-weight:600}
+.alert.info{background:var(--infobg);color:var(--info)}
+.alert.warn{background:var(--warningbg);color:var(--warning)}
+.alert.danger{background:var(--dangerbg);color:var(--danger)}
+.alert .btn{padding:8px 12px}
+.hint{font-size:13px;color:var(--muted);margin:10px 0 0}
+
+/* Plannen */
+.plans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
+.plan{position:relative;border:2px solid var(--line);border-radius:15px;padding:17px;background:#fff;display:flex;flex-direction:column;gap:10px}
+.plan.current{border-color:var(--primary);box-shadow:0 0 0 4px #e3f4e9}
+.plan-name{font-size:19px;font-weight:900;color:#103e2a}
+.plan-price{font-size:28px;font-weight:950;color:#147a46}.plan-price small{font-size:13px;color:var(--muted);font-weight:700}
+.plan-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.plan-save{background:#fff6df;color:var(--warning);font-size:12px;font-weight:900;padding:5px 9px;border-radius:999px;white-space:nowrap}
+.plan-features{display:grid;gap:7px;padding:0;margin:0;list-style:none}
+.plan-features li:before{content:'✓';color:#147a46;font-weight:950;margin-right:7px}
+.plan .btn{margin-top:auto;width:100%}
+
+/* Gegevens */
+.info{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.info>div{padding:12px;border:1px solid var(--line);border-radius:12px;background:#fbfcfb}
+.info span{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+.fine{font-size:12px;color:var(--muted);margin:16px 4px 0;line-height:1.6}
+.fine a{color:var(--primary2);font-weight:700}
+
+/* Toestanden en toast */
+.state{text-align:center;padding:38px 20px}
+.state h2{margin-bottom:8px}.state p{max-width:480px;margin:0 auto 16px;color:var(--muted)}
+.toast{position:fixed;right:22px;bottom:22px;z-index:60;background:#153c28;color:#fff;padding:12px 16px;border-radius:10px;box-shadow:var(--shadow);opacity:0;transform:translateY(20px);pointer-events:none;transition:.2s;max-width:min(420px,calc(100vw - 44px))}
+.toast.show{opacity:1;transform:none}
+
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto;padding:14px}
+  .brand{padding-bottom:12px}
+  .nav{grid-auto-flow:column;grid-auto-columns:1fr}
+  .nav-btn{text-align:center;padding:10px 8px}.nav-btn span{width:auto;margin-right:6px}
+  .sidebar-note{display:none}
+  .main{padding:18px 14px 70px}
+  .hero,.plans,.info{grid-template-columns:1fr}
+  .page-head h1{font-size:23px}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark">A<img src="images/animo-icon.png.png" alt="ANIMO HACCP" onerror="this.remove()"></div>
+      <div><strong>Animo HACCP</strong><small id="brandBiz">Facturatie</small></div>
+    </div>
+    <nav class="nav" aria-label="Navigatie">
+      <a class="nav-btn" href="/"><span>←</span>Terug naar de app</a>
+      <a class="nav-btn active" href="./billing.html" aria-current="page"><span>€</span>Facturatie</a>
+    </nav>
+    <div class="sidebar-note">Prijzen zijn exclusief btw. Vragen over je factuur? <a href="mailto:info@animo-apps.com">info@animo-apps.com</a></div>
+  </aside>
+
+  <main class="main">
+    <div class="page-head">
+      <div><h1>Facturatie</h1><p>Abonnement, betaling en facturen van jouw zaak</p></div>
+      <button id="refreshBtn" class="btn secondary hidden" type="button">Vernieuwen</button>
+    </div>
+
+    <section id="stLoading" class="card state"><p style="margin:0">Gegevens worden geladen…</p></section>
+    <section id="stLogin" class="card state hidden"><h2>Aanmelden vereist</h2><p>Je bent niet aangemeld. Meld je aan in de app en kom daarna terug naar deze pagina.</p><a class="btn" href="/">Naar de app</a></section>
+    <section id="stNoBiz" class="card state hidden"><h2>Geen zaak gevonden</h2><p>Aan dit account is geen actieve horecazaak gekoppeld. Neem contact op met <a href="mailto:info@animo-apps.com">info@animo-apps.com</a> als dit niet klopt.</p><a class="btn secondary" href="/">Terug naar de app</a></section>
+    <section id="stDenied" class="card state hidden"><h2>Geen toegang tot facturatie</h2><p>Alleen managers en eigenaars beheren het abonnement en de facturen van de zaak. Vraag het aan jouw manager.</p><a class="btn secondary" href="/">Terug naar de app</a></section>
+    <section id="stError" class="card state hidden"><h2>Laden mislukt</h2><p id="errMsg"></p><button id="retryBtn" class="btn" type="button">Opnieuw proberen</button></section>
+
+    <section id="content" class="hidden">
+      <div id="alerts"></div>
+      <div class="hero">
+        <div id="statusCard" class="status"></div>
+        <div id="manageCard" class="card"></div>
+      </div>
+      <div class="card">
+        <h2>Kies je betaalperiode</h2>
+        <p class="muted" style="margin:0">Eén formule met alle functies. Je betaalt veilig via Stripe en kan altijd opzeggen op het einde van de lopende periode.</p>
+        <div id="plans" class="plans"></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h2>Gegevens van je zaak</h2>
+        <div id="bizInfo" class="info"></div>
+      </div>
+      <p class="fine">Prijzen per zaak, exclusief btw. Opzeggen kan op het einde van de lopende betaalperiode. Zakelijke dienst voor professionele horecaondernemingen. Zie ook de <a href="https://animo-apps.com/algemene-voorwaarden.html" target="_blank" rel="noopener">algemene voorwaarden</a> en de <a href="https://animo-apps.com/privacy.html" target="_blank" rel="noopener">privacyverklaring</a>.</p>
+    </section>
+  </main>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+const CONFIG={url:'https://zimzsovvtdmrthrflkgm.supabase.co',key:'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k'};
+const sb=supabase.createClient(CONFIG.url,CONFIG.key,{auth:{persistSession:true,autoRefreshToken:true}});
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// Weergaveprijzen (excl. btw). De echte bedragen komen uit Stripe; pas deze aan als de prijzen wijzigen.
+const PLANS={
+  monthly:{name:'Professional maandelijks',price:55,period:'per maand'},
+  yearly:{name:'Professional jaarlijks',price:550,period:'per jaar'}
+};
+const YEARLY_SAVING=PLANS.monthly.price*12-PLANS.yearly.price;
+const FEATURES=['Temperaturen en corrigerende acties','Kuisplannen en opvolging','Allergenen, gerechten en voorraad','Leveranciers, facturen en documenten','Recepten en PDF-rapporten','Gebruikers en rollen'];
+const TRIAL_DAYS=14;
+const MANAGER_ROLES=['manager','owner'];
+const STATUS_LABEL={trialing:'Proefperiode',active:'Actief',past_due:'Betaling mislukt',canceled:'Opgezegd',expired:'Verlopen',incomplete:'Nog niet voltooid'};
+
+let biz=null,role='',sub=null;
+
+const euro=n=>'€ '+(Number.isInteger(Number(n))?String(Number(n)):Number(n).toFixed(2).replace('.',','));
+const fmtDate=v=>{if(!v)return '–';const d=new Date(v);return isNaN(d)?'–':d.toLocaleDateString('nl-BE')};
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),3600)}
+function showOnly(name){['stLoading','stLogin','stNoBiz','stDenied','stError','content'].forEach(id=>$(id).classList.toggle('hidden',id!==name));$('refreshBtn').classList.toggle('hidden',name!=='content')}
+
+async function callFn(name,body,fallback){
+  const {data,error}=await sb.functions.invoke(name,{body});
+  if(error){let m=error.message||fallback;try{const c=await error.context?.json();if(c?.error)m=c.error}catch(e){}throw new Error(m)}
+  if(data?.error)throw new Error(data.error);
+  return data;
+}
+function stripeUrl(url){
+  let u;try{u=new URL(url)}catch(e){throw new Error('Ongeldige link van Stripe ontvangen.')}
+  if(u.protocol!=='https:'||!(u.hostname==='stripe.com'||u.hostname.endsWith('.stripe.com')))throw new Error('Onverwachte betaallink ontvangen. Neem contact op met ANIMO.');
+  return u.href;
+}
+
+async function loadBusiness(user){
+  const {data:members,error}=await sb.from('business_members').select('business_id,role,active').eq('user_id',user.id).eq('active',true).limit(1);
+  if(error)throw error;
+  if(!members?.length)return null;
+  const m=members[0];
+  let res=await sb.from('businesses').select('id,name,enterprise_number,created_at').eq('id',m.business_id).single();
+  if(res.error)res=await sb.from('businesses').select('id,name,enterprise_number').eq('id',m.business_id).single();
+  if(res.error)throw res.error;
+  return {...res.data,role:m.role};
+}
+
+function normalize(d){
+  const raw=d.status||'none';
+  const hasSub=Boolean(d.subscriptionId)&&!['none','canceled','expired'].includes(raw);
+  let trialEnd=d.trialEnd||d.trialEndsAt||null,trialEstimated=false;
+  if(!trialEnd&&raw==='trialing')trialEnd=d.currentPeriodEnd||null;
+  if(!trialEnd&&raw==='none'&&biz?.created_at){const t=new Date(biz.created_at);t.setDate(t.getDate()+TRIAL_DAYS);trialEnd=t.toISOString();trialEstimated=true}
+  return {raw,status:raw==='none'?'trialing':raw,plan:PLANS[d.plan]?d.plan:'',hasSub,customerId:d.customerId||'',periodEnd:d.currentPeriodEnd||null,cancelAtPeriodEnd:Boolean(d.cancelAtPeriodEnd),trialEnd,trialEstimated};
+}
+async function loadStatus(){
+  const d=await callFn('subscription-status',{businessId:biz.id},'De abonnementsstatus kon niet worden opgehaald.');
+  sub=normalize(d||{});
+}
+
+function renderAlerts(){
+  const a=[];
+  const portalBtn='<button class="btn" type="button" data-act="portal">Klantenportaal openen</button>';
+  if(sub.status==='past_due')a.push(['danger','Je laatste betaling is mislukt. Werk je betaalmethode bij om onderbreking van de toegang te vermijden.',portalBtn]);
+  else if(sub.status==='incomplete')a.push(['warn','De betaling is nog niet voltooid. Rond ze af of start opnieuw hieronder.','']);
+  else if(sub.status==='canceled'||sub.status==='expired')a.push(['warn','Je abonnement is niet meer actief. Kies hieronder een betaalperiode om opnieuw te starten.','']);
+  else if(sub.cancelAtPeriodEnd)a.push(['warn',`Je abonnement stopt op ${fmtDate(sub.periodEnd)}. Tot dan behoud je toegang. Heractiveren kan in het klantenportaal.`,portalBtn]);
+  else if(!sub.hasSub&&sub.status==='trialing')a.push(['info',`Je gebruikt ANIMO HACCP gratis tijdens de proefperiode van ${TRIAL_DAYS} dagen. Kies hieronder een betaalperiode om zonder onderbreking verder te gaan.`,'']);
+  $('alerts').innerHTML=a.map(([t,m,b])=>`<div class="alert ${t}"><span>${esc(m)}</span>${b}</div>`).join('');
+}
+
+function renderStatus(){
+  const p=sub.plan?PLANS[sub.plan]:null;
+  const price=p?`${esc(euro(p.price))} <small>${esc(p.period)}, excl. btw</small>`:'Gratis <small>tijdens de proefperiode</small>';
+  const tiles=[];
+  if(sub.status==='trialing')tiles.push([`Proefperiode tot${sub.trialEstimated?' (geschat)':''}`,fmtDate(sub.trialEnd)]);
+  else if(sub.periodEnd)tiles.push([sub.cancelAtPeriodEnd||sub.status==='canceled'?'Toegang tot':'Volgende betaling op',fmtDate(sub.periodEnd)]);
+  else tiles.push(['Status','–']);
+  if(sub.hasSub&&sub.status==='trialing')tiles.push(['Eerste betaling op',fmtDate(sub.periodEnd)]);
+  else tiles.push(['Plan',p?p.name:'Nog niet gekozen']);
+  tiles.push(['Zaak',biz.name||'–']);
+  tiles.push(['Opzegging',sub.cancelAtPeriodEnd?'Aan het einde van de periode':(sub.status==='canceled'?'Opgezegd':(sub.hasSub?'Niet gepland':'Geen abonnement'))]);
+  $('statusCard').innerHTML=`<span class="badge ${esc(sub.status)}">${esc(STATUS_LABEL[sub.status]||sub.status)}</span><h2>ANIMO HACCP Professional</h2><div class="metric">${price}</div><div class="meta">${tiles.map(([l,v])=>`<div><span>${esc(l)}</span><strong>${esc(v)}</strong></div>`).join('')}</div>`;
+}
+
+function renderManage(){
+  const can=Boolean(sub.customerId);
+  $('manageCard').innerHTML=`<h3>Betaling en facturen</h3><p class="muted" style="margin:0">Via het beveiligde klantenportaal van Stripe beheer je je facturen, betaalmethode, btw-gegevens en opzegging.</p><div class="actions"><button class="btn" type="button" data-act="portal"${can?'':' disabled'}>Klantenportaal openen</button></div>${can?'':'<p class="hint">Beschikbaar zodra je een abonnement hebt gestart.</p>'}<p class="hint">Hulp nodig? Mail naar <a href="mailto:info@animo-apps.com">info@animo-apps.com</a>.</p>`;
+}
+
+function renderPlans(){
+  $('plans').innerHTML=Object.entries(PLANS).map(([key,p])=>{
+    const current=sub.hasSub&&sub.plan===key;
+    let btn;
+    if(current)btn='<button class="btn secondary" type="button" disabled>Huidig plan</button>';
+    else if(sub.hasSub)btn='<button class="btn secondary" type="button" data-act="portal">Wisselen via klantenportaal</button>';
+    else btn=`<button class="btn" type="button" data-act="checkout" data-plan="${esc(key)}">Veilig betalen met Stripe</button>`;
+    return `<article class="plan ${current?'current':''}"><div class="plan-top"><div class="plan-name">${esc(p.name)}</div>${key==='yearly'&&YEARLY_SAVING>0?`<span class="plan-save">Bespaar ${esc(euro(YEARLY_SAVING))}</span>`:''}</div><div class="plan-price">${esc(euro(p.price))} <small>${esc(p.period)}, excl. btw</small></div><ul class="plan-features">${FEATURES.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>${btn}</article>`;
+  }).join('');
+}
+
+function renderBiz(){
+  const rows=[['Zaak',biz.name||'–'],['Ondernemingsnummer',biz.enterprise_number||'–'],['Jouw rol',role==='owner'?'Eigenaar':'Manager'],['Plan',sub.plan?PLANS[sub.plan].name:'Nog niet gekozen']];
+  $('bizInfo').innerHTML=rows.map(([l,v])=>`<div><span>${esc(l)}</span><strong>${esc(v)}</strong></div>`).join('');
+}
+
+function render(){
+  $('brandBiz').textContent=biz.name||'Facturatie';
+  renderAlerts();renderStatus();renderManage();renderPlans();renderBiz();
+}
+
+async function act(action,btn){
+  if(!MANAGER_ROLES.includes(role)){toast('Alleen managers beheren de facturatie');return}
+  const label=btn.textContent;btn.disabled=true;btn.textContent='Even geduld…';
+  try{
+    let data;
+    if(action==='portal')data=await callFn('create-portal-session',{businessId:biz.id},'Het klantenportaal kon niet worden geopend.');
+    else if(action==='checkout')data=await callFn('create-checkout',{plan:btn.dataset.plan},'De betaalpagina kon niet worden gestart.');
+    else return;
+    if(!data?.url)throw new Error('Stripe heeft geen link teruggestuurd.');
+    location.href=stripeUrl(data.url);
+  }catch(err){
+    btn.disabled=false;btn.textContent=label;
+    toast(err.message||'Er ging iets mis. Probeer opnieuw.');
+  }
+}
+
+async function init(){
+  showOnly('stLoading');
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session){showOnly('stLogin');return}
+    biz=await loadBusiness(session.user);
+    if(!biz){showOnly('stNoBiz');return}
+    role=biz.role;
+    $('brandBiz').textContent=biz.name||'Facturatie';
+    if(!MANAGER_ROLES.includes(role)){showOnly('stDenied');return}
+    await loadStatus();
+    render();showOnly('content');
+  }catch(err){
+    $('errMsg').textContent=err?.message||String(err);
+    showOnly('stError');
+  }
+}
+
+async function refresh(){
+  const b=$('refreshBtn');b.disabled=true;
+  try{await loadStatus();render();toast('Gegevens bijgewerkt')}
+  catch(err){toast(err.message||'Vernieuwen mislukt')}
+  finally{b.disabled=false}
+}
+
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b)act(b.dataset.act,b)});
+$('refreshBtn').onclick=refresh;
+$('retryBtn').onclick=init;
+window.addEventListener('pageshow',e=>{if(e.persisted)init()});
+init();
+</script>
+</body>
+</html>
