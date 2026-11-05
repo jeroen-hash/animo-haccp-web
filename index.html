@@ -647,11 +647,41 @@ async function prepareCloudSession(user,options={}){
     return false;
   }
 }
+
 async function continueToCloudApp(){
-  window.FAVVStartSupabaseSession?.(window.FAVVCloudUser,cloudBusiness);
-  setTimeout(()=>refreshSubscriptionStatus(),0);
+  window.FAVVStartSupabaseSession?.(
+    window.FAVVCloudUser,
+    cloudBusiness
+  );
+
+  // Eerst de echte abonnementsstatus bij Supabase ophalen.
+  const subscription = await refreshSubscriptionStatus();
+
+  // Geen betrouwbare status ontvangen? Dan de app niet openen.
+  if(!subscription || typeof subscription.accessAllowed !== 'boolean'){
+    throw new Error(
+      'De toegangsrechten konden niet veilig worden gecontroleerd. Probeer opnieuw.'
+    );
+  }
+
+  // Proefperiode verlopen of geen geldig abonnement.
+  if(!subscription.accessAllowed){
+    if(subscription.billingAllowed){
+      navigate('subscription');
+      openLocalApp();
+      toast('Je proefperiode is afgelopen. Kies een abonnement om verder te gaan.');
+      return;
+    }
+
+    throw new Error(
+      'De toegang tot ANIMO HACCP is momenteel geblokkeerd. Neem contact op met de zaakbeheerder.'
+    );
+  }
+
+  // Alleen bij toegestane toegang de HACCP-gegevens laden.
   let r=window.__favvCloudRow;
   const forceClean=localStorage.getItem('favv-force-clean-new-business-v1')==='true';
+
   if(forceClean){
     const clean=window.FAVVStartCleanBusinessState();
     await saveCloudState(clean);
@@ -671,6 +701,10 @@ async function continueToCloudApp(){
     window.__favvCloudRow=r;
     setStatus('Nieuwe zaak schoon gestart',true);
   }
+
+  openLocalApp();
+}
+
   openLocalApp();
 }
 async function initClient(config){if(!window.supabase||!validConfig(config))return false;cloudClient=window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});cloudClient.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'&&session){showPasswordSetup('recovery');setStatus('Nieuw wachtwoord vereist')}});const {data,error}=await cloudClient.auth.getSession();if(error){setMessage(error.message);showLogin();return true}const linkType=authLinkType();if(data.session&&(linkType==='recovery'||linkType==='invite')){showPasswordSetup(linkType);setStatus(linkType==='invite'?'Accountactivatie vereist':'Nieuw wachtwoord vereist');history.replaceState(null,document.title,location.pathname);return true}if(data.session){
@@ -1054,15 +1088,53 @@ function loadSubscriptionConfig(){try{return JSON.parse(localStorage.getItem(sub
 function saveSubscriptionConfig(){localStorage.setItem(subscriptionConfigKey(),JSON.stringify({checkoutEndpoint:$('checkoutEndpoint').value.trim(),portalEndpoint:$('portalEndpoint').value.trim(),statusEndpoint:$('subscriptionStatusEndpoint').value.trim(),cancelEndpoint:$('cancelSubscriptionEndpoint').value.trim()}));toast('Abonnementsinstellingen bewaard')}
 function subscriptionStatusLabel(status){return ({trialing:'Proefperiode',active:'Actief',past_due:'Betaling mislukt',canceled:'Opgezegd',expired:'Verlopen',incomplete:'Nog niet voltooid'})[status]||status}
 function formatSubscriptionDate(value){return value?new Date(value).toLocaleDateString('nl-BE'):'Niet beschikbaar'}
-function renderSubscription(){if(currentUser?.role!=='manager')return;const plans=subscriptionPlans(),sub=loadSubscription();if(!plans[sub.plan]){sub.plan='monthly';saveSubscription(sub)}const plan=plans[sub.plan]||plans.monthly;$('subscriptionStatusCard').innerHTML=`<span class="status-badge ${esc(sub.status)}">${esc(subscriptionStatusLabel(sub.status))}</span><h2>ANIMO HACCP ${esc(plan.name)}</h2><div class="metric">${plan.price==null?'Prijs via Stripe':`€ ${Number(plan.price).toFixed(2).replace('.',',')} <small>${esc(plan.period)}</small>`}</div><div class="subscription-meta"><div><span>Proefperiode tot</span><strong>${formatSubscriptionDate(sub.trialEndsAt)}</strong></div><div><span>Volgende factuurdatum</span><strong>${formatSubscriptionDate(sub.currentPeriodEnd)}</strong></div><div><span>Zaak</span><strong>${esc(businessProfile?.businessName||'')}</strong></div><div><span>Opzegging</span><strong>${sub.cancelAtPeriodEnd?'Aan het einde van de periode':'Niet gepland'}</strong></div></div>`;$('subscriptionPlans').innerHTML=Object.entries(plans).map(([key,p])=>`<article class="plan-card ${sub.plan===key?'selected':''}"><div class="plan-name">${esc(p.name)}</div><div class="plan-price">${p.price==null?'Jaarprijs in Stripe':`€ ${Number(p.price).toFixed(2).replace('.',',')} <small>${esc(p.period)}</small>`}</div><ul class="plan-features">${p.features.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="btn ${sub.plan===key?'secondary':''}" data-subscription-action="select-plan" data-plan="${key}">${sub.plan===key?'Geselecteerd':'Kiezen'}</button></article>`).join('');const builder=$('builderPricingPanel');if(builder)builder.classList.remove('open')}
+function renderSubscription(){if(!['manager','owner'].includes(currentUser?.role))return;;const plans=subscriptionPlans(),sub=loadSubscription();if(!plans[sub.plan]){sub.plan='monthly';saveSubscription(sub)}const plan=plans[sub.plan]||plans.monthly;$('subscriptionStatusCard').innerHTML=`<span class="status-badge ${esc(sub.status)}">${esc(subscriptionStatusLabel(sub.status))}</span><h2>ANIMO HACCP ${esc(plan.name)}</h2><div class="metric">${plan.price==null?'Prijs via Stripe':`€ ${Number(plan.price).toFixed(2).replace('.',',')} <small>${esc(plan.period)}</small>`}</div><div class="subscription-meta"><div><span>Proefperiode tot</span><strong>${formatSubscriptionDate(sub.trialEndsAt)}</strong></div><div><span>Volgende factuurdatum</span><strong>${formatSubscriptionDate(sub.currentPeriodEnd)}</strong></div><div><span>Zaak</span><strong>${esc(businessProfile?.businessName||'')}</strong></div><div><span>Opzegging</span><strong>${sub.cancelAtPeriodEnd?'Aan het einde van de periode':'Niet gepland'}</strong></div></div>`;$('subscriptionPlans').innerHTML=Object.entries(plans).map(([key,p])=>`<article class="plan-card ${sub.plan===key?'selected':''}"><div class="plan-name">${esc(p.name)}</div><div class="plan-price">${p.price==null?'Jaarprijs in Stripe':`€ ${Number(p.price).toFixed(2).replace('.',',')} <small>${esc(p.period)}</small>`}</div><ul class="plan-features">${p.features.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="btn ${sub.plan===key?'secondary':''}" data-subscription-action="select-plan" data-plan="${key}">${sub.plan===key?'Geselecteerd':'Kiezen'}</button></article>`).join('');const builder=$('builderPricingPanel');if(builder)builder.classList.remove('open')}
 
 function selectSubscriptionPlan(plan){if(!subscriptionPlans()[plan])return;const sub=loadSubscription();sub.plan=plan;saveSubscription(sub);renderSubscription();toast('Abonnementsplan geselecteerd')}
 async function openSubscriptionSession(type){try{let url='';if(type==='checkout'){if(typeof window.FAVVCreateCheckout!=='function')throw new Error('De beveiligde Supabase-verbinding is nog niet klaar. Meld opnieuw aan en probeer opnieuw.');const sub=loadSubscription();if(!['monthly','yearly'].includes(sub.plan))throw new Error('Kies eerst maandelijks of jaarlijks.');url=await window.FAVVCreateCheckout(sub.plan)}else if(type==='portal'){if(typeof window.FAVVOpenBillingPortal!=='function')throw new Error('De beveiligde Supabase-verbinding is nog niet klaar. Meld opnieuw aan en probeer opnieuw.');url=await window.FAVVOpenBillingPortal()}else{throw new Error('Onbekende abonnementsactie.')}location.href=url}catch(err){alert(`${type==='portal'?'Kon het klantenportaal niet openen':'Kon de betaalpagina niet openen'}: ${err.message||err}`)}}
 
-async function refreshSubscriptionStatus(){try{if(typeof window.FAVVGetSubscriptionStatus!=='function')return;const data=await window.FAVVGetSubscriptionStatus();if(!data)return;const sub={...loadSubscription(),plan:data.plan||loadSubscription().plan,status:data.status==='none'?'trialing':(data.status||loadSubscription().status),customerId:data.customerId||'',subscriptionId:data.subscriptionId||'',priceId:data.priceId||'',currentPeriodStart:data.currentPeriodStart||null,currentPeriodEnd:data.currentPeriodEnd||null,cancelAtPeriodEnd:Boolean(data.cancelAtPeriodEnd)};saveSubscription(sub);if(currentUser?.role==='manager')renderSubscription();return sub}catch(error){console.error('Abonnementsstatus ophalen mislukt',error)}}
+
+async function refreshSubscriptionStatus(){
+  if(typeof window.FAVVGetSubscriptionStatus!=='function'){
+    throw new Error('De abonnementscontrole is niet beschikbaar.');
+  }
+
+  const data=await window.FAVVGetSubscriptionStatus();
+
+  if(!data || typeof data.accessAllowed!=='boolean'){
+    throw new Error('Supabase heeft geen geldige toegangsstatus teruggegeven.');
+  }
+
+  const previous=loadSubscription();
+
+  const sub={
+    ...previous,
+    plan:data.plan||previous.plan,
+    status:data.status||'none',
+    customerId:data.customerId||'',
+    subscriptionId:data.subscriptionId||'',
+    priceId:data.priceId||'',
+    currentPeriodStart:data.currentPeriodStart||null,
+    currentPeriodEnd:data.currentPeriodEnd||null,
+    trialEndsAt:data.trialEndsAt||null,
+    cancelAtPeriodEnd:Boolean(data.cancelAtPeriodEnd),
+    accessAllowed:data.accessAllowed,
+    accessReason:data.accessReason||'unknown',
+    trialRemainingDays:data.trialRemainingDays
+  };
+
+  saveSubscription(sub);
+
+  if(currentUser?.role==='manager'||currentUser?.role==='owner'){
+    renderSubscription();
+  }
+
+  return sub;
+}
+{try{if(typeof window.FAVVGetSubscriptionStatus!=='function')return;const data=await window.FAVVGetSubscriptionStatus();if(!data)return;const sub={...loadSubscription(),plan:data.plan||loadSubscription().plan,status:data.status==='none'?'trialing':(data.status||loadSubscription().status),customerId:data.customerId||'',subscriptionId:data.subscriptionId||'',priceId:data.priceId||'',currentPeriodStart:data.currentPeriodStart||null,currentPeriodEnd:data.currentPeriodEnd||null,cancelAtPeriodEnd:Boolean(data.cancelAtPeriodEnd)};saveSubscription(sub);if(currentUser?.role==='manager')renderSubscription();return sub}catch(error){console.error('Abonnementsstatus ophalen mislukt',error)}}
 function testSubscriptionStatus(status){const sub=loadSubscription(),now=new Date();sub.status=status;if(status==='trialing'){sub.startedAt=now.toISOString();sub.trialEndsAt=new Date(now.getTime()+loadBuilderSettings().trialDays*86400000).toISOString();sub.currentPeriodEnd=sub.trialEndsAt;sub.cancelAtPeriodEnd=false}if(status==='active'){sub.currentPeriodEnd=new Date(now.getFullYear(),now.getMonth()+1,now.getDate()).toISOString();sub.cancelAtPeriodEnd=false}if(status==='canceled')sub.cancelAtPeriodEnd=true;saveSubscription(sub);renderSubscription();toast(`Abonnementsstatus: ${subscriptionStatusLabel(status)}`)}
 async function cancelSubscription(){const sub=loadSubscription();if(sub.status==='canceled'||sub.cancelAtPeriodEnd){toast('Het abonnement is al opgezegd');return}if(!confirm('Abonnement opzeggen aan het einde van de huidige betaalperiode? Tot die datum blijft de toegang behouden.'))return;const config=loadSubscriptionConfig();if(config.cancelEndpoint){try{const res=await fetch(config.cancelEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({businessId:activeBusinessId,subscriptionId:sub.subscriptionId,cancelAtPeriodEnd:true})});if(!res.ok)throw new Error(`Serverfout ${res.status}`);const data=await res.json();Object.assign(sub,data)}catch(err){alert(`Opzegging kon niet worden verwerkt: ${err.message}`);return}}sub.cancelAtPeriodEnd=true;if(!config.cancelEndpoint)sub.status='canceled';saveSubscription(sub);renderSubscription();toast('Opzegging geregistreerd')}
-function subscriptionAction(action,el){if(cloudIsEmployee()||currentUser?.role!=='manager'){toast('Alleen managers beheren het abonnement');return}if(action==='select-plan')selectSubscriptionPlan(el.dataset.plan);if(action==='checkout')openSubscriptionSession('checkout');if(action==='portal')openSubscriptionSession('portal');if(action==='save-config')saveSubscriptionConfig();if(action==='save-builder-pricing')saveBuilderPricing();if(action==='cancel')cancelSubscription();if(action==='trial')testSubscriptionStatus('trialing');if(action==='activate-test')testSubscriptionStatus('active');if(action==='past-due')testSubscriptionStatus('past_due');if(action==='cancel-test')testSubscriptionStatus('canceled')}
+function subscriptionAction(action,el){if(cloudIsEmployee()||!['manager','owner'].includes(currentUser?.role)){toast('Alleen managers beheren het abonnement');return}if(action==='select-plan')selectSubscriptionPlan(el.dataset.plan);if(action==='checkout')openSubscriptionSession('checkout');if(action==='portal')openSubscriptionSession('portal');if(action==='save-config')saveSubscriptionConfig();if(action==='save-builder-pricing')saveBuilderPricing();if(action==='cancel')cancelSubscription();if(action==='trial')testSubscriptionStatus('trialing');if(action==='activate-test')testSubscriptionStatus('active');if(action==='past-due')testSubscriptionStatus('past_due');if(action==='cancel-test')testSubscriptionStatus('canceled')}
 function reportSnapshot(){return {id:'R-'+new Date().toISOString().replace(/\D/g,'').slice(0,14),createdAt:new Date().toISOString(),cleaning:clone(state.cleaning),temperatures:clone(state.temperatures),dishes:clone(state.dishes)}}
 function htmlDoc(title,body){const now=new Date().toLocaleString('nl-BE');return `<!doctype html><html lang="nl"><head><meta charset="utf-8"><title>${esc(title)}</title><style>
 @page{size:A4;margin:18mm 14mm 18mm}
