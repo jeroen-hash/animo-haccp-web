@@ -655,7 +655,7 @@ async function continueToCloudApp(){
   );
 
   // Eerst de echte abonnementsstatus bij Supabase ophalen.
-  const subscription = await refreshSubscriptionStatus();
+  const subscription = await window.refreshSubscriptionStatus();
 
   // Geen betrouwbare status ontvangen? Dan de app niet openen.
   if(!subscription || typeof subscription.accessAllowed !== 'boolean'){
@@ -1093,7 +1093,7 @@ function selectSubscriptionPlan(plan){if(!subscriptionPlans()[plan])return;const
 async function openSubscriptionSession(type){try{let url='';if(type==='checkout'){if(typeof window.FAVVCreateCheckout!=='function')throw new Error('De beveiligde Supabase-verbinding is nog niet klaar. Meld opnieuw aan en probeer opnieuw.');const sub=loadSubscription();if(!['monthly','yearly'].includes(sub.plan))throw new Error('Kies eerst maandelijks of jaarlijks.');url=await window.FAVVCreateCheckout(sub.plan)}else if(type==='portal'){if(typeof window.FAVVOpenBillingPortal!=='function')throw new Error('De beveiligde Supabase-verbinding is nog niet klaar. Meld opnieuw aan en probeer opnieuw.');url=await window.FAVVOpenBillingPortal()}else{throw new Error('Onbekende abonnementsactie.')}location.href=url}catch(err){alert(`${type==='portal'?'Kon het klantenportaal niet openen':'Kon de betaalpagina niet openen'}: ${err.message||err}`)}}
 
 
-async function refreshSubscriptionStatus(){
+window.refreshSubscriptionStatus = async function(){
   if(typeof window.FAVVGetSubscriptionStatus!=='function'){
     throw new Error('De abonnementscontrole is niet beschikbaar.');
   }
