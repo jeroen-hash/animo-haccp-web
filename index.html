@@ -709,7 +709,15 @@ async function continueToCloudApp(){
 async function initClient(config){if(!window.supabase||!validConfig(config))return false;cloudClient=window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});cloudClient.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'&&session){showPasswordSetup('recovery');setStatus('Nieuw wachtwoord vereist')}});const {data,error}=await cloudClient.auth.getSession();if(error){setMessage(error.message);showLogin();return true}const linkType=authLinkType();if(data.session&&(linkType==='recovery'||linkType==='invite')){showPasswordSetup(linkType);setStatus(linkType==='invite'?'Accountactivatie vereist':'Nieuw wachtwoord vereist');history.replaceState(null,document.title,location.pathname);return true}if(data.session){
   const prepared=await prepareCloudSession(data.session.user,{attempts:3,delay:500});
   if(prepared){
-    try{await continueToCloudApp()}catch(error){console.error('Automatisch openen van bestaande sessie mislukt',error)}
+    try{
+      await finishPendingBusinessRegistration();
+      await continueToCloudApp();
+    }catch(error){
+      console.error('Registratie of automatisch openen van bestaande sessie mislukt',error);
+      setMessage(error?.message||'De zaakregistratie kon niet worden voltooid. Meld opnieuw aan om het opnieuw te proberen.');
+      await cloudClient.auth.signOut({scope:'local'});
+      showLogin();
+    }
   }
 }else{showLogin();setStatus('Supabase klaar voor aanmelding');if(new URLSearchParams(location.search).get('signup')==='1')showSignup()}return true}
 get('cloudSaveConfig').addEventListener('click',async()=>{const config={url:get('cloudUrl').value.trim().replace(/\/$/,''),key:get('cloudKey').value.trim()};if(config.key.startsWith('sb_secret_')){alert('Gebruik nooit een secret key in de browser.');return}if(!validConfig(config)){alert('Controleer de Project URL en gebruik de volledige sleutel die begint met sb_publishable_.');return}localStorage.setItem(CONFIG_KEY,JSON.stringify(config));get('cloudKey').value='';await initClient(config)});
