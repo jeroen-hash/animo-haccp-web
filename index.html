@@ -649,7 +649,9 @@ async function prepareCloudSession(user,options={}){
 }
 async function continueToCloudApp(){
   window.FAVVStartSupabaseSession?.(window.FAVVCloudUser,cloudBusiness);
-  setTimeout(()=>refreshSubscriptionStatus(),0);
+  if (typeof refreshSubscriptionStatus === 'function') {
+    setTimeout(() => refreshSubscriptionStatus(), 0);
+}
   let r=window.__favvCloudRow;
   const forceClean=localStorage.getItem('favv-force-clean-new-business-v1')==='true';
   if(forceClean){
