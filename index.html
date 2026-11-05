@@ -711,7 +711,7 @@ async function initClient(config){if(!window.supabase||!validConfig(config))retu
   if(prepared){
     try{await continueToCloudApp()}catch(error){console.error('Automatisch openen van bestaande sessie mislukt',error)}
   }
-}else{showLogin();setStatus('Supabase klaar voor aanmelding')}return true}
+}else{showLogin();setStatus('Supabase klaar voor aanmelding');if(new URLSearchParams(location.search).get('signup')==='1')showSignup()}return true}
 get('cloudSaveConfig').addEventListener('click',async()=>{const config={url:get('cloudUrl').value.trim().replace(/\/$/,''),key:get('cloudKey').value.trim()};if(config.key.startsWith('sb_secret_')){alert('Gebruik nooit een secret key in de browser.');return}if(!validConfig(config)){alert('Controleer de Project URL en gebruik de volledige sleutel die begint met sb_publishable_.');return}localStorage.setItem(CONFIG_KEY,JSON.stringify(config));get('cloudKey').value='';await initClient(config)});
 get('cloudLoginForm').addEventListener('submit',async e=>{
   e.preventDefault();
@@ -779,11 +779,16 @@ get('cloudSignupForm').addEventListener('submit',async e=>{
   if(password!==confirmPassword){setSignupMessage('De wachtwoorden zijn niet gelijk.');return}
   if(password.length<10){setSignupMessage('Gebruik een wachtwoord van minstens 10 tekens.');return}
   setSignupMessage('Account wordt veilig aangemaakt...','ok');
-  const {data:signupData,error:signupError}=await cloudClient.auth.signUp({email,password,options:{data:{full_name:fullName}}});
+  const {data:signupData,error:signupError}=await cloudClient.auth.signUp({email,password,options:{data:{full_name:fullName,animo_pending_business_registration:{business_name:businessName,enterprise_number:enterpriseNumber}}}});
   if(signupError){setSignupMessage(signupError.message);return}
-  if(!signupData.session){setSignupMessage('Account aangemaakt. Bevestig eerst het e-mailadres en meld daarna aan. De zaakregistratie wordt na de eerste aanmelding voltooid.','ok');localStorage.setItem('favv-pending-business-registration-v1',JSON.stringify({businessName,enterpriseNumber}));return}
-  const {data:registration,error:registrationError}=await cloudClient.rpc('register_new_business',{p_business_name:businessName,p_enterprise_number:enterpriseNumber});
-  if(registrationError){await cloudClient.auth.signOut({scope:'local'});setSignupMessage('Account gemaakt, maar de zaak kon niet worden geregistreerd: '+registrationError.message);return}
+  if(!signupData.session){setSignupMessage('Account aangemaakt. Bevestig eerst je e-mailadres. Daarna kan je op elk toestel aanmelden; jouw zaakregistratie wordt automatisch voltooid en je proefperiode van 14 dagen start.','ok');return}
+  try{
+    await finishPendingBusinessRegistration();
+  }catch(registrationError){
+    await cloudClient.auth.signOut({scope:'local'});
+    setSignupMessage('Account gemaakt, maar de zaak kon niet worden geregistreerd: '+registrationError.message);
+    return;
+  }
   localStorage.removeItem('favv-pending-business-registration-v1');
   localStorage.setItem('favv-force-clean-new-business-v1','true');
   setSignupMessage('Account en zaak zijn aangemaakt. De zaakomgeving wordt geopend...','ok');
@@ -798,11 +803,29 @@ get('cloudSignupForm').addEventListener('submit',async e=>{
   }
 });
 async function finishPendingBusinessRegistration(){
-  let pending=null;try{pending=JSON.parse(localStorage.getItem('favv-pending-business-registration-v1')||'null')}catch(e){}
+  const {data:userData,error:userError}=await cloudClient.auth.getUser();
+  if(userError)throw userError;
+  const user=userData?.user;
+  const metadataPending=user?.user_metadata?.animo_pending_business_registration;
+  let pending=metadataPending&&typeof metadataPending==='object'?metadataPending:null;
+  if(!pending){
+    try{pending=JSON.parse(localStorage.getItem('favv-pending-business-registration-v1')||'null')}catch(e){}
+  }
   if(!pending)return false;
-  const {data,error}=await cloudClient.rpc('register_new_business',{p_business_name:pending.businessName,p_enterprise_number:pending.enterpriseNumber});
-  if(error){if(!String(error.message||'').includes('al aan een actieve zaak gekoppeld'))throw error}
-  localStorage.removeItem('favv-pending-business-registration-v1');localStorage.setItem('favv-force-clean-new-business-v1','true');return true;
+  const businessName=String(pending.business_name||pending.businessName||'').trim();
+  const enterpriseNumber=String(pending.enterprise_number||pending.enterpriseNumber||'').trim();
+  if(!businessName||!enterpriseNumber)throw new Error('De bewaarde zaakgegevens ontbreken. Neem contact op met ANIMO voordat je opnieuw registreert.');
+  const {error}=await cloudClient.rpc('register_new_business',{p_business_name:businessName,p_enterprise_number:enterpriseNumber});
+  if(error&&!String(error.message||'').includes('al aan een actieve zaak gekoppeld'))throw error;
+  localStorage.removeItem('favv-pending-business-registration-v1');
+  if(metadataPending&&user){
+    const updatedMetadata={...(user.user_metadata||{})};
+    delete updatedMetadata.animo_pending_business_registration;
+    const {error:metadataError}=await cloudClient.auth.updateUser({data:updatedMetadata});
+    if(metadataError)console.warn('Zaakregistratie is voltooid, maar tijdelijke registratiegegevens konden niet worden opgeschoond.',metadataError);
+  }
+  localStorage.setItem('favv-force-clean-new-business-v1','true');
+  return true;
 }
 get('cloudForgetConfig').addEventListener('click',()=>{if(!confirm('Lokale Supabase-instellingen wissen?'))return;localStorage.removeItem(CONFIG_KEY);cloudClient=null;get('cloudUrl').value='';get('cloudKey').value='';setStatus('Lokale veilige modus');showSetup()});
 const config=validConfig(PUBLIC_SUPABASE_CONFIG)?PUBLIC_SUPABASE_CONFIG:readConfig();if(validConfig(config)){localStorage.setItem(CONFIG_KEY,JSON.stringify(config));initClient(config)}else{get('cloudSetup').classList.add('cloud-hidden');get('cloudLoginForm').classList.add('cloud-hidden');get('cloudSignupForm').classList.add('cloud-hidden');get('cloudSessionBox').classList.add('cloud-hidden');hidePasswordSetup();setStatus('Configuratie ontbreekt');const card=document.querySelector('.cloud-card');card.insertAdjacentHTML('beforeend','<div class="cloud-message error show">De publieke appconfiguratie is nog niet voltooid.</div>')}
