@@ -85,6 +85,11 @@ jobs:
                 if (localStorage.getItem('animo-offline-outbox:offline-test-business') !== null) {
                   throw new Error('Successfully synchronized snapshot remained queued.');
                 }
+                const recovered = await queueOfflineSnapshot({ value: 3 }, 'original-dirty-base');
+                if (recovered.baseUpdatedAt !== 'original-dirty-base') {
+                  throw new Error('Recovered dirty marker did not preserve its original cloud base.');
+                }
+                await clearOfflineSnapshot('offline-test-business', recovered.queuedAt);
               })()
             `;
             await vm.runInNewContext(testSource, context);
