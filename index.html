@@ -1255,7 +1255,7 @@ window.refreshSubscriptionStatus = async function(){
   if(currentUser?.role==='manager'||currentUser?.role==='owner'||currentUser?.role==='employee'){
     renderSubscription();
   }
-  if(!data.accessAllowed&&cloudBusiness&&currentUser){
+  if(!data.accessAllowed&&cloudBusiness&&currentUser&&document.querySelector('.page.active')?.id!=='subscription'){
     navigate('subscription');
   }
 
