@@ -63,7 +63,7 @@ jobs:
             extract('function tempOk', 'function localDay'),
             extract('function temperatureDirection', 'function actionForTemperature'),
             extract('function syncTemperatureActions', 'function updateActionBadge')
-          ].join('\\n');
+          ].join('\n');
           const temperatureContext = {
             state: { temperatures: [], temperatureActions: [] },
             currentUser: { name: 'CI test' },
