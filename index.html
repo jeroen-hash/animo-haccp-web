@@ -1213,7 +1213,7 @@ function renderSubscription(){
   const builder=$('builderPricingPanel');if(builder)builder.classList.remove('open');
 }
 
-async function selectSubscriptionPlan(plan){if(!subscriptionPlans()[plan])return;const sub=loadSubscription();sub.plan=plan;saveSubscription(sub);renderSubscription();await openSubscriptionSession('checkout')}
+async async function selectSubscriptionPlan(plan){if(!subscriptionPlans()[plan])return;const sub=loadSubscription();sub.plan=plan;saveSubscription(sub);renderSubscription();await openSubscriptionSession('checkout')}
 async function openSubscriptionSession(type){try{let url='';if(type==='checkout'){if(typeof window.FAVVCreateCheckout!=='function')throw new Error('De beveiligde Supabase-verbinding is nog niet klaar. Meld opnieuw aan en probeer opnieuw.');const sub=loadSubscription();if(!['monthly','yearly'].includes(sub.plan))throw new Error('Kies eerst maandelijks of jaarlijks.');url=await window.FAVVCreateCheckout(sub.plan)}else if(type==='portal'){if(typeof window.FAVVOpenBillingPortal!=='function')throw new Error('De beveiligde Supabase-verbinding is nog niet klaar. Meld opnieuw aan en probeer opnieuw.');url=await window.FAVVOpenBillingPortal()}else{throw new Error('Onbekende abonnementsactie.')}location.href=url}catch(err){alert(`${type==='portal'?'Kon het klantenportaal niet openen':'Kon de betaalpagina niet openen'}: ${err.message||err}`)}}
 
 
