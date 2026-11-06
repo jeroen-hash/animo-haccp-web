@@ -788,6 +788,7 @@ async function initClient(config){if(!window.supabase||!validConfig(config))retu
     await finishPendingBusinessRegistration();
     const prepared=await prepareCloudSession(data.session.user,{attempts:3,delay:500});
     if(prepared)await continueToCloudApp();
+    else if(!navigator.onLine&&bootOfflineFromCache(data.session.user))return true;
   }catch(error){
     console.error('Registratie of automatisch openen van bestaande sessie mislukt',error);
     if(!navigator.onLine&&bootOfflineFromCache(data.session.user))return true;
