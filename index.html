@@ -534,7 +534,7 @@ async function loadMembership(options={}){
   }
   throw lastError||new Error('Geen actieve zaak gekoppeld.');
 }
-async function loadCloudState(){if(!cloudBusiness)await loadMembership();const {data,error}=await cloudClient.from('app_data').select('data,updated_at').eq('business_id',cloudBusiness.id).eq('data_type','full_state').maybeSingle();if(error)throw error;return data}
+async function loadCloudState(){if(!cloudBusiness)await loadMembership();const {data,error}=await cloudClient.from('app_data').select('data,updated_at').eq('business_id',cloudBusiness.id).eq('data_type','full_state').maybeSingle();if(error)throw error;cloudRowUpdatedAt=data?.updated_at||null;return data}
 const AUDIT_MODULES={
   temperatures:{module:'temperature',label:'Temperatuurregistratie'},
   cleaning:{module:'cleaning',label:'Kuistaak'},
@@ -548,6 +548,20 @@ const AUDIT_MODULES={
   reports:{module:'report',label:'Rapport'}
 };
 let lastAuditState=null;
+let cloudRowUpdatedAt=null;
+const OFFLINE_SESSION_KEY='animo-offline-session-v1';
+const OFFLINE_DB_NAME='animo-haccp-offline-v1';
+let offlineDbPromise=null;
+function openOfflineDb(){if(!('indexedDB' in window))return Promise.reject(new Error('IndexedDB niet beschikbaar'));if(!offlineDbPromise)offlineDbPromise=new Promise((resolve,reject)=>{const request=indexedDB.open(OFFLINE_DB_NAME,1);request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains('outbox'))db.createObjectStore('outbox',{keyPath:'businessId'})};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||new Error('Lokale wachtrij kon niet worden geopend'))});return offlineDbPromise}
+async function readOfflineSnapshot(businessId){try{const db=await openOfflineDb();return await new Promise((resolve,reject)=>{const tx=db.transaction('outbox','readonly'),r=tx.objectStore('outbox').get(businessId);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error)})}catch(e){try{return JSON.parse(localStorage.getItem('animo-offline-outbox:'+businessId)||'null')}catch(_){return null}}}
+async function queueOfflineSnapshot(snapshot){if(!cloudBusiness?.id)return;const previous=await readOfflineSnapshot(cloudBusiness.id);const item={businessId:cloudBusiness.id,data:JSON.parse(JSON.stringify(snapshot)),baseUpdatedAt:previous?previous.baseUpdatedAt:cloudRowUpdatedAt,queuedAt:new Date().toISOString()};try{const db=await openOfflineDb();await new Promise((resolve,reject)=>{const tx=db.transaction('outbox','readwrite');tx.objectStore('outbox').put(item);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){localStorage.setItem('animo-offline-outbox:'+cloudBusiness.id,JSON.stringify(item))}}
+async function clearOfflineSnapshot(businessId){try{const db=await openOfflineDb();await new Promise((resolve,reject)=>{const tx=db.transaction('outbox','readwrite');tx.objectStore('outbox').delete(businessId);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){}localStorage.removeItem('animo-offline-outbox:'+businessId)}
+function offlineNotice(message,kind='offline'){let el=document.getElementById('animoOfflineNotice');if(!el){el=document.createElement('div');el.id='animoOfflineNotice';el.style.cssText='position:fixed;z-index:9999;left:12px;right:12px;top:12px;padding:12px 15px;border-radius:12px;background:#fff6df;color:#6d4705;border:1px solid #e9c978;box-shadow:0 5px 22px rgba(0,0,0,.12);font:600 13px/1.45 system-ui,sans-serif';document.body.appendChild(el)}el.textContent=message;el.style.background=kind==='conflict'?'#fde8e5':'#fff6df';el.style.color=kind==='conflict'?'#9f241b':'#6d4705';el.hidden=false}
+function clearOfflineNotice(){const el=document.getElementById('animoOfflineNotice');if(el)el.hidden=true}
+function rememberOfflineSession(user,subscription){if(!cloudBusiness?.id||!user?.id||subscription?.accessAllowed!==true)return;localStorage.setItem(OFFLINE_SESSION_KEY,JSON.stringify({userId:user.id,businessId:cloudBusiness.id,role:cloudBusiness.role||'employee',businessName:cloudBusiness.name||'',enterpriseNumber:cloudBusiness.enterprise_number||'',verifiedAt:new Date().toISOString(),accessAllowed:true}))}
+function bootOfflineFromCache(user){try{const meta=JSON.parse(localStorage.getItem(OFFLINE_SESSION_KEY)||'null');if(!meta||!user||meta.userId!==user.id||!meta.businessId||meta.accessAllowed!==true)return false;const age=Date.now()-new Date(meta.verifiedAt).getTime();if(!Number.isFinite(age)||age<0||age>24*60*60*1000)return false;activeBusinessId=meta.businessId;localStorage.setItem(ACTIVE_BUSINESS_KEY,activeBusinessId);cloudBusiness={id:meta.businessId,name:meta.businessName||'Horecazaak',enterprise_number:meta.enterpriseNumber||'',role:meta.role||'employee'};window.FAVVCloudBusiness=cloudBusiness;window.FAVVCloudUser=user;window.FAVVCloudRole=cloudBusiness.role;window.FAVVStartSupabaseSession(user,cloudBusiness);window.FAVVOfflineMode=true;openLocalApp();offlineNotice('OFFLINEMODUS · Je werkt met lokaal bewaarde HACCP-gegevens. Nieuwe registraties worden bewaard en wachten op veilige synchronisatie. Offline toegang is maximaal 24 uur geldig na de laatste online controle.');return true}catch(e){return false}}
+window.addEventListener('online',()=>{if(window.FAVVOfflineMode){offlineNotice('Internetverbinding hersteld. Je rechten en wijzigingen worden veilig gecontroleerd...');if(cloudClient)cloudClient.auth.getSession().then(({data})=>{if(data?.session)return prepareCloudSession(data.session.user,{attempts:2,delay:400}).then(ok=>ok&&continueToCloudApp()).catch(e=>offlineNotice('Synchronisatie wacht: '+(e.message||'controle mislukt'),'conflict'))})}});
+window.addEventListener('offline',()=>{if(window.FAVVCloudBusiness){window.FAVVOfflineMode=true;offlineNotice('OFFLINEMODUS · Je registraties worden lokaal bewaard. Synchronisatie volgt zodra internet terug is.')}});
 function auditItemName(item,fallback){
   if(!item||typeof item!=='object')return fallback;
   return String(item.device||item.name||item.task||item.title||item.productName||item.supplier||item.invoiceNumber||item.reference||item.id||fallback);
@@ -606,12 +620,18 @@ async function writeAuditEvents(events,user){
   if(error){console.error('Auditlog opslaan mislukt',error);logPlatformError('audit-sync',error.message,{code:error.code||null})}
 }
 async function saveCloudState(x){
-  if(!cloudClient||!cloudBusiness||!x)return;
-  const {data:{user}}=await cloudClient.auth.getUser();
+  if(!cloudBusiness||!x)return;
   const snapshot=JSON.parse(JSON.stringify(x));
+  if(!navigator.onLine||window.FAVVOfflineMode||!cloudClient){await queueOfflineSnapshot(snapshot);setStatus('Lokaal bewaard · wacht op internet');return}
+  const {data:{user},error:userError}=await cloudClient.auth.getUser();
+  if(userError||!user){await queueOfflineSnapshot(snapshot);setStatus('Cloudcontrole mislukt · lokaal bewaard');return}
   const events=lastAuditState?buildAuditEvents(lastAuditState,snapshot):[];
-  const {error}=await cloudClient.from('app_data').upsert({business_id:cloudBusiness.id,data_type:'full_state',data:x,created_by:user?.id||null,updated_at:new Date().toISOString()},{onConflict:'business_id,data_type'});
-  if(error){setStatus('Cloud opslaan mislukt');console.error(error);logPlatformError('cloud-sync',error.message,{code:error.code||null});return}
+  const {data,resultError}=await cloudClient.rpc('save_app_data_if_unchanged',{p_business_id:cloudBusiness.id,p_data:snapshot,p_expected_updated_at:cloudRowUpdatedAt});
+  if(resultError){await queueOfflineSnapshot(snapshot);setStatus('Cloud opslaan mislukt · lokaal bewaard');console.error(resultError);logPlatformError('cloud-sync',resultError.message,{code:resultError.code||null});return}
+  if(!data?.saved){await queueOfflineSnapshot(snapshot);window.FAVVSyncConflict=true;offlineNotice('SYNCHRONISATIECONFLICT · De cloudgegevens zijn intussen door iemand anders gewijzigd. Je lokale registraties zijn veilig bewaard en worden niet overschreven. Neem contact op met ANIMO om de versies samen te voegen.','conflict');setStatus('Conflict · lokale gegevens veilig bewaard');return}
+  cloudRowUpdatedAt=data.updated_at||cloudRowUpdatedAt;
+  await clearOfflineSnapshot(cloudBusiness.id);
+  window.FAVVSyncConflict=false;window.FAVVOfflineMode=false;clearOfflineNotice();
   lastAuditState=snapshot;
   setStatus('Cloud bijgewerkt',true);
   if(events.length)writeAuditEvents(events,user).catch(error=>console.error('Auditlog onverwachte fout',error));
@@ -646,7 +666,9 @@ async function prepareCloudSession(user,options={}){
     window.FAVVCloudUser=user;
     setStatus('Zaakomgeving wordt geladen...');
     const b=await loadMembership({attempts:options.attempts||1,delay:options.delay||700,businessId:options.businessId});
-    const r=await loadCloudState();
+    let r=await loadCloudState();
+    const pending=await readOfflineSnapshot(b.id);
+    if(pending){window.__favvPendingOutbox=pending;if((pending.baseUpdatedAt||null)===(r?.updated_at||null)){r={...(r||{}),data:pending.data};}else{window.FAVVSyncConflict=true;}}
     get('cloudSessionText').textContent='Supabase actief voor '+(user.email||'testgebruiker')+' · zaak: '+b.name+(r?' · cloudgegevens gevonden':' · eerste cloudkopie wordt gemaakt');
     window.__favvCloudRow=r;
     lastAuditState=r?.data?JSON.parse(JSON.stringify(r.data)):null;
@@ -700,7 +722,9 @@ async function continueToCloudApp(){
     );
 
     // Eerst de echte abonnementsstatus bij Supabase ophalen.
-    let subscription = await window.refreshSubscriptionStatus();
+    let subscription;
+    if(!navigator.onLine)throw new Error('Geen internetverbinding.');
+    subscription = await window.refreshSubscriptionStatus();
     // Stripe-webhooks kunnen net na de terugkeer van Checkout aankomen.
     if(!subscription.accessAllowed && new URLSearchParams(location.search).get('stripe')==='success'){
       for(let attempt=0;attempt<5&&!subscription.accessAllowed;attempt++){
@@ -725,6 +749,7 @@ async function continueToCloudApp(){
     }
 
     // Alleen bij toegestane toegang de HACCP-gegevens laden.
+    rememberOfflineSession(sessionUser,subscription);
     let r=window.__favvCloudRow;
     const forceClean=localStorage.getItem('favv-force-clean-new-business-v1')==='true';
 
@@ -738,6 +763,7 @@ async function continueToCloudApp(){
       setStatus('Nieuwe zaak schoon gestart',true);
     }else if(r?.data){
       window.FAVVApplyCloudState(r.data);
+      if(window.__favvPendingOutbox){if(window.FAVVSyncConflict){offlineNotice('SYNCHRONISATIECONFLICT · Je lokale gegevens zijn bewaard. De cloud bevat intussen andere wijzigingen; er wordt niets automatisch overschreven.','conflict');}else{await saveCloudState(r.data);window.__favvPendingOutbox=null;}}
       setStatus('Cloudgegevens geladen',true);
     }else{
       const clean=window.FAVVStartCleanBusinessState();
@@ -761,8 +787,9 @@ async function initClient(config){if(!window.supabase||!validConfig(config))retu
     if(prepared)await continueToCloudApp();
   }catch(error){
     console.error('Registratie of automatisch openen van bestaande sessie mislukt',error);
+    if(!navigator.onLine&&bootOfflineFromCache(data.session.user))return true;
     setMessage(error?.message||'De zaakregistratie kon niet worden voltooid. Meld opnieuw aan om het opnieuw te proberen.');
-    await cloudClient.auth.signOut({scope:'local'});
+    if(navigator.onLine)await cloudClient.auth.signOut({scope:'local'});
     showLogin();
   }
 }else{showLogin();setStatus('Supabase klaar voor aanmelding');if(new URLSearchParams(location.search).get('signup')==='1')showSignup()}return true}
