@@ -110,3 +110,52 @@ Proposed mapping only; no data has been read into a target or transformed:
 7. Obtain a restorable backup/export and explicit approval before any production import.
 
 This mapping is a design artifact, not an executable migration. No database, customer data, subscription, business, or live deployment was changed.
+
+## Read-only dry-run checklist and SQL (prepared 2026-11-06)
+
+The following checks are intended for a later controlled dry run. They are SELECT-only: they do not create a business, write rows, alter schemas, or migrate data. Run each block against the indicated Supabase project, not against a production target by mistake.
+
+### A. Legacy source counts — project `xwjcwravfeldndwlugai`
+
+```sql
+select 'temperature_records' as source, count(*)::bigint as row_count from public.temperature_records
+union all select 'temperature_templates', count(*) from public.temperature_templates
+union all select 'corrective_actions', count(*) from public.corrective_actions
+union all select 'cleaning_templates', count(*) from public.cleaning_templates
+union all select 'cleaning_checks', count(*) from public.cleaning_checks
+union all select 'cleaning_tasks', count(*) from public.cleaning_tasks
+union all select 'allergen_plan_items', count(*) from public.allergen_plan_items
+union all select 'day_closings', count(*) from public.day_closings
+union all select 'business_settings', count(*) from public.business_settings
+union all select 'audit_log', count(*) from public.audit_log
+order by source;
+```
+
+### B. Candidate SaaS businesses — project `zimzsovvtdmrthrflkgm`
+
+```sql
+select b.id, b.name, b.enterprise_number, b.created_at,
+       (select count(*) from public.business_members bm where bm.business_id=b.id) as member_count,
+       (select count(*) from public.app_data ad where ad.business_id=b.id) as app_data_rows
+from public.businesses b
+where lower(b.name) in ('animo 2.0','animo2.0','animo vof','animo apps','vof test')
+order by b.created_at;
+```
+
+The filter deliberately uses only the five user-confirmed owned business names. It does not select `Riku Ramen`. This query is for inventory only; none of the five is approved as a migration destination.
+
+### C. Dry-run acceptance criteria
+
+- Source counts are captured per table and, where applicable, by branch.
+- Every converted record includes its legacy table name and legacy row ID as provenance.
+- The dry-run output lists proposed destination business ID separately; it must remain blank until a dedicated target has been explicitly approved and created.
+- The five existing owned businesses are read-only and excluded from all write targets.
+- `Riku Ramen` is excluded from the query scope and from every migration mapping.
+- No passwords, password hashes, auth tokens, or Stripe secrets are exported or copied.
+- Temperature records, corrective actions, allergen dishes, cleaning templates and cleaning checks are counted independently. Historical cleaning checks must not be flattened into a single current task state.
+- Day closings and audit events remain separately counted and preserved, even if the new interface cannot yet display them.
+- A mismatch, unknown status mapping, missing user mapping, or absent restorable backup blocks import.
+
+### Current status
+
+The dry-run queries and acceptance criteria are documented but have **not** been executed. The automated database read was blocked by a safety control. No alternative route was used. No destination business has been created or selected, and no customer data has been copied or changed.
