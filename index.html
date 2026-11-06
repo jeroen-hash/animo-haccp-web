@@ -668,6 +668,7 @@ async function prepareCloudSession(user,options={}){
     window.FAVVCloudUser=user;
     setStatus('Zaakomgeving wordt geladen...');
     const b=await loadMembership({attempts:options.attempts||1,delay:options.delay||700,businessId:options.businessId});
+    window.__favvPendingOutbox=null;window.FAVVSyncConflict=false;
     let r=await loadCloudState();
     const cloudVersionData=r?.data?JSON.parse(JSON.stringify(r.data)):null;
     let pending=await readOfflineSnapshot(b.id);
@@ -708,6 +709,8 @@ async function prepareCloudSession(user,options={}){
         }
       }catch(choiceError){e=choiceError}
     }
+    if(window.FAVVOfflineMode&&isNetworkUnavailable(e)){offlineNotice('De verbinding is nog niet stabiel. Je lokale registraties blijven beschikbaar en de synchronisatie probeert later opnieuw.');return false;}
+    window.FAVVOfflineMode=false;
     showLogin();
     setMessage(e.message||'Zaak laden mislukt');
     setStatus('Cloudkoppeling niet klaar');
