@@ -36,7 +36,9 @@ jobs:
             'function queueOfflineSnapshot',
             'async function readOfflineSnapshot',
             'save_app_data_if_unchanged',
-            'FAVVSyncConflict'
+            'FAVVSyncConflict',
+            'hasPersistedAuth',
+            'FAVVRememberOfflineSession'
           ];
           for (const marker of required) {
             if (!html.includes(marker)) throw new Error(`Missing offline safety marker: ${marker}`);
