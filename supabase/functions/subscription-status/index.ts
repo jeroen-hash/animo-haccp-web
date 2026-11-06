@@ -48,8 +48,9 @@ Deno.serve(async (req: Request) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!supabaseUrl || !supabaseAnonKey) {
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
       throw new Error(
         "De Supabase-omgevingsvariabelen ontbreken.",
       );
@@ -216,11 +217,25 @@ Deno.serve(async (req: Request) => {
     const billingAllowed =
       role === "owner" || role === "manager";
 
+    // Billing details are read with service role only after the caller's
+    // authenticated membership and business access have been verified above.
+    // This lets RLS restrict direct subscription-table reads to owners/managers.
+    const supabaseAdmin = createClient(
+      supabaseUrl,
+      supabaseServiceRoleKey,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      },
+    );
+
     // Abonnement ophalen.
     const {
       data: subscription,
       error: subscriptionError,
-    } = await supabase
+    } = await supabaseAdmin
       .from("subscriptions")
       .select(`
         business_id,
