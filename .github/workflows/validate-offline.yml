@@ -88,7 +88,7 @@ jobs:
             }
             state.temperatures = [{id:'t-1',device:'Testkoeling',type:'Koeling',value:6,date:'2026-11-06T12:00',min:0,max:5}];
             syncTemperatureActions();
-            if (state.temperatureActions.length !== 1 || state.temperatureActions[0].direction !== 'Te hoog') {
+            if (state.temperatureActions.length !== 1 || state.temperatureActions[0].direction !== 'Te hoog' || state.temperatureActions[0].min !== 0 || state.temperatureActions[0].max !== 5) {
               throw new Error('Custom-limit deviation did not create a correctly classified action.');
             }
             syncTemperatureActions();
