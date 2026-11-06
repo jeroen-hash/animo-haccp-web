@@ -216,6 +216,9 @@ jobs:
           const html = fs.readFileSync('index.html', 'utf8');
           const unitStart = html.indexOf('function unitCost(product)');
           const unitEnd = html.indexOf('function renderStockUnitCostPreview()', unitStart);
+          const stockStart = html.indexOf('function normalizedIngredientAmount(');
+          const stockEnd = html.indexOf('function recipeSnapshot(', stockStart);
+          if (stockStart < 0 || stockEnd < 0) throw new Error('Recipe portion and stock helpers could not be isolated.');
           const recipeStart = html.indexOf('function recipeUnitInfo(unit)');
           const recipeEnd = html.indexOf('function saveRecipe(e)', recipeStart);
           const costStart = html.indexOf('function recipeCost(recipe)');
@@ -223,16 +226,26 @@ jobs:
           if ([unitStart, unitEnd, recipeStart, recipeEnd, costStart, costEnd].some(x => x < 0)) {
             throw new Error('Recipe cost helpers could not be isolated.');
           }
-          const source = html.slice(unitStart, unitEnd) + html.slice(recipeStart, recipeEnd) + html.slice(costStart, costEnd);
+          const source = html.slice(unitStart, unitEnd) + html.slice(recipeStart, recipeEnd) + html.slice(stockStart, stockEnd) + html.slice(costStart, costEnd);
           const context = { state: { stock: [] }, stockById: id => context.state.stock.find(x => x.id === id) };
           vm.runInNewContext(source + `
             const eggs = { id: 'eggs', name: 'Eieren', unit: 'stuks', purchaseQuantity: 10, purchasePrice: 5 };
             if (Math.abs(unitCost(eggs) - 0.5) > 0.000001) throw new Error('10 eggs for €5 must cost €0.50 per egg.');
             state.stock = [eggs];
+            eggs.quantity = 9;
             const recipe = { yield: 1, ingredients: [{ stockId: 'eggs', quantity: 5, unit: 'stuks' }] };
             if (Math.abs(recipeCost(recipe) - 2.5) > 0.000001) throw new Error('5 eggs must cost €2.50.');
             if (Math.abs(convertRecipeQuantity(5, 'eieren', 'stuks') - 5) > 0.000001) throw new Error('Egg-to-piece conversion must preserve quantity.');
             if (Math.abs(convertRecipeQuantity(0.5, 'kg', 'g') - 500) > 0.000001) throw new Error('Kilogram-to-gram conversion failed.');
+            if (Math.abs(convertRecipeQuantity(250, 'g', 'kg') - 0.25) > 0.000001) throw new Error('Gram-to-kilogram conversion failed.');
+            if (Math.abs(convertRecipeQuantity(75, 'cl', 'ml') - 750) > 0.000001) throw new Error('Centiliter-to-milliliter conversion failed.');
+            if (convertRecipeQuantity(1, 'kg', 'liter') !== null) throw new Error('Incompatible mass and volume units must be rejected.');
+            if (convertRecipeQuantity(2, 'doos', 'doos') !== 2 || convertRecipeQuantity(2, 'doos', 'fles') !== null) throw new Error('Custom units must match exactly.');
+            const tenPortionRecipe = { yield: 10, ingredients: [{ stockId: 'eggs', quantity: 10, unit: 'stuks' }] };
+            if (Math.abs(normalizedIngredientAmount(tenPortionRecipe.ingredients[0], 5, tenPortionRecipe.yield) - 5) > 0.000001) throw new Error('Half-batch ingredient quantity is incorrect.');
+            if (Math.abs(normalizedIngredientAmount(tenPortionRecipe.ingredients[0], 20, tenPortionRecipe.yield) - 20) > 0.000001) throw new Error('Double-batch ingredient quantity is incorrect.');
+            if (Math.abs(recipeShortages(tenPortionRecipe, 20)[0].shortage - 11) > 0.000001) throw new Error('Scaled stock shortage is incorrect.');
+            if (recipeShortages(tenPortionRecipe, 5).length !== 0) throw new Error('A sufficiently stocked half-batch should be available.');
           `, context);
           console.log('Recipe cost tests passed: 10 eggs €5 => €0.50/egg; 5 eggs => €2.50; unit conversions passed.');
           NODE
