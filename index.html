@@ -624,17 +624,17 @@ async function writeAuditEvents(events,user){
   if(error){console.error('Auditlog opslaan mislukt',error);logPlatformError('audit-sync',error.message,{code:error.code||null})}
 }
 async function saveCloudState(x){
-  if(!cloudBusiness||!x)return;
+  if(!cloudBusiness||!x)return false;
   const snapshot=JSON.parse(JSON.stringify(x));
-  if(window.FAVVSyncConflict){await queueOfflineSnapshot(snapshot);setStatus('Conflict · lokale gegevens veilig bewaard');return}
-  if(!navigator.onLine||window.FAVVOfflineMode||!cloudClient){await queueOfflineSnapshot(snapshot);setStatus('Lokaal bewaard · wacht op internet');return}
+  if(window.FAVVSyncConflict){await queueOfflineSnapshot(snapshot);setStatus('Conflict · lokale gegevens veilig bewaard');return false;}
+  if(!navigator.onLine||window.FAVVOfflineMode||!cloudClient){await queueOfflineSnapshot(snapshot);setStatus('Lokaal bewaard · wacht op internet');return false;}
   const {data:{user},error:userError}=await cloudClient.auth.getUser();
-  if(userError||!user){await queueOfflineSnapshot(snapshot);setStatus('Cloudcontrole mislukt · lokaal bewaard');offlineNotice('Je wijzigingen zijn lokaal bewaard. De cloudcontrole is mislukt; probeer opnieuw zodra de verbinding stabiel is.');return}
+  if(userError||!user){await queueOfflineSnapshot(snapshot);setStatus('Cloudcontrole mislukt · lokaal bewaard');offlineNotice('Je wijzigingen zijn lokaal bewaard. De cloudcontrole is mislukt; probeer opnieuw zodra de verbinding stabiel is.');return false;}
   const queuedItem=await queueOfflineSnapshot(snapshot);
   const events=lastAuditState?buildAuditEvents(lastAuditState,snapshot):[];
   const {data,error:resultError}=await cloudClient.rpc('save_app_data_if_unchanged',{p_business_id:cloudBusiness.id,p_data:snapshot,p_expected_updated_at:cloudRowUpdatedAt});
-  if(resultError){await queueOfflineSnapshot(snapshot);setStatus('Cloud opslaan mislukt · lokaal bewaard');offlineNotice('Je wijzigingen zijn lokaal bewaard, maar konden nog niet naar de cloud. Ze blijven in de wachtrij tot synchronisatie lukt.');console.error(resultError);logPlatformError('cloud-sync',resultError.message,{code:resultError.code||null});return}
-  if(!data?.saved){await queueOfflineSnapshot(snapshot);window.FAVVSyncConflict=true;offlineNotice('SYNCHRONISATIECONFLICT · De cloudgegevens zijn intussen door iemand anders gewijzigd. Je lokale registraties zijn veilig bewaard en worden niet overschreven. Neem contact op met ANIMO om de versies samen te voegen.','conflict');setStatus('Conflict · lokale gegevens veilig bewaard');return}
+  if(resultError){await queueOfflineSnapshot(snapshot);setStatus('Cloud opslaan mislukt · lokaal bewaard');offlineNotice('Je wijzigingen zijn lokaal bewaard, maar konden nog niet naar de cloud. Ze blijven in de wachtrij tot synchronisatie lukt.');console.error(resultError);logPlatformError('cloud-sync',resultError.message,{code:resultError.code||null});return false;}
+  if(!data?.saved){await queueOfflineSnapshot(snapshot);window.FAVVSyncConflict=true;offlineNotice('SYNCHRONISATIECONFLICT · De cloudgegevens zijn intussen door iemand anders gewijzigd. Je lokale registraties zijn veilig bewaard en worden niet overschreven. Neem contact op met ANIMO om de versies samen te voegen.','conflict');setStatus('Conflict · lokale gegevens veilig bewaard');return false;}
   cloudRowUpdatedAt=data.updated_at||cloudRowUpdatedAt;
   try{const meta=JSON.parse(localStorage.getItem(OFFLINE_SESSION_KEY)||'null');if(meta&&meta.businessId===cloudBusiness.id){meta.cloudUpdatedAt=cloudRowUpdatedAt;localStorage.setItem(OFFLINE_SESSION_KEY,JSON.stringify(meta))}}catch(e){}
   await clearOfflineSnapshot(cloudBusiness.id,queuedItem?.queuedAt);
@@ -643,6 +643,7 @@ async function saveCloudState(x){
   lastAuditState=snapshot;
   setStatus('Cloud bijgewerkt',true);
   if(events.length)writeAuditEvents(events,user).catch(error=>console.error('Auditlog onverwachte fout',error));
+  return true;
 }
 window.FAVVCloudSync={schedule(x){const snapshot=JSON.parse(JSON.stringify(x));queueOfflineSnapshot(snapshot).catch(error=>{console.error('Lokale wachtrij kon niet worden bijgewerkt',error);logPlatformError('offline-queue',error.message)});clearTimeout(saveTimer);saveTimer=setTimeout(()=>saveCloudState(snapshot),900)}};
 window.FAVVInviteBusinessMember=async(payload)=>{if(!cloudClient)throw new Error('Supabase is niet verbonden.');const {data,error}=await cloudClient.functions.invoke('invite-business-member',{body:payload});if(error){let message=error.message||'De uitnodiging kon niet worden verstuurd.';try{const context=await error.context?.json();if(context?.error)message=context.error}catch(e){}throw new Error(message)}if(data?.error)throw new Error(data.error);return data};
@@ -778,7 +779,15 @@ async function continueToCloudApp(){
       setStatus('Nieuwe zaak schoon gestart',true);
     }else if(r?.data){
       window.FAVVApplyCloudState(r.data);
-      if(window.__favvPendingOutbox){if(window.FAVVSyncConflict){offlineNotice('SYNCHRONISATIECONFLICT · Je lokale gegevens zijn bewaard. De cloud bevat intussen andere wijzigingen; er wordt niets automatisch overschreven.','conflict');}else{await saveCloudState(r.data);window.__favvPendingOutbox=null;}}
+      if(window.__favvPendingOutbox){
+        if(window.FAVVSyncConflict){
+          offlineNotice('SYNCHRONISATIECONFLICT · Je lokale gegevens zijn bewaard. De cloud bevat intussen andere wijzigingen; er wordt niets automatisch overschreven.','conflict');
+        }else{
+          const synced=await saveCloudState(r.data);
+          if(synced)window.__favvPendingOutbox=null;
+          else offlineNotice('Je offline registraties staan nog veilig op dit toestel. De synchronisatie is nog niet bevestigd; probeer opnieuw zodra de verbinding stabiel is.');
+        }
+      }
       setStatus('Cloudgegevens geladen',true);
     }else{
       const clean=window.FAVVStartCleanBusinessState();
