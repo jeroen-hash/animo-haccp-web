@@ -72,17 +72,15 @@ jobs:
           };
           vm.runInNewContext(temperatureHelpers + `
             const cases = [
-              [{type:'Koeling',value:6,min:0,max:5}, 'Te hoog'],
-              [{type:'Diepvries',value:-19,min:'',max:-20}, 'Te hoog'],
-              [{type:'Koeling',value:8,min:'',max:''}, 'Te hoog'],
-              [{type:'Diepvries',value:-17,min:'',max:''}, 'Te hoog'],
-              [{type:'Koeling',value:4,min:0,max:5}, 'Afwijkend']
+              [{type:'Koeling',value:6,min:0,max:5}, false, 'Te hoog'],
+              [{type:'Diepvries',value:-19,min:'',max:-20}, false, 'Te hoog'],
+              [{type:'Koeling',value:8,min:'',max:''}, false, 'Te hoog'],
+              [{type:'Diepvries',value:-17,min:'',max:''}, false, 'Te hoog'],
+              [{type:'Koeling',value:4,min:0,max:5}, true, '']
             ];
-            for (const [reading, expected] of cases) {
-              if (tempOk(reading) === (expected !== 'Afwijkend')) {
-                if (expected === 'Afwijkend') throw new Error('In-range custom reading incorrectly flagged.');
-              }
-              if (!tempOk(reading) && temperatureDirection(reading) !== expected) {
+            for (const [reading, expectedOk, expectedDirection] of cases) {
+              if (tempOk(reading) !== expectedOk) throw new Error('Wrong temperature status for ' + JSON.stringify(reading));
+              if (!expectedOk && temperatureDirection(reading) !== expectedDirection) {
                 throw new Error('Wrong deviation direction for ' + JSON.stringify(reading));
               }
             }
