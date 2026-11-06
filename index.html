@@ -630,6 +630,7 @@ async function saveCloudState(x){
   if(resultError){await queueOfflineSnapshot(snapshot);setStatus('Cloud opslaan mislukt · lokaal bewaard');offlineNotice('Je wijzigingen zijn lokaal bewaard, maar konden nog niet naar de cloud. Ze blijven in de wachtrij tot synchronisatie lukt.');console.error(resultError);logPlatformError('cloud-sync',resultError.message,{code:resultError.code||null});return}
   if(!data?.saved){await queueOfflineSnapshot(snapshot);window.FAVVSyncConflict=true;offlineNotice('SYNCHRONISATIECONFLICT · De cloudgegevens zijn intussen door iemand anders gewijzigd. Je lokale registraties zijn veilig bewaard en worden niet overschreven. Neem contact op met ANIMO om de versies samen te voegen.','conflict');setStatus('Conflict · lokale gegevens veilig bewaard');return}
   cloudRowUpdatedAt=data.updated_at||cloudRowUpdatedAt;
+  try{const meta=JSON.parse(localStorage.getItem(OFFLINE_SESSION_KEY)||'null');if(meta&&meta.businessId===cloudBusiness.id){meta.cloudUpdatedAt=cloudRowUpdatedAt;localStorage.setItem(OFFLINE_SESSION_KEY,JSON.stringify(meta))}}catch(e){}
   await clearOfflineSnapshot(cloudBusiness.id);
   window.FAVVSyncConflict=false;window.FAVVOfflineMode=false;clearOfflineNotice();
   lastAuditState=snapshot;
