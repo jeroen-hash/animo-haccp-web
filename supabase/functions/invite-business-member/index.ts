@@ -1,4 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const APP_URL = (Deno.env.get("APP_URL") ?? "https://app.animo-apps.com/").replace(/\/?$/, "/");
+
  
 const corsHeaders = {
 "Access-Control-Allow-Origin": "*",
@@ -225,6 +228,7 @@ error: inviteError,
 } = await adminClient.auth.admin.inviteUserByEmail(
 email,
 {
+redirectTo: APP_URL,
 data: {
 full_name: fullName,
 invited_business_id: membership.business_id,
