@@ -668,7 +668,8 @@ async function prepareCloudSession(user,options={}){
     const b=await loadMembership({attempts:options.attempts||1,delay:options.delay||700,businessId:options.businessId});
     let r=await loadCloudState();
     const cloudVersionData=r?.data?JSON.parse(JSON.stringify(r.data)):null;
-    const pending=await readOfflineSnapshot(b.id);
+    let pending=await readOfflineSnapshot(b.id);
+    if(!pending){let dirty=null;try{dirty=JSON.parse(localStorage.getItem('animo-offline-dirty:'+b.id)||'null')}catch(e){}if(dirty){const local=window.FAVVGetLocalState?.();if(local){pending={businessId:b.id,data:local,baseUpdatedAt:dirty.baseUpdatedAt??null,queuedAt:dirty.queuedAt||new Date().toISOString()};await queueOfflineSnapshot(local)}}}
     if(pending){window.__favvPendingOutbox=pending;r={...(r||{}),data:pending.data};if((pending.baseUpdatedAt||null)!==(r?.updated_at||null)){window.FAVVSyncConflict=true;}}
     get('cloudSessionText').textContent='Supabase actief voor '+(user.email||'testgebruiker')+' · zaak: '+b.name+(r?' · cloudgegevens gevonden':' · eerste cloudkopie wordt gemaakt');
     window.__favvCloudRow=r;
