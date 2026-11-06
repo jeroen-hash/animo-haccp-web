@@ -62,7 +62,9 @@ jobs:
           const temperatureHelpers = [
             extract('function tempOk', 'function localDay'),
             extract('function temperatureDirection', 'function actionForTemperature'),
-            extract('function syncTemperatureActions', 'function updateActionBadge')
+            extract('function actionForTemperature', 'function syncTemperatureActions'),
+            extract('function syncTemperatureActions', 'function updateActionBadge'),
+            extract('function updateActionBadge', 'function renderTemperatureActions')
           ].join('\n');
           const temperatureContext = {
             state: { temperatures: [], temperatureActions: [] },
