@@ -1,0 +1,98 @@
+name: Validate ANIMO HACCP offline code
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'sw.js'
+      - 'supabase/migrations/**'
+      - '.github/workflows/validate-offline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  syntax-and-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate inline JavaScript and service worker
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
+            .map(match => match[1])
+            .filter(source => source.trim());
+          if (scripts.length < 2) throw new Error('Expected both application inline scripts.');
+          scripts.forEach((source, index) => new vm.Script(source, { filename: `index-inline-${index + 1}.js` }));
+          const worker = fs.readFileSync('sw.js', 'utf8');
+          new vm.Script(worker, { filename: 'sw.js' });
+          const required = [
+            'function queueOfflineSnapshot',
+            'async function readOfflineSnapshot',
+            'save_app_data_if_unchanged',
+            'FAVVSyncConflict',
+            'hasPersistedAuth',
+            'FAVVRememberOfflineSession'
+          ];
+          for (const marker of required) {
+            if (!html.includes(marker)) throw new Error(`Missing offline safety marker: ${marker}`);
+          }
+          for (const apiPath of ['/rest/v1/', '/auth/v1/', '/functions/v1/', '/storage/v1/']) {
+            if (!worker.includes(apiPath)) throw new Error(`Service worker must explicitly bypass ${apiPath}`);
+          }
+          if (!worker.includes('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2')) {
+            throw new Error('Supabase SDK cache entry is missing.');
+          }
+          console.log(`Validated ${scripts.length} inline scripts, service worker, and offline safety guards.`);
+          (async () => {
+            const start = html.indexOf('async function readOfflineSnapshot');
+            const end = html.indexOf('function offlineNotice', start);
+            if (start < 0 || end < 0) throw new Error('Offline queue helpers could not be isolated for tests.');
+            const values = new Map();
+            const storage = {
+              getItem: key => values.has(key) ? values.get(key) : null,
+              setItem: (key, value) => values.set(key, String(value)),
+              removeItem: key => values.delete(key)
+            };
+            const context = {
+              localStorage: storage,
+              cloudBusiness: { id: 'offline-test-business' },
+              cloudRowUpdatedAt: 'cloud-version-1',
+              openOfflineDb: () => Promise.reject(new Error('IndexedDB disabled in fallback test')),
+              setStatus: () => {},
+              console
+            };
+            const testSource = html.slice(start, end) + `
+              (async () => {
+                const first = await queueOfflineSnapshot({ value: 1 });
+                const second = await queueOfflineSnapshot({ value: 2 });
+                if (first.baseUpdatedAt !== 'cloud-version-1' || second.baseUpdatedAt !== 'cloud-version-1') {
+                  throw new Error('Offline edits did not preserve their original cloud base.');
+                }
+                await clearOfflineSnapshot('offline-test-business', first.queuedAt);
+                let queued = JSON.parse(localStorage.getItem('animo-offline-outbox:offline-test-business'));
+                if (queued?.data?.value !== 2) throw new Error('An older save removed a newer local snapshot.');
+                await rebaseOfflineSnapshot('offline-test-business', first.queuedAt, 'cloud-version-2');
+                queued = JSON.parse(localStorage.getItem('animo-offline-outbox:offline-test-business'));
+                if (queued?.baseUpdatedAt !== 'cloud-version-2') throw new Error('Newer local snapshot was not rebased.');
+                await clearOfflineSnapshot('offline-test-business', second.queuedAt);
+                if (localStorage.getItem('animo-offline-outbox:offline-test-business') !== null) {
+                  throw new Error('Successfully synchronized snapshot remained queued.');
+                }
+                const recovered = await queueOfflineSnapshot({ value: 3 }, 'original-dirty-base');
+                if (recovered.baseUpdatedAt !== 'original-dirty-base') {
+                  throw new Error('Recovered dirty marker did not preserve its original cloud base.');
+                }
+                await clearOfflineSnapshot('offline-test-business', recovered.queuedAt);
+              })()
+            `;
+            await vm.runInNewContext(testSource, context);
+            console.log('Offline queue fallback, version preservation, conditional clearing, and rebasing tests passed.');
+          })().catch(error => { console.error(error); process.exitCode = 1; });
+          NODE
