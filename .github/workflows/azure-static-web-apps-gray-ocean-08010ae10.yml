@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   build_and_deploy_job:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    if: false # Legacy Azure deployment disabled; protect existing live app
     runs-on: ubuntu-latest
     name: Build and Deploy Job
 
@@ -78,7 +78,7 @@ jobs:
           skip_app_build: true
 
   close_pull_request_job:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    if: false # Legacy Azure preview deployments disabled
     runs-on: ubuntu-latest
     name: Close Pull Request Job
 
