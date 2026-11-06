@@ -239,3 +239,57 @@ Read-only inspection of the SaaS database policies/functions found:
 - The client-side member-management UI still reserves role changes and membership activation/removal for the owner role.
 
 This suggests that the manager role already has broad access to the shared HACCP data at the database-policy level, while some member-administration actions remain owner-only in the client. This is not a complete security audit: all related RPCs, triggers, edge functions and RLS policies must be checked before claiming full parity. No policies or functions were changed.
+
+
+## Row-level dry-run findings (read-only, 2026-11-06)
+
+### Exact source coverage
+
+All operational records below are scoped to the single legacy branch `menen` (`404382de-816e-4b7d-8c85-8cd5c9bc2539`), except the one day-closing row, whose `branch_id` is NULL. This closing must be retained but flagged as organisation-level/unassigned rather than silently assigned to the branch.
+
+| Source | Rows | Proposed dry-run destination |
+|---|---:|---|
+| `temperature_records` | 10 | `temperatures[]` |
+| `temperature_templates` | 7 | `temperaturePoints[]` |
+| `corrective_actions` | 6 | `temperatureActions[]` |
+| `cleaning_templates` | 15 | `cleaning[]` |
+| `cleaning_checks` | 6 | `legacyCleaningChecks[]` |
+| `cleaning_tasks` | 0 | none |
+| `allergen_plan_items` | 2 | `dishes[]` |
+| `day_closings` | 1 | `legacyDayClosings[]` |
+| `business_settings` | 1 | `businessProfile` plus provenance |
+| `audit_log` | 5 | `legacyAuditLog[]` |
+
+### Conversion rules identified
+
+- Temperature record IDs and original timestamps must be retained. Map `recorded_at` to `date`, `temperature` to `value`, `device` to `device`, and preserve employee, location, source status, limit, cause, corrective measure, legacy type, source table and source ID in extra metadata.
+- The current app uses temperature types `Koeling` and `Diepvries` for its automatic checks. Legacy `Koelkast` must map to `Koeling`, and `Vriezer` to `Diepvries`. `Friteuse` / `Warme bewaring` need a safe `Andere` display type plus preserved legacy type and explicit bounds where available; do not treat them as refrigerator readings.
+- Critical: six of the ten legacy temperature rows have source status `Afwijking`; all six have a linked corrective action. Four records have no explicit `limit_temperature`. The new app's `tempOk()` does not understand the legacy type names, and its automatic action sync only creates actions for readings it classifies as out of range. A naive conversion would therefore lose or misclassify deviations. The converter must normalize types and set only defensible limits, while importing the six linked corrective actions directly with their original state. Do not recreate these as six new open actions.
+- The six corrective actions consist of four completed actions (four have `closed_at`) and two open actions. Map `done=true` to `status='resolved'`, `done=false` to `status='open'`, preserve `closed_at`, `closure_note`, `problem`, `measure`, `owner`, error code and source IDs. Preserve legacy action details in extra fields if the current UI does not render them.
+- Map cleaning templates to current task objects with original IDs, names, frequency and location. Set `done=false` for the current task list because historical completion belongs to the separate six-row `legacyCleaningChecks[]`; do not mark all templates complete from past checks. The current UI has no native cleaning-history renderer.
+- Map allergen codes explicitly: `gluten` -> `Glutenbevattende granen`, `eggs` -> `Eieren`, `milk` -> `Melk`, `mustard` -> `Mosterd`. Keep ingredients, category, cross-contamination, notes, timestamps and legacy IDs as metadata. Do not drop allergens that are not in the mapping table; stop the import and report any unknown value.
+- Keep the day closing in `legacyDayClosings[]` because the new report snapshot shape is not equivalent. Its missing branch ID must remain explicitly null/unassigned.
+- Preserve all five audit events in `legacyAuditLog[]`; do not map them to the new audit schema without a separate audited converter.
+- Map company/site/address into `businessProfile` only after the owner confirms the target business details. The old `owner_email` is a legacy account attribute, not the new business owner identity.
+
+### Data integrity results
+
+- No orphan corrective actions: 0.
+- No temperature records with a missing referenced temperature template: 0.
+- No cleaning checks with a missing referenced cleaning template: 0.
+- Source deviation count: 6; linked corrective actions: 6.
+- Corrective action state: 4 completed, 2 open.
+- Cleaning frequency values: 10 daily, 5 weekly.
+- Allergen values currently found: gluten, eggs, milk, mustard; all four have explicit mappings above.
+- Temperature type values found: Koelkast, Vriezer, Friteuse, and template-only Warme bewaring.
+- The dry-run can account for all 53 source rows across the ten listed tables (including the zero-row cleaning_tasks table) without discarding the historical-only collections.
+
+### Acceptance blockers before any import
+
+1. Build and test the converter so that all six deviations and their 4 resolved / 2 open corrective-action states remain exactly represented after `syncTemperatureActions()` runs.
+2. Confirm how the app should display legacy cleaning history, day closings and audit history; until then preserve them as explicit extension arrays, not flattened current-state objects.
+3. Confirm whether the unassigned day closing belongs to branch `menen` before any branch-specific reporting; keep it unassigned in the dry-run.
+4. Confirm the destination business profile details and secure target Auth invitation/identity for Melissa. The new target still has zero members; no Melissa account or membership was created.
+5. Create and verify a restorable source export before any import.
+
+This is a row-level assessment and proposed mapping only. No row-level data has been inserted, updated, deleted, or copied to the SaaS target. No production app or subscription was changed.
