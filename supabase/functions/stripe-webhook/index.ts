@@ -42,6 +42,20 @@ function getInvoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
   return subscription?.id ?? null;
 }
 
+function shouldIgnoreSubscriptionOverwrite(
+  currentSubscriptionId: string | null,
+  currentSubscriptionCreated: number | null,
+  incomingSubscriptionId: string,
+  incomingSubscriptionCreated: number,
+) {
+  return Boolean(
+    currentSubscriptionId &&
+    currentSubscriptionId !== incomingSubscriptionId &&
+    currentSubscriptionCreated !== null &&
+    currentSubscriptionCreated >= incomingSubscriptionCreated
+  );
+}
+
 async function saveSubscription(
   stripe: Stripe,
   supabaseAdmin: ReturnType<typeof createClient>,
@@ -113,6 +127,51 @@ async function saveSubscription(
     throw new Error(
       `Ontbrekende business_id voor Stripe-abonnement ${subscription.id}`,
     );
+  }
+
+  // Stripe can deliver subscription events out of order. Since the table
+  // stores one subscription per business, an old canceled subscription
+  // must never overwrite a newer live subscription row.
+  const { data: currentBusinessSubscription, error: currentBusinessSubscriptionError } =
+    await supabaseAdmin
+      .from("subscriptions")
+      .select("stripe_subscription_id")
+      .eq("business_id", businessId)
+      .maybeSingle();
+
+  if (currentBusinessSubscriptionError) {
+    throw currentBusinessSubscriptionError;
+  }
+
+  const currentSubscriptionId =
+    currentBusinessSubscription?.stripe_subscription_id ?? null;
+  if (
+    currentSubscriptionId &&
+    currentSubscriptionId !== subscription.id
+  ) {
+    // Compare Stripe's immutable creation timestamps rather than status.
+    // A late event from an older subscription must not revive it after a
+    // newer subscription was canceled or replaced.
+    const currentStripeSubscription =
+      await stripe.subscriptions.retrieve(currentSubscriptionId);
+
+    if (
+      shouldIgnoreSubscriptionOverwrite(
+        currentSubscriptionId,
+        currentStripeSubscription.created,
+        subscription.id,
+        subscription.created,
+      )
+    ) {
+      console.warn("Verouderd Stripe-event genegeerd; nieuwer abonnement blijft gekoppeld:", {
+        business_id: businessId,
+        incoming_subscription_id: subscription.id,
+        incoming_created: subscription.created,
+        current_subscription_id: currentSubscriptionId,
+        current_created: currentStripeSubscription.created,
+      });
+      return;
+    }
   }
 
   const customerId =

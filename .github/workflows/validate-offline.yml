@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'supabase/functions/stripe-webhook/index.ts'
       - 'sw.js'
       - 'supabase/migrations/**'
       - '.github/workflows/validate-offline.yml'
@@ -19,6 +20,34 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Validate Stripe webhook subscription ordering guard
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const source = fs.readFileSync('supabase/functions/stripe-webhook/index.ts', 'utf8');
+          const start = source.indexOf('function shouldIgnoreSubscriptionOverwrite(');
+          const end = source.indexOf('async function saveSubscription(', start);
+          if (start < 0 || end < 0) throw new Error('Stripe subscription ordering guard is missing.');
+          const helper = source.slice(start, end).replaceAll(': string | null', '').replaceAll(': number | null', '').replaceAll(': string', '').replaceAll(': number', '');
+          vm.runInNewContext(helper + `
+            const cases = [
+              ['late event from older subscription is ignored', 'sub-newer', 200, 'sub-older', 100, true],
+              ['new subscription can replace an older one', 'sub-older', 100, 'sub-newer', 200, false],
+              ['same subscription ID can receive updates', 'sub-current', 200, 'sub-current', 200, false],
+              ['empty subscription row accepts first subscription', null, null, 'sub-first', 100, false],
+              ['equal timestamps from different IDs are treated as stale', 'sub-current', 100, 'sub-other', 100, true]
+            ];
+            for (const [label, currentId, currentCreated, incomingId, incomingCreated, expected] of cases) {
+              const actual = shouldIgnoreSubscriptionOverwrite(currentId, currentCreated, incomingId, incomingCreated);
+              if (actual !== expected) throw new Error(label + ': expected ' + expected + ', got ' + actual);
+            }
+          `);
+          console.log('Stripe subscription ordering guard: 5 cases passed.');
+          if (!source.includes('await stripe.subscriptions.retrieve(currentSubscriptionId)')) throw new Error('Current Stripe subscription creation time is not verified.');
+          if (!source.includes('if (\n    currentSubscriptionId &&')) throw new Error('Stripe webhook ordering guard is not applied before upsert.');
+          console.log('Stripe webhook ordering lookup and guard placement passed.');
+          NODE
       - name: Validate inline JavaScript and service worker
         run: |
           node <<'NODE'
