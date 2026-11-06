@@ -199,3 +199,12 @@ Read-only inspection of the legacy project shows:
 - The new isolated migration target is owned by the SaaS account `jeroen@animo-apps.com`.
 
 This is an ownership/authorization mismatch that must be explicitly explained and resolved before any row-level export or import. It may be a legitimate employee/administrator relationship, but that cannot be inferred. Do not map these identities based on names or assumptions. The legacy organisation and its records remain untouched. No row-by-row payload conversion or copy was performed. The migration target remains empty except for its default starter state, and no membership was added.
+
+
+## User confirmation about legacy manager access (2026-11-06)
+
+The business owner clarified that Melissa was added as a **manager** in the old ANIMO HACCP application. The owner also confirmed that, in that legacy application, a manager had the same access rights as an owner.
+
+The read-only legacy membership row currently stores Melissa's role as `owner` and status as `active` for branch `menen`. This is therefore consistent with the user's explanation of equivalent access, but the stored role label does not preserve the distinction the user remembers. For the new app, the intended role label is **manager**, with permissions equivalent to the old manager/owner access, while the SaaS business owner remains the account owner. Before importing any membership, verify the new app's exact permission checks and confirm the intended target Auth identity for Melissa. Do not copy Auth UUIDs or credentials across Supabase projects.
+
+This confirmation resolves the explanation for the legacy role label; it does not authorize a data import, membership creation, or changes to role permissions. The dedicated migration target remains isolated and empty apart from its default starter snapshot.
