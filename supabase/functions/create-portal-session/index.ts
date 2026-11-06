@@ -26,7 +26,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const stripeSecretKey = (Deno.env.get("STRIPE_SECRET_KEY") ?? "").trim();
-    const appUrl = Deno.env.get("APP_URL");
+    const appUrl = "https://app.animo-apps.com";
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
 
@@ -34,7 +34,7 @@ Deno.serve(async (req: Request) => {
     const stripeKeyPrefix = stripeSecretKey.slice(0, 3);
     console.log("Stripe key prefix:", stripeKeyPrefix || "(leeg)");
 
-    if (!stripeSecretKey || !appUrl || !supabaseUrl || !supabaseAnonKey) {
+    if (!stripeSecretKey || !supabaseUrl || !supabaseAnonKey) {
       throw new Error("Een of meerdere omgevingsvariabelen ontbreken.");
     }
 
