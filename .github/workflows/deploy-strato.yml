@@ -43,6 +43,7 @@ jobs:
           mkdir -p out/landing out/app
 
           test -f index.html
+          test -f sw.js
           test -f landing.html
           test -f onboarding-form.html
 
@@ -71,6 +72,7 @@ jobs:
 
           # App
           cp index.html out/app/index.html
+          cp sw.js out/app/sw.js
           for f in admin-dashboard.html onboarding-form.html onboarding-dashboard.html wachtwoord-vergeten.html; do
             if [ -f "$f" ]; then cp "$f" "out/app/$f"; fi
           done
