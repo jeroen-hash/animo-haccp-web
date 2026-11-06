@@ -699,7 +699,14 @@ async function continueToCloudApp(){
   );
 
   // Eerst de echte abonnementsstatus bij Supabase ophalen.
-  const subscription = await window.refreshSubscriptionStatus();
+  let subscription = await window.refreshSubscriptionStatus();
+  // Stripe-webhooks kunnen net na de terugkeer van Checkout aankomen.
+  if(!subscription.accessAllowed && new URLSearchParams(location.search).get('stripe')==='success'){
+    for(let attempt=0;attempt<5&&!subscription.accessAllowed;attempt++){
+      await wait(1500);
+      subscription=await window.refreshSubscriptionStatus();
+    }
+  }
 
   // Geen betrouwbare status ontvangen? Dan de app niet openen.
   if(!subscription || typeof subscription.accessAllowed !== 'boolean'){
@@ -1483,5 +1490,10 @@ $('roleModalClose').addEventListener('click',closeRoleModal);
 $('roleModalCancel').addEventListener('click',closeRoleModal);
 $('roleModalLayer').addEventListener('click',e=>{if(e.target===$('roleModalLayer'))closeRoleModal()});$('businessEditForm').addEventListener('submit',saveBusinessEdit);$('businessEditModal').addEventListener('click',e=>{if(e.target===$('businessEditModal'))closeBusinessEdit()});document.addEventListener('click',e=>{const action=e.target.closest('[data-business-edit]');if(action?.dataset.businessEdit==='close')closeBusinessEdit()});
 $('deliveryFile').addEventListener('change',e=>{const file=e.target.files[0],img=$('deliveryPreview');if(file&&file.type.startsWith('image/')){img.src=URL.createObjectURL(file);img.style.display='block'}else img.style.display='none'});document.addEventListener('input',e=>{const field=e.target.closest('[data-review]');if(field){const i=Number(field.dataset.index),key=field.dataset.review;deliveryReviewRows[i][key]=key==='quantity'?Number(field.value):field.value}const rf=e.target.closest('[data-recipe-field]');if(rf){const i=Number(rf.dataset.index),key=rf.dataset.recipeField;recipeIngredientDraft[i][key]=key==='quantity'?Number(rf.value):rf.value;if(key==='stockId'&&!recipeIngredientDraft[i].unit)recipeIngredientDraft[i].unit=stockById(rf.value)?.unit||''}const bf=e.target.closest('[data-batch-field]');if(bf){const i=Number(bf.dataset.index),key=bf.dataset.batchField;stockBatchDraft[i][key]=key==='quantity'?Number(bf.value):bf.value;if(key==='quantity')$('stockProductQuantity').value=stockBatchDraft.reduce((n,b)=>n+Number(b.quantity||0),0).toFixed(3).replace(/0+$/,'').replace(/\.$/,'')||'0'}const sf=e.target.closest('[data-step-field]');if(sf){const i=Number(sf.dataset.index),key=sf.dataset.stepField;recipeStepDraft[i][key]=key==='minutes'||key==='temperature'?(sf.value===''?'':Number(sf.value)):sf.value}});initializeAuth();
+setInterval(()=>{
+  if(cloudClient&&cloudBusiness&&currentUser&&typeof window.refreshSubscriptionStatus==='function'){
+    window.refreshSubscriptionStatus().catch(error=>console.warn('Periodieke abonnementscontrole mislukt',error));
+  }
+},60000);
 })();
 </script></body></html>
