@@ -42,6 +42,27 @@ function getInvoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
   return subscription?.id ?? null;
 }
 
+function shouldIgnoreSubscriptionOverwrite(
+  currentSubscriptionId: string | null,
+  currentSubscriptionStatus: string | null,
+  incomingSubscriptionId: string,
+) {
+  const currentSubscriptionStillBlocksReplacement = [
+    "active",
+    "trialing",
+    "past_due",
+    "unpaid",
+    "incomplete",
+    "paused",
+  ].includes(currentSubscriptionStatus ?? "");
+
+  return Boolean(
+    currentSubscriptionId &&
+    currentSubscriptionId !== incomingSubscriptionId &&
+    currentSubscriptionStillBlocksReplacement
+  );
+}
+
 async function saveSubscription(
   stripe: Stripe,
   supabaseAdmin: ReturnType<typeof createClient>,
@@ -133,21 +154,15 @@ async function saveSubscription(
     currentBusinessSubscription?.stripe_subscription_id ?? null;
   const currentSubscriptionStatus =
     currentBusinessSubscription?.status ?? null;
-  const currentSubscriptionStillBlocksReplacement = [
-    "active",
-    "trialing",
-    "past_due",
-    "unpaid",
-    "incomplete",
-    "paused",
-  ].includes(currentSubscriptionStatus ?? "");
 
   if (
-    currentSubscriptionId &&
-    currentSubscriptionId !== subscription.id &&
-    currentSubscriptionStillBlocksReplacement
+    shouldIgnoreSubscriptionOverwrite(
+      currentSubscriptionId,
+      currentSubscriptionStatus,
+      subscription.id,
+    )
   ) {
-    console.warn("Verouderd Stripe-event genegeerd; nieuwer abonnement blijft gekoppeld:", {
+    console.warn("Verouderd Stripe-event genegeerd; bestaand abonnement blijft gekoppeld:", {
       business_id: businessId,
       incoming_subscription_id: subscription.id,
       current_subscription_id: currentSubscriptionId,
