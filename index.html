@@ -351,6 +351,68 @@ body:has(#cloudGate:not(.hidden)) .mobile-nav{display:none!important}
   #temperatureActionForm .modal-actions .btn{width:100%!important;min-height:50px!important}
 }
 </style>
+<style id="stock-product-modal-mobile-final-fix">
+/* Stockproduct: dialoog en bewaarknop altijd boven de vaste mobiele navigatie. */
+@media (max-width: 900px) {
+  html body #stockProductModal.modal-layer,
+  html body #stockProductModal.modal-layer.open {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 3000 !important;
+    display: grid !important;
+    align-items: start !important;
+    justify-items: center !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    padding: max(10px, env(safe-area-inset-top)) 10px max(12px, env(safe-area-inset-bottom)) !important;
+    background: rgba(0,0,0,.48) !important;
+  }
+  html body #stockProductModal > .modal {
+    position: relative !important;
+    z-index: 3001 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 560px !important;
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 22px) !important;
+    min-height: 0 !important;
+    margin: 0 auto !important;
+    overflow: hidden !important;
+  }
+  html body #stockProductModal .modal-head {
+    flex: 0 0 auto !important;
+  }
+  html body #stockProductForm {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 0 !important;
+  }
+  html body #stockProductForm .modal-actions {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 20 !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    flex: 0 0 auto !important;
+    gap: 8px !important;
+    margin: 12px -1px 0 !important;
+    padding: 12px 1px max(14px, env(safe-area-inset-bottom)) !important;
+    background: #fff !important;
+    box-shadow: 0 -10px 18px rgba(255,255,255,.98) !important;
+  }
+  html body #stockProductForm .modal-actions .btn {
+    display: block !important;
+    width: 100% !important;
+    min-height: 52px !important;
+    touch-action: manipulation !important;
+  }
+}
+</style>
 </head><body>
 <div id="cloudStatus" class="cloud-status">Lokale veilige modus</div>
 <div id="cloudGate" class="cloud-gate">
