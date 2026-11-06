@@ -9,7 +9,7 @@ self.addEventListener('fetch',event=>{
   if(request.method!=='GET')return;
   const url=new URL(request.url);
   if(url.origin!==self.location.origin&&url.href!==SUPABASE_SDK)return;
-  if(url.origin!==self.location.origin&&url.href!==SUPABASE_SDK)return;
+  if(url.href===SUPABASE_SDK){event.respondWith(caches.match(SUPABASE_SDK).then(cached=>cached||fetch(request)));return;}
   if(url.pathname.includes('/rest/v1/')||url.pathname.includes('/auth/v1/')||url.pathname.includes('/functions/v1/')||url.pathname.includes('/storage/v1/'))return;
   if(request.mode==='navigate'){
     event.respondWith(fetch(request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put('./index.html',copy))}return response}).catch(()=>caches.match('./index.html').then(response=>response||caches.match('./'))));
