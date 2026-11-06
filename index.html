@@ -354,6 +354,10 @@ body:has(#cloudGate:not(.hidden)) .mobile-nav{display:none!important}
     </form>
     <div id="cloudSessionBox" class="cloud-hidden">
       <div id="cloudSessionText" class="cloud-message ok show"></div>
+      <div id="cloudBusinessChoice" class="cloud-hidden">
+        <div class="field"><label for="cloudBusinessSelect">Kies de horecazaak</label><select id="cloudBusinessSelect"></select></div>
+        <div class="cloud-actions"><button id="cloudSelectBusiness" class="btn" type="button">Deze zaak openen</button></div>
+      </div>
       <div class="cloud-actions"><button id="cloudContinue" class="btn" type="button">Doorgaan naar app</button><button id="cloudSignOut" class="btn secondary" type="button">Afmelden</button></div>
     </div>
   </div>
@@ -644,7 +648,7 @@ async function prepareCloudSession(user,options={}){
   try{
     window.FAVVCloudUser=user;
     setStatus('Zaakomgeving wordt geladen...');
-    const b=await loadMembership({attempts:options.attempts||1,delay:options.delay||700});
+    const b=await loadMembership({attempts:options.attempts||1,delay:options.delay||700,businessId:options.businessId});
     const r=await loadCloudState();
     get('cloudSessionText').textContent='Supabase actief voor '+(user.email||'testgebruiker')+' · zaak: '+b.name+(r?' · cloudgegevens gevonden':' · eerste cloudkopie wordt gemaakt');
     window.__favvCloudRow=r;
@@ -653,6 +657,34 @@ async function prepareCloudSession(user,options={}){
     setStatus('Supabase aangemeld',true);
     return true;
   }catch(e){
+    if(String(e?.message||'').includes('meerdere horecazaken')){
+      try{
+        const {data:{user:authUser}}=await cloudClient.auth.getUser();
+        const {data:members,error:memberError}=await cloudClient.from('business_members').select('business_id').eq('user_id',authUser.id).eq('active',true);
+        if(memberError)throw memberError;
+        const ids=[...new Set((members||[]).map(x=>x.business_id).filter(Boolean))];
+        if(ids.length>1){
+          const {data:businesses,error:businessError}=await cloudClient.from('businesses').select('id,name,enterprise_number').in('id',ids);
+          if(businessError)throw businessError;
+          const select=get('cloudBusinessSelect');
+          select.replaceChildren();
+          (businesses||[]).forEach(b=>{
+            const option=document.createElement('option');
+            option.value=b.id;
+            option.textContent=b.name+(b.enterprise_number?' · '+b.enterprise_number:'');
+            select.appendChild(option);
+          });
+          if(!select.options.length)throw new Error('Geen beschikbare horecazaken gevonden.');
+          get('cloudBusinessChoice').classList.remove('cloud-hidden');
+          get('cloudContinue').classList.add('cloud-hidden');
+          get('cloudSessionText').textContent='Je account is gekoppeld aan meerdere horecazaken. Kies hieronder welke zaak je wilt openen.';
+          showSession(authUser);
+          window.__favvPendingBusinessUser=authUser;
+          setStatus('Kies je horecazaak');
+          return false;
+        }
+      }catch(choiceError){e=choiceError}
+    }
     showLogin();
     setMessage(e.message||'Zaak laden mislukt');
     setStatus('Cloudkoppeling niet klaar');
@@ -753,6 +785,27 @@ get('cloudLoginForm').addEventListener('submit',async e=>{
 });
 
 get('cloudContinue').addEventListener('click',async()=>{try{await continueToCloudApp()}catch(e){alert('Cloudgegevens konden niet worden geladen: '+e.message)}});
+get('cloudSelectBusiness').addEventListener('click',async()=>{
+  const user=window.__favvPendingBusinessUser;
+  const businessId=get('cloudBusinessSelect').value;
+  if(!user||!businessId)return;
+  const button=get('cloudSelectBusiness');
+  button.disabled=true;
+  button.textContent='Zaak wordt geladen...';
+  try{
+    const prepared=await prepareCloudSession(user,{attempts:2,delay:400,businessId});
+    if(!prepared)throw new Error('De gekozen horecazaak kon niet worden geopend.');
+    get('cloudBusinessChoice').classList.add('cloud-hidden');
+    get('cloudContinue').classList.remove('cloud-hidden');
+    window.__favvPendingBusinessUser=null;
+    await continueToCloudApp();
+  }catch(e){
+    get('cloudSessionText').textContent=e.message||'De gekozen horecazaak kon niet worden geopend.';
+  }finally{
+    button.disabled=false;
+    button.textContent='Deze zaak openen';
+  }
+});
 window.FAVVSupabaseSignOut=async()=>{if(cloudClient)await cloudClient.auth.signOut({scope:'local'});window.FAVVCloudUser=null;window.FAVVCloudBusiness=null;window.FAVVCloudRole=null;const gate=get('cloudGate');gate.classList.remove('hidden');gate.removeAttribute('aria-hidden');gate.style.removeProperty('display');gate.style.removeProperty('visibility');gate.style.removeProperty('pointer-events');setStatus('Supabase klaar voor aanmelding');showLogin()};get('cloudSignOut').addEventListener('click',window.FAVVSupabaseSignOut);
 get('cloudOpenSignup').addEventListener('click',showSignup);
 get('cloudOpenPasswordReset').addEventListener('click',showResetRequest);
