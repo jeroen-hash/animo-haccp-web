@@ -1115,9 +1115,39 @@ function loadSubscription(){try{return {...defaultSubscription(),...JSON.parse(l
 function saveSubscription(value){value.updatedAt=new Date().toISOString();localStorage.setItem(subscriptionKey(),JSON.stringify(value))}
 function loadSubscriptionConfig(){try{return JSON.parse(localStorage.getItem(subscriptionConfigKey())||'{}')}catch(e){return {}}}
 function saveSubscriptionConfig(){localStorage.setItem(subscriptionConfigKey(),JSON.stringify({checkoutEndpoint:$('checkoutEndpoint').value.trim(),portalEndpoint:$('portalEndpoint').value.trim(),statusEndpoint:$('subscriptionStatusEndpoint').value.trim(),cancelEndpoint:$('cancelSubscriptionEndpoint').value.trim()}));toast('Abonnementsinstellingen bewaard')}
-function subscriptionStatusLabel(status){return ({trialing:'Proefperiode',active:'Actief',past_due:'Betaling mislukt',canceled:'Opgezegd',expired:'Verlopen',incomplete:'Nog niet voltooid'})[status]||status}
-function formatSubscriptionDate(value){return value?new Date(value).toLocaleDateString('nl-BE'):'Niet beschikbaar'}
-function renderSubscription(){if(!['manager','owner'].includes(currentUser?.role))return;;const plans=subscriptionPlans(),sub=loadSubscription();if(!plans[sub.plan]){sub.plan='monthly';saveSubscription(sub)}const plan=plans[sub.plan]||plans.monthly;$('subscriptionStatusCard').innerHTML=`<span class="status-badge ${esc(sub.status)}">${esc(subscriptionStatusLabel(sub.status))}</span><h2>ANIMO HACCP ${esc(plan.name)}</h2><div class="metric">${plan.price==null?'Prijs via Stripe':`€ ${Number(plan.price).toFixed(2).replace('.',',')} <small>${esc(plan.period)}</small>`}</div><div class="subscription-meta"><div><span>Proefperiode tot</span><strong>${formatSubscriptionDate(sub.trialEndsAt)}</strong></div><div><span>Volgende factuurdatum</span><strong>${formatSubscriptionDate(sub.currentPeriodEnd)}</strong></div><div><span>Zaak</span><strong>${esc(businessProfile?.businessName||'')}</strong></div><div><span>Opzegging</span><strong>${sub.cancelAtPeriodEnd?'Aan het einde van de periode':'Niet gepland'}</strong></div></div>`;$('subscriptionPlans').innerHTML=Object.entries(plans).map(([key,p])=>`<article class="plan-card ${sub.plan===key?'selected':''}"><div class="plan-name">${esc(p.name)}</div><div class="plan-price">${p.price==null?'Jaarprijs in Stripe':`€ ${Number(p.price).toFixed(2).replace('.',',')} <small>${esc(p.period)}</small>`}</div><ul class="plan-features">${p.features.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="btn ${sub.plan===key?'secondary':''}" data-subscription-action="select-plan" data-plan="${key}">${sub.plan===key?'Geselecteerd':'Kiezen'}</button></article>`).join('');const builder=$('builderPricingPanel');if(builder)builder.classList.remove('open')}
+function subscriptionStatusLabel(status){return ({none:'Geen betaald abonnement',trialing:'Gratis proefperiode',active:'Actief betaald abonnement',past_due:'Betaling mislukt',canceled:'Opgezegd',expired:'Verlopen',incomplete:'Inschrijving niet voltooid',unpaid:'Betaling vereist',incomplete_expired:'Inschrijving verlopen',paused:'Gepauzeerd'})[status]||'Status onbekend'}
+function formatSubscriptionDate(value){if(!value)return 'Niet beschikbaar';const date=new Date(value);return Number.isNaN(date.getTime())?'Niet beschikbaar':date.toLocaleDateString('nl-BE',{day:'numeric',month:'long',year:'numeric'})}
+function renderSubscription(){
+  if(!['manager','owner'].includes(currentUser?.role))return;
+  const plans=subscriptionPlans(),sub=loadSubscription();
+  if(!plans[sub.plan]){sub.plan='monthly';saveSubscription(sub)}
+  const plan=plans[sub.plan]||plans.monthly;
+  const status=sub.status||'none';
+  const isTrial=status==='trialing'||sub.accessReason==='trial_active';
+  const isCanceled=status==='canceled';
+  const hasPaidAccess=status==='active'&&sub.accessAllowed===true;
+  const statusForDisplay=isTrial&&status==='none'?'trialing':status;
+  const trialDate=formatSubscriptionDate(sub.trialEndsAt);
+  let accessMessage='';
+  if(isCanceled&&sub.accessAllowed===true&&sub.accessReason==='trial_active'){
+    accessMessage=`<div class="subscription-note" style="margin-top:14px"><strong>Je abonnement is opgezegd.</strong><br>Je hebt voorlopig nog toegang via je gratis proefperiode tot ${trialDate}. Er is geen volgende Stripe-factuur gepland.</div>`;
+  }else if(isCanceled){
+    accessMessage='<div class="subscription-note" style="margin-top:14px"><strong>Je abonnement is opgezegd.</strong><br>Er is geen volgende abonnementsverlenging gepland.</div>';
+  }else if(isTrial){
+    accessMessage=`<div class="subscription-note" style="margin-top:14px"><strong>Gratis proefperiode actief.</strong><br>Je proefperiode loopt tot ${trialDate}. Dit is nog geen betaald abonnement.</div>`;
+  }else if(hasPaidAccess&&sub.cancelAtPeriodEnd){
+    accessMessage=`<div class="subscription-note" style="margin-top:14px"><strong>Opzegging ingepland.</strong><br>Je behoudt toegang tot ${formatSubscriptionDate(sub.currentPeriodEnd)}. Daarna wordt het abonnement niet verlengd.</div>`;
+  }else if(hasPaidAccess){
+    accessMessage='<div class="subscription-note" style="margin-top:14px"><strong>Betaald abonnement actief.</strong><br>Je abonnement wordt volgens de gekozen betaalperiode verlengd.</div>';
+  }else{
+    accessMessage='<div class="subscription-note" style="margin-top:14px"><strong>Geen actieve betaalde toegang.</strong><br>Kies een abonnement om de betaalde toegang te activeren.</div>';
+  }
+  const periodLabel=isCanceled?'Einde abonnement':hasPaidAccess?'Volgende factuurdatum':'Proefperiode tot';
+  const periodValue=isCanceled?'Geen verlenging gepland':hasPaidAccess?formatSubscriptionDate(sub.currentPeriodEnd):trialDate;
+  $('subscriptionStatusCard').innerHTML=`<span class="status-badge ${esc(statusForDisplay)}">${esc(subscriptionStatusLabel(statusForDisplay))}</span><h2>ANIMO HACCP ${esc(plan.name)}</h2><div class="metric">${plan.price==null?'Prijs via Stripe':`€ ${Number(plan.price).toFixed(2).replace('.',',')} <small>${esc(plan.period)}</small>`}</div><div class="subscription-meta"><div><span>Toegang</span><strong>${sub.accessAllowed===true?'Toegestaan':'Niet actief'}</strong></div><div><span>${periodLabel}</span><strong>${periodValue}</strong></div><div><span>Zaak</span><strong>${esc(businessProfile?.businessName||'')}</strong></div><div><span>Opzegging</span><strong>${isCanceled?'Verwerkt':sub.cancelAtPeriodEnd?'Aan het einde van de periode':'Niet gepland'}</strong></div></div>${accessMessage}`;
+  $('subscriptionPlans').innerHTML=Object.entries(plans).map(([key,p])=>`<article class="plan-card ${sub.plan===key?'selected':''}"><div class="plan-name">${esc(p.name)}</div><div class="plan-price">${p.price==null?'Jaarprijs in Stripe':`€ ${Number(p.price).toFixed(2).replace('.',',')} <small>${esc(p.period)}</small>`}</div><ul class="plan-features">${p.features.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="btn ${sub.plan===key?'secondary':''}" data-subscription-action="select-plan" data-plan="${key}">${sub.plan===key?'Geselecteerd':'Kiezen'}</button></article>`).join('');
+  const builder=$('builderPricingPanel');if(builder)builder.classList.remove('open');
+}
 
 function selectSubscriptionPlan(plan){if(!subscriptionPlans()[plan])return;const sub=loadSubscription();sub.plan=plan;saveSubscription(sub);renderSubscription();toast('Abonnementsplan geselecteerd')}
 async function openSubscriptionSession(type){try{let url='';if(type==='checkout'){if(typeof window.FAVVCreateCheckout!=='function')throw new Error('De beveiligde Supabase-verbinding is nog niet klaar. Meld opnieuw aan en probeer opnieuw.');const sub=loadSubscription();if(!['monthly','yearly'].includes(sub.plan))throw new Error('Kies eerst maandelijks of jaarlijks.');url=await window.FAVVCreateCheckout(sub.plan)}else if(type==='portal'){if(typeof window.FAVVOpenBillingPortal!=='function')throw new Error('De beveiligde Supabase-verbinding is nog niet klaar. Meld opnieuw aan en probeer opnieuw.');url=await window.FAVVOpenBillingPortal()}else{throw new Error('Onbekende abonnementsactie.')}location.href=url}catch(err){alert(`${type==='portal'?'Kon het klantenportaal niet openen':'Kon de betaalpagina niet openen'}: ${err.message||err}`)}}
@@ -1145,7 +1175,10 @@ window.refreshSubscriptionStatus = async function(){
     priceId:data.priceId||'',
     currentPeriodStart:data.currentPeriodStart||null,
     currentPeriodEnd:data.currentPeriodEnd||null,
+    trialStartedAt:data.trialStartedAt||null,
     trialEndsAt:data.trialEndsAt||null,
+    trialActive:Boolean(data.trialActive),
+    trialExpired:Boolean(data.trialExpired),
     cancelAtPeriodEnd:Boolean(data.cancelAtPeriodEnd),
     accessAllowed:data.accessAllowed,
     accessReason:data.accessReason||'unknown',
