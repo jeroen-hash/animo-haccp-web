@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   build_and_deploy_job:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    if: false # ANIMO HACCP: legacy Azure deployment disabled to keep the existing live app untouched
     runs-on: ubuntu-latest
     name: Build and Deploy Job
 
@@ -78,7 +78,7 @@ jobs:
           skip_app_build: true
 
   close_pull_request_job:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    if: false # No Azure preview deployments for the new STRATO release
     runs-on: ubuntu-latest
     name: Close Pull Request Job
 
