@@ -199,7 +199,7 @@ jobs:
           const unitEnd = html.indexOf('function renderStockUnitCostPreview()', unitStart);
           const recipeStart = html.indexOf('function recipeUnitInfo(unit)');
           const recipeEnd = html.indexOf('function saveRecipe(e)', recipeStart);
-          const costStart = html.indexOf('function recipeCost(recipe)', recipeEnd);
+          const costStart = html.indexOf('function recipeCost(recipe)');
           const costEnd = html.indexOf('function recipeSnapshot(recipe', costStart);
           if ([unitStart, unitEnd, recipeStart, recipeEnd, costStart, costEnd].some(x => x < 0)) {
             throw new Error('Recipe cost helpers could not be isolated.');
