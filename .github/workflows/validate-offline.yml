@@ -70,7 +70,8 @@ jobs:
             state: { temperatures: [], temperatureActions: [] },
             currentUser: { name: 'CI test' },
             id: (() => { let n = 0; return prefix => prefix + (++n); })(),
-            updateActionBadge: () => {}
+            updateActionBadge: () => {},
+            $: () => null
           };
           vm.runInNewContext(temperatureHelpers + `
             const cases = [
