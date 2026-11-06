@@ -502,20 +502,31 @@ async function loadMembership(options={}){
   const {data:{user},error:userError}=await cloudClient.auth.getUser();
   if(userError)throw userError;
   if(!user)throw new Error('Geen aangemelde gebruiker gevonden.');
+  const selectionKey='animo-active-business-id';
   let lastError=null;
   for(let attempt=1;attempt<=attempts;attempt++){
-    const {data:members,error:e}=await cloudClient.from('business_members').select('business_id,role,active').eq('user_id',user.id).eq('active',true).limit(1);
+    const {data:members,error:e}=await cloudClient.from('business_members').select('business_id,role,active').eq('user_id',user.id).eq('active',true);
     if(e)lastError=e;
     else if(Array.isArray(members)&&members.length){
-      const m=members[0];
-      const {data:b,error:be}=await cloudClient.from('businesses').select('id,name,enterprise_number').eq('id',m.business_id).single();
-      if(be)lastError=be;
-      else{
-        cloudBusiness={...b,role:m.role};
-        window.FAVVCloudRole=m.role;
-        window.FAVVCloudBusiness=cloudBusiness;
-        window.FAVVApplyCloudRole?.(m.role);
-        return cloudBusiness;
+      const requestedBusinessId=options.businessId||localStorage.getItem(selectionKey);
+      let m=null;
+      if(requestedBusinessId){
+        m=members.find(member=>member.business_id===requestedBusinessId)||null;
+        if(!m)localStorage.removeItem(selectionKey);
+      }
+      if(!m&&members.length===1)m=members[0];
+      if(!m&&members.length>1)throw new Error('Je account is gekoppeld aan meerdere horecazaken. Kies eerst de juiste zaak voordat ANIMO HACCP verdergaat.');
+      if(m){
+        const {data:b,error:be}=await cloudClient.from('businesses').select('id,name,enterprise_number').eq('id',m.business_id).single();
+        if(be)lastError=be;
+        else{
+          localStorage.setItem(selectionKey,m.business_id);
+          cloudBusiness={...b,role:m.role};
+          window.FAVVCloudRole=m.role;
+          window.FAVVCloudBusiness=cloudBusiness;
+          window.FAVVApplyCloudRole?.(m.role);
+          return cloudBusiness;
+        }
       }
     }else lastError=new Error('Geen actieve zaak gekoppeld.');
     if(attempt<attempts)await wait(delay*attempt);
