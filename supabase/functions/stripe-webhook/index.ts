@@ -115,6 +115,47 @@ async function saveSubscription(
     );
   }
 
+  // Stripe can deliver subscription events out of order. Since the table
+  // stores one subscription per business, an old canceled subscription
+  // must never overwrite a newer live subscription row.
+  const { data: currentBusinessSubscription, error: currentBusinessSubscriptionError } =
+    await supabaseAdmin
+      .from("subscriptions")
+      .select("stripe_subscription_id, status")
+      .eq("business_id", businessId)
+      .maybeSingle();
+
+  if (currentBusinessSubscriptionError) {
+    throw currentBusinessSubscriptionError;
+  }
+
+  const currentSubscriptionId =
+    currentBusinessSubscription?.stripe_subscription_id ?? null;
+  const currentSubscriptionStatus =
+    currentBusinessSubscription?.status ?? null;
+  const currentSubscriptionStillBlocksReplacement = [
+    "active",
+    "trialing",
+    "past_due",
+    "unpaid",
+    "incomplete",
+    "paused",
+  ].includes(currentSubscriptionStatus ?? "");
+
+  if (
+    currentSubscriptionId &&
+    currentSubscriptionId !== subscription.id &&
+    currentSubscriptionStillBlocksReplacement
+  ) {
+    console.warn("Verouderd Stripe-event genegeerd; nieuwer abonnement blijft gekoppeld:", {
+      business_id: businessId,
+      incoming_subscription_id: subscription.id,
+      current_subscription_id: currentSubscriptionId,
+      current_status: currentSubscriptionStatus,
+    });
+    return;
+  }
+
   const customerId =
     typeof subscription.customer === "string"
       ? subscription.customer
