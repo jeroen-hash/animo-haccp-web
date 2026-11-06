@@ -208,3 +208,22 @@ The business owner clarified that Melissa was added as a **manager** in the old 
 The read-only legacy membership row currently stores Melissa's role as `owner` and status as `active` for branch `menen`. This is therefore consistent with the user's explanation of equivalent access, but the stored role label does not preserve the distinction the user remembers. For the new app, the intended role label is **manager**, with permissions equivalent to the old manager/owner access, while the SaaS business owner remains the account owner. Before importing any membership, verify the new app's exact permission checks and confirm the intended target Auth identity for Melissa. Do not copy Auth UUIDs or credentials across Supabase projects.
 
 This confirmation resolves the explanation for the legacy role label; it does not authorize a data import, membership creation, or changes to role permissions. The dedicated migration target remains isolated and empty apart from its default starter snapshot.
+
+
+## New-app permission compatibility check (2026-11-06)
+
+A read-only inspection of `index.html` found that the SaaS client currently distinguishes `owner` from `manager` in some management actions:
+
+- Both roles are treated as non-employees for the main manager-only areas, and both can reach the subscription UI.
+- The member-management UI allows only an `owner` to change roles or activate/deactivate/remove non-owner members; a manager cannot perform those actions for another manager.
+- The code retains an explicit `isOwner` flag for the owner role.
+
+Therefore the user's statement that legacy managers had the same access as owners is **not yet fully reproduced** by the new app. Operational access appears broadly similar, but member-administration privileges differ. Do not silently claim exact permission parity or import Melissa as a manager until the intended scope is implemented and tested. Keep the platform/business ownership boundary intact; any permission expansion must be reviewed against the database RPCs/RLS policies, not only the visible client UI.
+
+## Latest read-only validation (2026-11-06)
+
+- Confirmed the exact legacy membership table is `branch_memberships` (not `members`).
+- The one active legacy membership row is Melissa's account at branch `menen`, with stored role `owner`. This is consistent with the user's explanation that she was added as a manager whose access matched the old owner role.
+- Current source counts remain: 10 temperature records, 7 temperature templates, 6 corrective actions, 15 cleaning templates, 6 cleaning checks, 0 cleaning tasks, 2 allergen plan items, 1 day closing, 1 business settings row, and 5 audit events.
+- The isolated target `afe00335-d959-4b7f-bb12-15d047a880ee` is still owned by `jeroen@animo-apps.com`, has 0 business members and 1 default starter `app_data` row.
+- No legacy rows, memberships, credentials, or subscriptions were copied or changed. No existing SaaS business was modified.
