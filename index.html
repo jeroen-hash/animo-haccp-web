@@ -497,6 +497,7 @@ function openLocalApp(){
   if(status){status.textContent='';status.classList.remove('online');status.hidden=true}
 }
 function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+function isNetworkUnavailable(error){if(!navigator.onLine)return true;const message=String(error?.message||error||'').toLowerCase();return error instanceof TypeError||/failed to fetch|fetch failed|failed to send a request|network request failed|networkerror|load failed|connection (?:is )?(?:lost|closed|refused)|internetverbinding|offline/.test(message)}
 async function loadMembership(options={}){
   const attempts=Math.max(1,Number(options.attempts)||1);
   const delay=Math.max(100,Number(options.delay)||700);
@@ -792,7 +793,7 @@ async function initClient(config){if(!window.supabase||!validConfig(config))retu
     if(prepared)await continueToCloudApp();
   }catch(error){
     console.error('Registratie of automatisch openen van bestaande sessie mislukt',error);
-    if(!navigator.onLine&&bootOfflineFromCache(data.session.user))return true;
+    if(isNetworkUnavailable(error)&&bootOfflineFromCache(data.session.user))return true;
     setMessage(error?.message||'De zaakregistratie kon niet worden voltooid. Meld opnieuw aan om het opnieuw te proberen.');
     if(navigator.onLine)await cloudClient.auth.signOut({scope:'local'});
     showLogin();
