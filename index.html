@@ -275,6 +275,46 @@ input,select,textarea{box-sizing:border-box}
   .registration-head .auth-title{font-size:18px!important}
   .registration-head .auth-sub{font-size:12px!important}
 }
+
+/* iPhone: stockproduct bewaren blijft bereikbaar boven de veilige schermrand */
+@media(max-width:700px){
+  #stockProductModal{
+    z-index:120;
+    align-items:flex-start;
+    overflow-y:auto;
+    padding: max(8px, env(safe-area-inset-top)) 10px max(8px, env(safe-area-inset-bottom));
+  }
+  #stockProductModal > .modal{
+    display:flex;
+    flex-direction:column;
+    width:100%;
+    max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px);
+    max-height:calc(100vh - 16px);
+    overflow:hidden;
+    margin:auto 0;
+  }
+  #stockProductForm{
+    min-height:0;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:4px;
+  }
+  #stockProductForm .modal-actions{
+    position:sticky;
+    bottom:0;
+    z-index:3;
+    background:#fff;
+    padding:12px 0 max(12px, env(safe-area-inset-bottom));
+    margin-top:12px;
+    box-shadow:0 -8px 14px rgba(255,255,255,.96);
+  }
+  #stockProductForm .modal-actions .btn{
+    min-height:48px;
+    touch-action:manipulation;
+  }
+}
+
 </style>
 
 <style id="cloud-auth-styles">
