@@ -48,6 +48,23 @@ jobs:
           if (!source.includes('if (\n    currentSubscriptionId &&')) throw new Error('Stripe webhook ordering guard is not applied before upsert.');
           console.log('Stripe webhook ordering lookup and guard placement passed.');
           NODE
+      - name: Validate subscription billing data access
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const status = fs.readFileSync('supabase/functions/subscription-status/index.ts', 'utf8');
+          const policy = fs.readFileSync('supabase/migrations/20261106230000_restrict_subscription_row_reads.sql', 'utf8');
+          const membershipCheck = status.indexOf('if (allowedMemberships.length === 0)');
+          const adminClient = status.indexOf('const supabaseAdmin = createClient(');
+          const subscriptionRead = status.indexOf('.from("subscriptions")');
+          if (!status.includes('Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")')) throw new Error('Subscription status endpoint must use the server-side service role key.');
+          if (membershipCheck < 0 || adminClient < membershipCheck || subscriptionRead < adminClient) throw new Error('Subscription data is read before membership/business authorization.');
+          if (!status.includes('const customerId = billingAllowed') || !status.includes('const subscriptionId = billingAllowed') || !status.includes('const priceId = billingAllowed')) throw new Error('Stripe billing identifiers must remain owner/manager-only in the endpoint response.');
+          for (const marker of ['for select', 'to authenticated', "bm.role in ('owner', 'manager')", 'bm.active is true']) {
+            if (!policy.toLowerCase().includes(marker)) throw new Error('Subscription SELECT policy is missing: ' + marker);
+          }
+          console.log('Subscription billing data access and owner/manager policy checks passed.');
+          NODE
       - name: Validate inline JavaScript and service worker
         run: |
           node <<'NODE'
