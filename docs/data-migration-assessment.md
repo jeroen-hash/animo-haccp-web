@@ -67,3 +67,14 @@ The six existing SaaS snapshots are populated test/business records. They must n
 ## Safety gate
 
 No migration SQL or data import should be executed until the target business and user mapping are explicitly confirmed and a restorable backup/export is available. Production deployment remains blocked until the migration is validated.
+
+## Ownership clarification (2026-11-06)
+
+The account owner clarified that the existing SaaS test businesses are all theirs except Rick's business. A read-only membership check identified the following ownership split:
+
+- Keep untouched: `Animo 2.0`, `Animo2.0`, `animo vof`, `animo apps`, and `Vof test` (five businesses belonging to the project owner).
+- Exclude from this migration and leave untouched: `Riku Ramen` (the owner account is Rik van Hooydonk).
+
+This ownership clarification does not select one of the five owned businesses as the migration destination. The legacy HACCP organisation must still be mapped to a dedicated destination without overwriting any of the five existing snapshots. The migration plan therefore remains read-only until a dedicated target and user mapping are established.
+
+No business, membership, snapshot, user, subscription, or legacy HACCP record was changed by this assessment.
