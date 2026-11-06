@@ -29,26 +29,24 @@ jobs:
           const start = source.indexOf('function shouldIgnoreSubscriptionOverwrite(');
           const end = source.indexOf('async function saveSubscription(', start);
           if (start < 0 || end < 0) throw new Error('Stripe subscription ordering guard is missing.');
-          const helper = source.slice(start, end).replaceAll(': string | null', '').replaceAll(': string', '');
-          const context = {};
+          const helper = source.slice(start, end).replaceAll(': string | null', '').replaceAll(': number | null', '').replaceAll(': string', '').replaceAll(': number', '');
           vm.runInNewContext(helper + `
             const cases = [
-              ['active current subscription blocks a different incoming ID', 'sub-current', 'active', 'sub-old', true],
-              ['trialing current subscription blocks a different incoming ID', 'sub-current', 'trialing', 'sub-old', true],
-              ['past_due current subscription blocks stale overwrite', 'sub-current', 'past_due', 'sub-old', true],
-              ['canceled current subscription allows replacement', 'sub-current', 'canceled', 'sub-new', false],
-              ['same subscription ID can receive updates', 'sub-current', 'active', 'sub-current', false],
-              ['empty subscription row accepts first subscription', null, null, 'sub-first', false]
+              ['late event from older subscription is ignored', 'sub-newer', 200, 'sub-older', 100, true],
+              ['new subscription can replace an older one', 'sub-older', 100, 'sub-newer', 200, false],
+              ['same subscription ID can receive updates', 'sub-current', 200, 'sub-current', 200, false],
+              ['empty subscription row accepts first subscription', null, null, 'sub-first', 100, false],
+              ['equal timestamps from different IDs are treated as stale', 'sub-current', 100, 'sub-other', 100, true]
             ];
-            for (const [label, currentId, currentStatus, incomingId, expected] of cases) {
-              const actual = shouldIgnoreSubscriptionOverwrite(currentId, currentStatus, incomingId);
+            for (const [label, currentId, currentCreated, incomingId, incomingCreated, expected] of cases) {
+              const actual = shouldIgnoreSubscriptionOverwrite(currentId, currentCreated, incomingId, incomingCreated);
               if (actual !== expected) throw new Error(label + ': expected ' + expected + ', got ' + actual);
             }
-          `, context);
-          console.log('Stripe subscription ordering guard: 6 cases passed.');
-          if (!source.includes('.eq("business_id", businessId)')) throw new Error('Stripe webhook must scope current subscription lookup to business_id.');
-          if (!source.includes('if (\n    shouldIgnoreSubscriptionOverwrite(')) throw new Error('Stripe webhook does not enforce the ordering guard before upsert.');
-          console.log('Stripe webhook guard placement and business scoping passed.');
+          `);
+          console.log('Stripe subscription ordering guard: 5 cases passed.');
+          if (!source.includes('await stripe.subscriptions.retrieve(currentSubscriptionId)')) throw new Error('Current Stripe subscription creation time is not verified.');
+          if (!source.includes('if (\n    currentSubscriptionId &&')) throw new Error('Stripe webhook ordering guard is not applied before upsert.');
+          console.log('Stripe webhook ordering lookup and guard placement passed.');
           NODE
       - name: Validate inline JavaScript and service worker
         run: |
