@@ -189,3 +189,13 @@ No membership was added deliberately. The current client selects one active memb
 | audit_log | 5 |
 
 These are current counts only, not yet a row-by-row conversion. The target contains only its trigger-created empty starter state. No legacy rows have been copied, transformed, or imported. The five owned pre-existing businesses and `Riku Ramen` were not modified.
+
+## Dry-run identity finding — migration blocked pending owner confirmation (2026-11-06)
+
+Read-only inspection of the legacy project shows:
+- One legacy organisation named `animo`, created by the account associated with `melissa.marreel@hotmail.com`.
+- One legacy branch named `menen`, linked to that organisation.
+- The legacy `business_settings.owner_email` is also `melissa.marreel@hotmail.com`.
+- The new isolated migration target is owned by the SaaS account `jeroen@animo-apps.com`.
+
+This is an ownership/authorization mismatch that must be explicitly explained and resolved before any row-level export or import. It may be a legitimate employee/administrator relationship, but that cannot be inferred. Do not map these identities based on names or assumptions. The legacy organisation and its records remain untouched. No row-by-row payload conversion or copy was performed. The migration target remains empty except for its default starter state, and no membership was added.
