@@ -28,12 +28,12 @@ Deno.serve(async (req: Request) => {
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
     const monthlyPriceId = Deno.env.get("STRIPE_PRICE_MONTHLY");
     const yearlyPriceId = Deno.env.get("STRIPE_PRICE_YEARLY");
-    const appUrl = Deno.env.get("APP_URL");
+    const appUrl = "https://app.animo-apps.com";
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
 
     if (!stripeSecretKey || !monthlyPriceId || !yearlyPriceId ||
-        !appUrl || !supabaseUrl || !supabaseAnonKey) {
+        !supabaseUrl || !supabaseAnonKey) {
       throw new Error("Een of meerdere vereiste omgevingsvariabelen ontbreken.");
     }
 
