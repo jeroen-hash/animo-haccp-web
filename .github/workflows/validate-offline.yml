@@ -38,7 +38,10 @@ jobs:
             'save_app_data_if_unchanged',
             'FAVVSyncConflict',
             'hasPersistedAuth',
-            'FAVVRememberOfflineSession'
+            'FAVVRememberOfflineSession',
+            'const synced=await saveCloudState(r.data)',
+            'if(synced)window.__favvPendingOutbox=null',
+            'return true;'
           ];
           for (const marker of required) {
             if (!html.includes(marker)) throw new Error(`Missing offline safety marker: ${marker}`);
