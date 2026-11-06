@@ -553,10 +553,12 @@ let cloudRowUpdatedAt=null;
 const OFFLINE_SESSION_KEY='animo-offline-session-v1';
 const OFFLINE_DB_NAME='animo-haccp-offline-v1';
 let offlineDbPromise=null;
+let offlineQueueWrite=Promise.resolve();
 function openOfflineDb(){if(!('indexedDB' in window))return Promise.reject(new Error('IndexedDB niet beschikbaar'));if(!offlineDbPromise)offlineDbPromise=new Promise((resolve,reject)=>{const request=indexedDB.open(OFFLINE_DB_NAME,1);request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains('outbox'))db.createObjectStore('outbox',{keyPath:'businessId'})};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||new Error('Lokale wachtrij kon niet worden geopend'))});return offlineDbPromise}
-async function readOfflineSnapshot(businessId){try{const db=await openOfflineDb();const item=await new Promise((resolve,reject)=>{const tx=db.transaction('outbox','readonly'),r=tx.objectStore('outbox').get(businessId);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error)});if(item)return item}catch(e){}try{return JSON.parse(localStorage.getItem('animo-offline-outbox:'+businessId)||'null')}catch(_){return null}}
-async function queueOfflineSnapshot(snapshot){if(!cloudBusiness?.id)return;const previous=await readOfflineSnapshot(cloudBusiness.id);const item={businessId:cloudBusiness.id,data:JSON.parse(JSON.stringify(snapshot)),baseUpdatedAt:previous?previous.baseUpdatedAt:cloudRowUpdatedAt,queuedAt:new Date().toISOString()};localStorage.setItem('animo-offline-dirty:'+cloudBusiness.id,JSON.stringify({baseUpdatedAt:item.baseUpdatedAt,queuedAt:item.queuedAt}));try{const db=await openOfflineDb();await new Promise((resolve,reject)=>{const tx=db.transaction('outbox','readwrite');tx.objectStore('outbox').put(item);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){localStorage.setItem('animo-offline-outbox:'+cloudBusiness.id,JSON.stringify(item))}}
-async function clearOfflineSnapshot(businessId){try{const db=await openOfflineDb();await new Promise((resolve,reject)=>{const tx=db.transaction('outbox','readwrite');tx.objectStore('outbox').delete(businessId);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){}localStorage.removeItem('animo-offline-outbox:'+businessId);localStorage.removeItem('animo-offline-dirty:'+businessId)}
+async function readOfflineSnapshot(businessId){try{const local=JSON.parse(localStorage.getItem('animo-offline-outbox:'+businessId)||'null');if(local)return local}catch(e){}try{const db=await openOfflineDb();return await new Promise((resolve,reject)=>{const tx=db.transaction('outbox','readonly'),r=tx.objectStore('outbox').get(businessId);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error)})}catch(e){return null}}
+function queueOfflineSnapshot(snapshot){if(!cloudBusiness?.id)return Promise.resolve();const key='animo-offline-outbox:'+cloudBusiness.id;let previous=null;try{previous=JSON.parse(localStorage.getItem(key)||'null')}catch(e){}const item={businessId:cloudBusiness.id,data:JSON.parse(JSON.stringify(snapshot)),baseUpdatedAt:previous?previous.baseUpdatedAt:cloudRowUpdatedAt,queuedAt:new Date().toISOString()};try{localStorage.setItem(key,JSON.stringify(item));localStorage.setItem('animo-offline-dirty:'+cloudBusiness.id,JSON.stringify({baseUpdatedAt:item.baseUpdatedAt,queuedAt:item.queuedAt}))}catch(e){setStatus('Lokale opslag vol · controleer je toestelopslag');return Promise.reject(e)}offlineQueueWrite=offlineQueueWrite.catch(()=>{}).then(async()=>{try{const db=await openOfflineDb();await new Promise((resolve,reject)=>{const tx=db.transaction('outbox','readwrite');tx.objectStore('outbox').put(item);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){console.warn('IndexedDB wachtrij niet beschikbaar; localStorage-kopie blijft bewaard',e)}});return offlineQueueWrite.then(()=>item)}
+async function clearOfflineSnapshot(businessId,expectedQueuedAt){await offlineQueueWrite.catch(()=>{});const key='animo-offline-outbox:'+businessId;let current=null;try{current=JSON.parse(localStorage.getItem(key)||'null')}catch(e){}if(expectedQueuedAt&&current?.queuedAt!==expectedQueuedAt)return;if(!expectedQueuedAt&&current)return;try{const db=await openOfflineDb();await new Promise((resolve,reject)=>{const tx=db.transaction('outbox','readwrite'),store=tx.objectStore('outbox'),getReq=store.get(businessId);getReq.onsuccess=()=>{if(!expectedQueuedAt||getReq.result?.queuedAt===expectedQueuedAt)store.delete(businessId)};tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){}let latest=null,dirty=null;try{latest=JSON.parse(localStorage.getItem(key)||'null');dirty=JSON.parse(localStorage.getItem('animo-offline-dirty:'+businessId)||'null')}catch(e){}if((expectedQueuedAt&&latest?.queuedAt===expectedQueuedAt)||(!expectedQueuedAt&&!latest)){localStorage.removeItem(key);if(!dirty||!expectedQueuedAt||dirty.queuedAt===expectedQueuedAt)localStorage.removeItem('animo-offline-dirty:'+businessId)}}
+async function rebaseOfflineSnapshot(businessId,savedQueuedAt,newUpdatedAt){await offlineQueueWrite.catch(()=>{});const key='animo-offline-outbox:'+businessId;let item=null;try{item=JSON.parse(localStorage.getItem(key)||'null')}catch(e){}if(!item||item.queuedAt===savedQueuedAt)return;item.baseUpdatedAt=newUpdatedAt;localStorage.setItem(key,JSON.stringify(item));let dirty=null;try{dirty=JSON.parse(localStorage.getItem('animo-offline-dirty:'+businessId)||'null')}catch(e){}if(dirty){dirty.baseUpdatedAt=newUpdatedAt;localStorage.setItem('animo-offline-dirty:'+businessId,JSON.stringify(dirty))}offlineQueueWrite=offlineQueueWrite.catch(()=>{}).then(async()=>{try{const db=await openOfflineDb();await new Promise((resolve,reject)=>{const tx=db.transaction('outbox','readwrite');tx.objectStore('outbox').put(item);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){console.warn('Outbox kon niet worden herijkt; lokale kopie blijft bewaard',e)}});await offlineQueueWrite}
 function offlineNotice(message,kind='offline'){let el=document.getElementById('animoOfflineNotice');if(!el){el=document.createElement('div');el.id='animoOfflineNotice';el.style.cssText='position:fixed;z-index:9999;left:12px;right:12px;top:12px;padding:12px 15px;border-radius:12px;background:#fff6df;color:#6d4705;border:1px solid #e9c978;box-shadow:0 5px 22px rgba(0,0,0,.12);font:600 13px/1.45 system-ui,sans-serif';document.body.appendChild(el)}el.textContent=message;el.style.background=kind==='conflict'?'#fde8e5':'#fff6df';el.style.color=kind==='conflict'?'#9f241b':'#6d4705';el.hidden=false}
 function clearOfflineNotice(){const el=document.getElementById('animoOfflineNotice');if(el)el.hidden=true}
 function rememberOfflineSession(user,subscription){if(!cloudBusiness?.id||!user?.id||subscription?.accessAllowed!==true)return;const accessValidUntil=subscription.accessReason==='lifetime_free'?null:(subscription.trialEndsAt||subscription.currentPeriodEnd||null);localStorage.setItem(OFFLINE_SESSION_KEY,JSON.stringify({userId:user.id,businessId:cloudBusiness.id,role:cloudBusiness.role||'employee',businessName:cloudBusiness.name||'',enterpriseNumber:cloudBusiness.enterprise_number||'',verifiedAt:new Date().toISOString(),cloudUpdatedAt:cloudRowUpdatedAt,accessValidUntil,accessReason:subscription.accessReason||'unknown',accessAllowed:true}))}
@@ -623,22 +625,25 @@ async function writeAuditEvents(events,user){
 async function saveCloudState(x){
   if(!cloudBusiness||!x)return;
   const snapshot=JSON.parse(JSON.stringify(x));
+  if(window.FAVVSyncConflict){await queueOfflineSnapshot(snapshot);setStatus('Conflict · lokale gegevens veilig bewaard');return}
   if(!navigator.onLine||window.FAVVOfflineMode||!cloudClient){await queueOfflineSnapshot(snapshot);setStatus('Lokaal bewaard · wacht op internet');return}
   const {data:{user},error:userError}=await cloudClient.auth.getUser();
   if(userError||!user){await queueOfflineSnapshot(snapshot);setStatus('Cloudcontrole mislukt · lokaal bewaard');offlineNotice('Je wijzigingen zijn lokaal bewaard. De cloudcontrole is mislukt; probeer opnieuw zodra de verbinding stabiel is.');return}
+  const queuedItem=await queueOfflineSnapshot(snapshot);
   const events=lastAuditState?buildAuditEvents(lastAuditState,snapshot):[];
   const {data,error:resultError}=await cloudClient.rpc('save_app_data_if_unchanged',{p_business_id:cloudBusiness.id,p_data:snapshot,p_expected_updated_at:cloudRowUpdatedAt});
   if(resultError){await queueOfflineSnapshot(snapshot);setStatus('Cloud opslaan mislukt · lokaal bewaard');offlineNotice('Je wijzigingen zijn lokaal bewaard, maar konden nog niet naar de cloud. Ze blijven in de wachtrij tot synchronisatie lukt.');console.error(resultError);logPlatformError('cloud-sync',resultError.message,{code:resultError.code||null});return}
   if(!data?.saved){await queueOfflineSnapshot(snapshot);window.FAVVSyncConflict=true;offlineNotice('SYNCHRONISATIECONFLICT · De cloudgegevens zijn intussen door iemand anders gewijzigd. Je lokale registraties zijn veilig bewaard en worden niet overschreven. Neem contact op met ANIMO om de versies samen te voegen.','conflict');setStatus('Conflict · lokale gegevens veilig bewaard');return}
   cloudRowUpdatedAt=data.updated_at||cloudRowUpdatedAt;
   try{const meta=JSON.parse(localStorage.getItem(OFFLINE_SESSION_KEY)||'null');if(meta&&meta.businessId===cloudBusiness.id){meta.cloudUpdatedAt=cloudRowUpdatedAt;localStorage.setItem(OFFLINE_SESSION_KEY,JSON.stringify(meta))}}catch(e){}
-  await clearOfflineSnapshot(cloudBusiness.id);
+  await clearOfflineSnapshot(cloudBusiness.id,queuedItem?.queuedAt);
+  await rebaseOfflineSnapshot(cloudBusiness.id,queuedItem?.queuedAt,cloudRowUpdatedAt);
   window.FAVVSyncConflict=false;window.FAVVOfflineMode=false;clearOfflineNotice();
   lastAuditState=snapshot;
   setStatus('Cloud bijgewerkt',true);
   if(events.length)writeAuditEvents(events,user).catch(error=>console.error('Auditlog onverwachte fout',error));
 }
-window.FAVVCloudSync={schedule(x){clearTimeout(saveTimer);saveTimer=setTimeout(()=>saveCloudState(JSON.parse(JSON.stringify(x))),900)}};
+window.FAVVCloudSync={schedule(x){const snapshot=JSON.parse(JSON.stringify(x));offlineQueueWrite=queueOfflineSnapshot(snapshot).catch(error=>{console.error('Lokale wachtrij kon niet worden bijgewerkt',error);logPlatformError('offline-queue',error.message)});clearTimeout(saveTimer);saveTimer=setTimeout(async()=>{await offlineQueueWrite;await saveCloudState(snapshot)},900)}};
 window.FAVVInviteBusinessMember=async(payload)=>{if(!cloudClient)throw new Error('Supabase is niet verbonden.');const {data,error}=await cloudClient.functions.invoke('invite-business-member',{body:payload});if(error){let message=error.message||'De uitnodiging kon niet worden verstuurd.';try{const context=await error.context?.json();if(context?.error)message=context.error}catch(e){}throw new Error(message)}if(data?.error)throw new Error(data.error);return data};
 window.FAVVListBusinessMembers=async()=>{if(!cloudClient)throw new Error('Supabase is niet verbonden.');const businessId=cloudBusiness?.id||window.FAVVCloudBusiness?.id||'';if(!businessId)throw new Error('De actieve horecazaak kon niet worden bepaald. Meld opnieuw aan.');const {data,error}=await cloudClient.rpc('list_business_members',{p_business_id:businessId});if(error)throw new Error(error.message||'De gebruikerslijst kon niet worden geladen.');return Array.isArray(data)?data:[]};
 window.FAVVGetSubscriptionStatus=async()=>{if(!cloudClient)throw new Error('Supabase is niet verbonden.');const {data,error}=await cloudClient.functions.invoke('subscription-status',{body:{businessId:cloudBusiness?.id||window.FAVVCloudBusiness?.id||''}});if(error){let message=error.message||'De abonnementsstatus kon niet worden opgehaald.';try{const context=await error.context?.json();if(context?.error)message=context.error}catch(e){}throw new Error(message)}if(data?.error)throw new Error(data.error);return data};
@@ -667,6 +672,7 @@ async function prepareCloudSession(user,options={}){
   try{
     window.FAVVCloudUser=user;
     setStatus('Zaakomgeving wordt geladen...');
+    window.__favvPrepareNetworkError=false;
     const b=await loadMembership({attempts:options.attempts||1,delay:options.delay||700,businessId:options.businessId});
     window.__favvPendingOutbox=null;window.FAVVSyncConflict=false;
     let r=await loadCloudState();
@@ -681,6 +687,7 @@ async function prepareCloudSession(user,options={}){
     setStatus('Supabase aangemeld',true);
     return true;
   }catch(e){
+    window.__favvPrepareNetworkError=isNetworkUnavailable(e)||!navigator.onLine;
     if(String(e?.message||'').includes('meerdere horecazaken')){
       try{
         const {data:{user:authUser}}=await cloudClient.auth.getUser();
@@ -794,6 +801,7 @@ async function initClient(config){if(!window.supabase||!validConfig(config))retu
     await finishPendingBusinessRegistration();
     const prepared=await prepareCloudSession(data.session.user,{attempts:3,delay:500});
     if(prepared)await continueToCloudApp();
+    else if((!navigator.onLine||window.__favvPrepareNetworkError)&&bootOfflineFromCache(data.session.user))return true;
   }catch(error){
     console.error('Registratie of automatisch openen van bestaande sessie mislukt',error);
     if(isNetworkUnavailable(error)&&bootOfflineFromCache(data.session.user))return true;
@@ -1297,6 +1305,7 @@ window.refreshSubscriptionStatus = async function(){
   };
 
   saveSubscription(sub);
+  window.FAVVRememberOfflineSession?.(window.FAVVCloudUser,sub);
 
   if(currentUser?.role==='manager'||currentUser?.role==='owner'||currentUser?.role==='employee'){
     renderSubscription();
