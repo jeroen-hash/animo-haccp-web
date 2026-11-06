@@ -205,7 +205,7 @@ jobs:
             throw new Error('Recipe cost helpers could not be isolated.');
           }
           const source = html.slice(unitStart, unitEnd) + html.slice(recipeStart, recipeEnd) + html.slice(costStart, costEnd);
-          const context = { state: { stock: [] }, stockById(id) { return this.state.stock.find(x => x.id === id); } };
+          const context = { state: { stock: [] }, stockById: id => context.state.stock.find(x => x.id === id) };
           vm.runInNewContext(source + `
             const eggs = { id: 'eggs', name: 'Eieren', unit: 'stuks', purchaseQuantity: 10, purchasePrice: 5 };
             if (Math.abs(unitCost(eggs) - 0.5) > 0.000001) throw new Error('10 eggs for €5 must cost €0.50 per egg.');
