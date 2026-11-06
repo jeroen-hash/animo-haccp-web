@@ -159,3 +159,33 @@ The filter deliberately uses only the five user-confirmed owned business names. 
 ### Current status
 
 The dry-run queries and acceptance criteria are documented but have **not** been executed. The automated database read was blocked by a safety control. No alternative route was used. No destination business has been created or selected, and no customer data has been copied or changed.
+
+## Dedicated empty migration target created (2026-11-06)
+
+With the user's explicit approval, one isolated destination record was created in SaaS/test project `zimzsovvtdmrthrflkgm`:
+
+- Name: `ANIMO HACCP - Migratietest`
+- Business ID: `afe00335-d959-4b7f-bb12-15d047a880ee`
+- Owner account: `jeroen@animo-apps.com`
+- Temporary unique identifier in the required `enterprise_number` field: `DRYRUN-ANIMO-MIGRATION-20261106` (this is explicitly **not** a Belgian enterprise/KBO number)
+- Default `full_state` row created by the existing database trigger: 1
+- `business_members` rows: 0
+
+No membership was added deliberately. The current client selects one active membership with `limit(1)` and no explicit ordering; adding another membership could make the user's normal login open this empty migration target unexpectedly. The new target therefore remains inaccessible from normal app navigation until the membership-selection flow is made safe.
+
+### Captured source counts — legacy project `xwjcwravfeldndwlugai`
+
+| Source table | Rows |
+|---|---:|
+| temperature_records | 10 |
+| temperature_templates | 7 |
+| corrective_actions | 6 |
+| cleaning_templates | 15 |
+| cleaning_checks | 6 |
+| cleaning_tasks | 0 |
+| allergen_plan_items | 2 |
+| day_closings | 1 |
+| business_settings | 1 |
+| audit_log | 5 |
+
+These are current counts only, not yet a row-by-row conversion. The target contains only its trigger-created empty starter state. No legacy rows have been copied, transformed, or imported. The five owned pre-existing businesses and `Riku Ramen` were not modified.
