@@ -109,12 +109,22 @@ Deno.serve(async (req) => {
       );
     }
 
+    const body = await req.json();
+    const requestedBusinessId = String(body?.businessId ?? "").trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestedBusinessId)) {
+      return jsonResponse(
+        { error: "De actieve horecazaak ontbreekt of is ongeldig. Meld opnieuw aan en probeer opnieuw." },
+        400,
+      );
+    }
+
     const {
       data: membership,
       error: membershipError,
     } = await adminClient
       .from("business_members")
       .select("business_id, role, active")
+      .eq("business_id", requestedBusinessId)
       .eq("user_id", user.id)
       .eq("active", true)
       .maybeSingle();
@@ -173,8 +183,6 @@ Deno.serve(async (req) => {
       );
     }
 
-
-    const body = await req.json();
 
     const fileBase64 = String(
       body?.fileBase64 ??

@@ -6,6 +6,7 @@ on:
     paths:
       - 'index.html'
       - 'supabase/functions/stripe-webhook/index.ts'
+      - 'supabase/functions/process-delivery-note/index.ts'
       - 'sw.js'
       - 'supabase/migrations/**'
       - '.github/workflows/validate-offline.yml'
@@ -47,6 +48,24 @@ jobs:
           if (!source.includes('await stripe.subscriptions.retrieve(currentSubscriptionId)')) throw new Error('Current Stripe subscription creation time is not verified.');
           if (!source.includes('if (\n    currentSubscriptionId &&')) throw new Error('Stripe webhook ordering guard is not applied before upsert.');
           console.log('Stripe webhook ordering lookup and guard placement passed.');
+          NODE
+      - name: Validate delivery parser business isolation
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const fn = fs.readFileSync('supabase/functions/process-delivery-note/index.ts', 'utf8');
+          if (!html.includes("functions.invoke('process-delivery-note',{body:{...payload,businessId}})")) {
+            throw new Error('Frontend must send the explicitly selected business ID to the delivery parser.');
+          }
+          if (!fn.includes('const requestedBusinessId = String(body?.businessId ?? "").trim()')) {
+            throw new Error('Delivery parser must require an explicit business ID.');
+          }
+          if (!fn.includes('.eq("business_id", requestedBusinessId)') || !fn.includes('.eq("user_id", user.id)') || !fn.includes('.eq("active", true)')) {
+            throw new Error('Delivery parser membership must be scoped to the requested business and authenticated user.');
+          }
+          if (!fn.includes('if (!membership)')) throw new Error('Delivery parser must reject users without active membership in the selected business.');
+          console.log('Delivery parser business isolation checks passed.');
           NODE
       - name: Validate subscription billing data access
         run: |

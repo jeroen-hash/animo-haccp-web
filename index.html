@@ -856,7 +856,7 @@ window.FAVVUpdateCloudBusiness=async(payload)=>{
   window.FAVVCloudBusiness=cloudBusiness;
   return updated;
 };
-window.FAVVProcessDeliveryNote=async(payload)=>{if(!cloudClient)throw new Error('Supabase is niet verbonden.');const {data,error}=await cloudClient.functions.invoke('process-delivery-note',{body:payload});if(error){let message=error.message||'De leveringsbon kon niet worden uitgelezen.';try{const context=await error.context?.json();if(context?.error)message=context.error}catch(e){}throw new Error(message)}if(data?.error)throw new Error(data.error);return data};
+window.FAVVProcessDeliveryNote=async(payload)=>{if(!cloudClient)throw new Error('Supabase is niet verbonden.');const businessId=cloudBusiness?.id||window.FAVVCloudBusiness?.id||'';if(!businessId)throw new Error('De actieve horecazaak kon niet worden bepaald. Meld opnieuw aan.');const {data,error}=await cloudClient.functions.invoke('process-delivery-note',{body:{...payload,businessId}});if(error){let message=error.message||'De leveringsbon kon niet worden uitgelezen.';try{const context=await error.context?.json();if(context?.error)message=context.error}catch(e){}throw new Error(message)}if(data?.error)throw new Error(data.error);return data};
 async function prepareCloudSession(user,options={}){
   try{
     window.FAVVCloudUser=user;
