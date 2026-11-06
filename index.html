@@ -481,7 +481,7 @@ function showResetRequest(){
 }
 function showPasswordSetup(type){hideResetRequest();pendingPasswordFlow=type==='invite'?'invite':'recovery';get('cloudSetup').classList.add('cloud-hidden');get('cloudLoginForm').classList.add('cloud-hidden');get('cloudSignupForm').classList.add('cloud-hidden');get('cloudSessionBox').classList.add('cloud-hidden');get('cloudPasswordSetupForm').classList.remove('cloud-hidden');get('cloudPasswordSetupTitle').textContent=pendingPasswordFlow==='invite'?'Account activeren':'Nieuw wachtwoord instellen';get('cloudPasswordSetupText').textContent=pendingPasswordFlow==='invite'?'Kies een persoonlijk wachtwoord om de uitnodiging te voltooien.':'Kies een nieuw persoonlijk wachtwoord om het account opnieuw te beveiligen.';get('cloudPasswordSetupMessage').className='cloud-message';get('cloudNewPassword').value='';get('cloudNewPasswordConfirm').value='';setTimeout(()=>get('cloudNewPassword').focus(),50)}
 function setSignupMessage(text,type='error'){const el=get('signupMessage');el.textContent=text;el.className='cloud-message show '+type}
-function showSession(user){hideResetRequest();hidePasswordSetup();get('cloudSetup').classList.add('cloud-hidden');get('cloudLoginForm').classList.add('cloud-hidden');get('cloudSessionBox').classList.remove('cloud-hidden');get('cloudSessionText').textContent='Supabase-aanmelding actief voor '+(user.email||'testgebruiker')}
+function showSession(user,loading=false){hideResetRequest();hidePasswordSetup();get('cloudSetup').classList.add('cloud-hidden');get('cloudLoginForm').classList.add('cloud-hidden');get('cloudSessionBox').classList.remove('cloud-hidden');get('cloudSessionText').textContent=loading?'ANIMO HACCP wordt geopend...':'Supabase-aanmelding actief voor '+(user.email||'testgebruiker');get('cloudContinue').classList.toggle('cloud-hidden',loading);get('cloudSignOut').classList.toggle('cloud-hidden',loading)}
 function openLocalApp(){
   const gate=get('cloudGate');
   gate.classList.add('hidden');
@@ -690,65 +690,69 @@ async function prepareCloudSession(user,options={}){
 }
 
 async function continueToCloudApp(){
-  window.FAVVStartSupabaseSession?.(
-    window.FAVVCloudUser,
-    window.FAVVCloudBusiness || null
-  );
-
-  // Eerst de echte abonnementsstatus bij Supabase ophalen.
-  let subscription = await window.refreshSubscriptionStatus();
-  // Stripe-webhooks kunnen net na de terugkeer van Checkout aankomen.
-  if(!subscription.accessAllowed && new URLSearchParams(location.search).get('stripe')==='success'){
-    for(let attempt=0;attempt<5&&!subscription.accessAllowed;attempt++){
-      await wait(1500);
-      subscription=await window.refreshSubscriptionStatus();
-    }
-  }
-
-  // Geen betrouwbare status ontvangen? Dan de app niet openen.
-  if(!subscription || typeof subscription.accessAllowed !== 'boolean'){
-    throw new Error(
-      'De toegangsrechten konden niet veilig worden gecontroleerd. Probeer opnieuw.'
+  const sessionUser=window.FAVVCloudUser;
+  try{
+    // Toon tijdens de controles een rustige laadmelding, geen tweede aanmeldscherm.
+    if(sessionUser)showSession(sessionUser,true);
+    window.FAVVStartSupabaseSession?.(
+      sessionUser,
+      window.FAVVCloudBusiness || null
     );
-  }
 
-  // Proefperiode verlopen of geen geldig abonnement.
-  if(!subscription.accessAllowed){
-    navigate('subscription');
+    // Eerst de echte abonnementsstatus bij Supabase ophalen.
+    let subscription = await window.refreshSubscriptionStatus();
+    // Stripe-webhooks kunnen net na de terugkeer van Checkout aankomen.
+    if(!subscription.accessAllowed && new URLSearchParams(location.search).get('stripe')==='success'){
+      for(let attempt=0;attempt<5&&!subscription.accessAllowed;attempt++){
+        await wait(1500);
+        subscription=await window.refreshSubscriptionStatus();
+      }
+    }
+
+    // Geen betrouwbare status ontvangen? Dan de app niet openen.
+    if(!subscription || typeof subscription.accessAllowed !== 'boolean'){
+      throw new Error('De toegangsrechten konden niet veilig worden gecontroleerd. Probeer opnieuw.');
+    }
+
+    // Proefperiode verlopen of geen geldig abonnement.
+    if(!subscription.accessAllowed){
+      navigate('subscription');
+      openLocalApp();
+      toast(subscription.billingAllowed
+        ? 'Je proefperiode is afgelopen. Kies een abonnement om verder te gaan.'
+        : 'De toegang is geblokkeerd. Vraag de eigenaar of manager om het abonnement te activeren.');
+      return;
+    }
+
+    // Alleen bij toegestane toegang de HACCP-gegevens laden.
+    let r=window.__favvCloudRow;
+    const forceClean=localStorage.getItem('favv-force-clean-new-business-v1')==='true';
+
+    if(forceClean){
+      const clean=window.FAVVStartCleanBusinessState();
+      await saveCloudState(clean);
+      lastAuditState=JSON.parse(JSON.stringify(clean));
+      r={data:clean};
+      window.__favvCloudRow=r;
+      localStorage.removeItem('favv-force-clean-new-business-v1');
+      setStatus('Nieuwe zaak schoon gestart',true);
+    }else if(r?.data){
+      window.FAVVApplyCloudState(r.data);
+      setStatus('Cloudgegevens geladen',true);
+    }else{
+      const clean=window.FAVVStartCleanBusinessState();
+      await saveCloudState(clean);
+      lastAuditState=JSON.parse(JSON.stringify(clean));
+      r={data:clean};
+      window.__favvCloudRow=r;
+      setStatus('Nieuwe zaak schoon gestart',true);
+    }
     openLocalApp();
-    toast(subscription.billingAllowed
-      ? 'Je proefperiode is afgelopen. Kies een abonnement om verder te gaan.'
-      : 'De toegang is geblokkeerd. Vraag de eigenaar of manager om het abonnement te activeren.');
-    return;
+  }catch(error){
+    // Bij een fout blijven opnieuw proberen of veilig afmelden mogelijk.
+    if(sessionUser)showSession(sessionUser,false);
+    throw error;
   }
-
-  // Alleen bij toegestane toegang de HACCP-gegevens laden.
-  let r=window.__favvCloudRow;
-  const forceClean=localStorage.getItem('favv-force-clean-new-business-v1')==='true';
-
-  if(forceClean){
-    const clean=window.FAVVStartCleanBusinessState();
-    await saveCloudState(clean);
-    lastAuditState=JSON.parse(JSON.stringify(clean));
-    r={data:clean};
-    window.__favvCloudRow=r;
-    localStorage.removeItem('favv-force-clean-new-business-v1');
-    setStatus('Nieuwe zaak schoon gestart',true);
-  }else if(r?.data){
-    window.FAVVApplyCloudState(r.data);
-    setStatus('Cloudgegevens geladen',true);
-  }else{
-    const clean=window.FAVVStartCleanBusinessState();
-    await saveCloudState(clean);
-    lastAuditState=JSON.parse(JSON.stringify(clean));
-    r={data:clean};
-    window.__favvCloudRow=r;
-    setStatus('Nieuwe zaak schoon gestart',true);
-  }
-
- 
-
-  openLocalApp();
 }
 async function initClient(config){if(!window.supabase||!validConfig(config))return false;cloudClient=window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});cloudClient.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'&&session){showPasswordSetup('recovery');setStatus('Nieuw wachtwoord vereist')}});const {data,error}=await cloudClient.auth.getSession();if(error){setMessage(error.message);showLogin();return true}const linkType=authLinkType();if(data.session&&(linkType==='recovery'||linkType==='invite')){showPasswordSetup(linkType);setStatus(linkType==='invite'?'Accountactivatie vereist':'Nieuw wachtwoord vereist');history.replaceState(null,document.title,location.pathname);return true}if(data.session){
   try{
