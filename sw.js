@@ -13,7 +13,7 @@ self.addEventListener('fetch',event=>{
     event.respondWith(fetch(request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put('./index.html',copy))}return response}).catch(()=>caches.match('./index.html').then(response=>response||caches.match('./'))));
     return;
   }
-  if(/\\.(?:js|css|png|jpg|jpeg|svg|webp|woff2?)$/i.test(url.pathname)){
+  if(/\.(?:js|css|png|jpg|jpeg|svg|webp|woff2?)$/i.test(url.pathname)){
     event.respondWith(caches.match(request).then(cached=>cached||fetch(request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy))}return response})));
   }
 });
