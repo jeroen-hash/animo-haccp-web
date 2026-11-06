@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'supabase/functions/stripe-webhook/index.ts'
       - 'sw.js'
       - 'supabase/migrations/**'
       - '.github/workflows/validate-offline.yml'
@@ -19,6 +20,36 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Validate Stripe webhook subscription ordering guard
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const source = fs.readFileSync('supabase/functions/stripe-webhook/index.ts', 'utf8');
+          const start = source.indexOf('function shouldIgnoreSubscriptionOverwrite(');
+          const end = source.indexOf('async function saveSubscription(', start);
+          if (start < 0 || end < 0) throw new Error('Stripe subscription ordering guard is missing.');
+          const helper = source.slice(start, end);
+          const context = {};
+          vm.runInNewContext(helper + `
+            const cases = [
+              ['active current subscription blocks a different incoming ID', 'sub-current', 'active', 'sub-old', true],
+              ['trialing current subscription blocks a different incoming ID', 'sub-current', 'trialing', 'sub-old', true],
+              ['past_due current subscription blocks stale overwrite', 'sub-current', 'past_due', 'sub-old', true],
+              ['canceled current subscription allows replacement', 'sub-current', 'canceled', 'sub-new', false],
+              ['same subscription ID can receive updates', 'sub-current', 'active', 'sub-current', false],
+              ['empty subscription row accepts first subscription', null, null, 'sub-first', false]
+            ];
+            for (const [label, currentId, currentStatus, incomingId, expected] of cases) {
+              const actual = shouldIgnoreSubscriptionOverwrite(currentId, currentStatus, incomingId);
+              if (actual !== expected) throw new Error(label + ': expected ' + expected + ', got ' + actual);
+            }
+          `, context);
+          console.log('Stripe subscription ordering guard: 6 cases passed.');
+          if (!source.includes('.eq("business_id", businessId)')) throw new Error('Stripe webhook must scope current subscription lookup to business_id.');
+          if (!source.includes('if (\n    shouldIgnoreSubscriptionOverwrite(')) throw new Error('Stripe webhook does not enforce the ordering guard before upsert.');
+          console.log('Stripe webhook guard placement and business scoping passed.');
+          NODE
       - name: Validate inline JavaScript and service worker
         run: |
           node <<'NODE'
