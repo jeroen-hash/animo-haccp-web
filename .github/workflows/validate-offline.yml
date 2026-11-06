@@ -29,7 +29,7 @@ jobs:
           const start = source.indexOf('function shouldIgnoreSubscriptionOverwrite(');
           const end = source.indexOf('async function saveSubscription(', start);
           if (start < 0 || end < 0) throw new Error('Stripe subscription ordering guard is missing.');
-          const helper = source.slice(start, end);
+          const helper = source.slice(start, end).replace(/: string \\| null/g, '').replace(/: string/g, '');
           const context = {};
           vm.runInNewContext(helper + `
             const cases = [
