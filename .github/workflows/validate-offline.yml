@@ -53,6 +53,49 @@ jobs:
             throw new Error('Supabase SDK cache entry is missing.');
           }
           console.log(`Validated ${scripts.length} inline scripts, service worker, and offline safety guards.`);
+          const extract = (signature, nextSignature) => {
+            const from = html.indexOf(signature);
+            const to = html.indexOf(nextSignature, from);
+            if (from < 0 || to < 0) throw new Error(`Temperature helper not found: ${signature}`);
+            return html.slice(from, to);
+          };
+          const temperatureHelpers = [
+            extract('function tempOk', 'function localDay'),
+            extract('function temperatureDirection', 'function actionForTemperature'),
+            extract('function actionForTemperature', 'function syncTemperatureActions'),
+            extract('function syncTemperatureActions', 'function updateActionBadge'),
+            extract('function updateActionBadge', 'function renderTemperatureActions')
+          ].join('\n');
+          const temperatureContext = {
+            state: { temperatures: [], temperatureActions: [] },
+            currentUser: { name: 'CI test' },
+            id: (() => { let n = 0; return prefix => prefix + (++n); })(),
+            updateActionBadge: () => {},
+            $: () => null
+          };
+          vm.runInNewContext(temperatureHelpers + `
+            const cases = [
+              [{type:'Koeling',value:6,min:0,max:5}, false, 'Te hoog'],
+              [{type:'Diepvries',value:-19,min:'',max:-20}, false, 'Te hoog'],
+              [{type:'Koeling',value:8,min:'',max:''}, false, 'Te hoog'],
+              [{type:'Diepvries',value:-17,min:'',max:''}, false, 'Te hoog'],
+              [{type:'Koeling',value:4,min:0,max:5}, true, '']
+            ];
+            for (const [reading, expectedOk, expectedDirection] of cases) {
+              if (tempOk(reading) !== expectedOk) throw new Error('Wrong temperature status for ' + JSON.stringify(reading));
+              if (!expectedOk && temperatureDirection(reading) !== expectedDirection) {
+                throw new Error('Wrong deviation direction for ' + JSON.stringify(reading));
+              }
+            }
+            state.temperatures = [{id:'t-1',device:'Testkoeling',type:'Koeling',value:6,date:'2026-11-06T12:00',min:0,max:5}];
+            syncTemperatureActions();
+            if (state.temperatureActions.length !== 1 || state.temperatureActions[0].direction !== 'Te hoog' || state.temperatureActions[0].min !== 0 || state.temperatureActions[0].max !== 5) {
+              throw new Error('Custom-limit deviation did not create a correctly classified action.');
+            }
+            syncTemperatureActions();
+            if (state.temperatureActions.length !== 1) throw new Error('Repeated sync created duplicate corrective actions.');
+          `, temperatureContext);
+          console.log('Temperature deviation thresholds, action creation, and duplicate prevention tests passed.');
           (async () => {
             const start = html.indexOf('async function readOfflineSnapshot');
             const end = html.indexOf('function offlineNotice', start);
