@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const APP_URL =
-  "https://jeroen-hash.github.io/animo-haccp-web/";
+  (Deno.env.get("APP_URL") ?? "https://app.animo-apps.com/").replace(/\/?$/, "/");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
