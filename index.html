@@ -692,7 +692,7 @@ async function prepareCloudSession(user,options={}){
 async function continueToCloudApp(){
   window.FAVVStartSupabaseSession?.(
     window.FAVVCloudUser,
-    cloudBusiness
+    window.FAVVCloudBusiness || null
   );
 
   // Eerst de echte abonnementsstatus bij Supabase ophalen.
