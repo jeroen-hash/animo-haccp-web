@@ -20,7 +20,7 @@ Datum: 2026-11-06
 
 ## Supabase back-up
 
-De Supabase-organisatie is op dit moment Pro. Volgens de Supabase-documentatie krijgen Pro-projecten dagelijkse databaseback-ups en kunnen de laatste 7 dagen via Dashboard > Database > Backups worden bekeken. Dit moet nog in het Dashboard worden bevestigd voor het bronproject.
+De Supabase-organisatie is op dit moment Pro. Volgens de Supabase-documentatie krijgen Pro-projecten dagelijkse databaseback-ups en kunnen de laatste 7 dagen via Dashboard > Database > Backups worden bekeken. De gebruiker heeft bevestigd dat in het Dashboard een recente geslaagde back-up zichtbaar is. Exacte datum/tijd is nog niet doorgegeven; noteer die vóór de definitieve migratie. Dit is een Supabase-herstelpunt, niet automatisch een onafhankelijk lokaal dumpbestand.
 
 1. Open het Supabase Dashboard en selecteer project `ANIMO HACCP` (ref `xwjcwravfeldndwlugai`).
 2. Open Database > Backups.
@@ -75,6 +75,7 @@ Import mag pas na expliciete gebruikersgoedkeuring van een concrete preview plaa
 - Read-only broninspectie en JSON-query uitgevoerd.
 - Exportquery staat in GitHub-branch `feature/self-service-14-day-trial`.
 - Volledige onafhankelijke database-dump: nog niet gemaakt.
-- Supabase Dashboard back-upstatus: nog niet visueel bevestigd.
+- Supabase Dashboard: gebruiker bevestigt dat een recente geslaagde databaseback-up zichtbaar is; exacte datum/tijd nog niet genoteerd.
+- Supabase Storage read-only gecontroleerd: `storage.buckets` bevat 0 rijen en `storage.objects` bevat 0 rijen; op dit moment geen Storage-buckets of objecten aangetroffen.
 - Doeltestzaak: 0 leden, 1 starter-`app_data`-rij.
 - Geen import, schemawijziging, live wijziging, PR-merge of deployment uitgevoerd.
