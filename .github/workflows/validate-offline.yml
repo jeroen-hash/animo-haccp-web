@@ -232,6 +232,7 @@ jobs:
             const eggs = { id: 'eggs', name: 'Eieren', unit: 'stuks', purchaseQuantity: 10, purchasePrice: 5 };
             if (Math.abs(unitCost(eggs) - 0.5) > 0.000001) throw new Error('10 eggs for €5 must cost €0.50 per egg.');
             state.stock = [eggs];
+            eggs.quantity = 9;
             const recipe = { yield: 1, ingredients: [{ stockId: 'eggs', quantity: 5, unit: 'stuks' }] };
             if (Math.abs(recipeCost(recipe) - 2.5) > 0.000001) throw new Error('5 eggs must cost €2.50.');
             if (Math.abs(convertRecipeQuantity(5, 'eieren', 'stuks') - 5) > 0.000001) throw new Error('Egg-to-piece conversion must preserve quantity.');
