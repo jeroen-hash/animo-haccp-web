@@ -315,6 +315,70 @@ input,select,textarea{box-sizing:border-box}
   }
 }
 
+
+/* Mobiele modals: bewaren blijft bereikbaar boven de vaste navigatiebalk. */
+@media(max-width:900px){
+  html body #stockProductModal.modal-layer:not(.open),
+  html body #recipeModalLayer.modal-layer:not(.open){
+    display:none!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+  }
+  html body #stockProductModal.modal-layer.open,
+  html body #recipeModalLayer.modal-layer.open{
+    position:fixed!important;
+    inset:0!important;
+    z-index:3000!important;
+    display:grid!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
+    align-items:start!important;
+    justify-items:center!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain!important;
+    -webkit-overflow-scrolling:touch!important;
+    padding:max(8px,env(safe-area-inset-top)) 10px max(12px,env(safe-area-inset-bottom))!important;
+  }
+  html body #stockProductModal.modal-layer.open > .modal,
+  html body #recipeModalLayer.modal-layer.open > .modal{
+    display:flex!important;
+    flex-direction:column!important;
+    width:100%!important;
+    max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 20px)!important;
+    max-height:calc(100vh - 20px)!important;
+    overflow:hidden!important;
+    margin:0!important;
+  }
+  html body #stockProductForm,
+  html body #recipeForm{
+    display:flex!important;
+    flex:1 1 auto!important;
+    flex-direction:column!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain!important;
+    -webkit-overflow-scrolling:touch!important;
+    padding-bottom:8px!important;
+  }
+  html body #stockProductForm .modal-actions,
+  html body #recipeForm .modal-actions{
+    position:sticky!important;
+    bottom:0!important;
+    z-index:5!important;
+    display:flex!important;
+    flex:0 0 auto!important;
+    visibility:visible!important;
+    background:#fff!important;
+    padding:12px 0 max(12px,env(safe-area-inset-bottom))!important;
+    margin-top:12px!important;
+    box-shadow:0 -8px 14px rgba(255,255,255,.98)!important;
+  }
+  html body #stockProductForm .modal-actions .btn,
+  html body #recipeForm .modal-actions .btn{
+    min-height:48px!important;
+    touch-action:manipulation!important;
+  }
+}
 </style>
 
 <style id="cloud-auth-styles">
