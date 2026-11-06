@@ -228,6 +228,18 @@
 </div></footer>
 
 <script>
+  // Privacyvriendelijke telling van paginaweergaven: geen cookies, IP-adressen of bezoekers-ID's.
+  if (location.pathname === '/' && !location.search.includes('no-analytics')) {
+    fetch('https://zimzsovvtdmrthrflkgm.supabase.co/functions/v1/record-website-visit', {
+      method: 'POST',
+      mode: 'cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: '/' }),
+      keepalive: true
+    }).catch(() => {});
+  }
+</script>
+<script>
   document.getElementById('year').textContent = new Date().getFullYear();
 </script>
 </body>
