@@ -51,7 +51,7 @@ main{max-width:1560px;margin:auto;padding:22px}.login{max-width:460px;margin:9vh
     <article class="card"><h3>Kerngebruik afgelopen 7 dagen</h3><div id="usageMetrics" class="metrics" style="grid-template-columns:repeat(2,1fr)"></div></article>
   </div>
   <div class="tabs" role="tablist">
-    <button class="btn tab active" data-tab="overview" type="button">Overzicht</button><button class="btn tab" data-tab="timeline" type="button">Tijdlijn</button><button class="btn tab" data-tab="audit" type="button">Auditlog</button><button class="btn tab" data-tab="errors" type="button">Fouten</button><button class="btn tab" data-tab="billing" type="button">Abonnement & omzet</button>
+    <button class="btn tab active" data-tab="overview" type="button">Overzicht</button><button class="btn tab" data-tab="website-analytics" type="button">Websitebezoeken</button><button class="btn tab" data-tab="timeline" type="button">Tijdlijn</button><button class="btn tab" data-tab="audit" type="button">Auditlog</button><button class="btn tab" data-tab="errors" type="button">Fouten</button><button class="btn tab" data-tab="billing" type="button">Abonnement & omzet</button>
   </div>
   <section id="tab-overview" class="tab-panel active">
     <div class="grid">
@@ -59,6 +59,15 @@ main{max-width:1560px;margin:auto;padding:22px}.login{max-width:460px;margin:9vh
       <article id="businessDetailCard" class="card hidden"><div class="subhead"><h3>Zaakdetails</h3><button id="previewBtn" class="btn green" type="button">Veilig bekijken</button></div><div id="businessDetail" class="detail-list"></div></article>
       <article id="healthCard" class="card hidden"><h3>Gezondheidsscore</h3><div class="health-wrap"><div id="healthRing" class="health-ring"><div><strong id="healthValue">0</strong><small>van 100</small></div></div><div id="healthExplanation" class="muted"></div></div></article>
     </div>
+  </section>
+  <section id="tab-website-analytics" class="tab-panel">
+    <div class="topline"><div><h2>Websitebezoeken</h2><div class="muted">Bezoeken aan www.animo-apps.com · Belgische tijd</div></div><button id="websiteAnalyticsRefresh" class="btn green" type="button">Statistieken vernieuwen</button></div>
+    <div id="websiteAnalyticsMetrics" class="metrics">
+      <div class="metric"><small>Vandaag</small><strong>—</strong></div><div class="metric"><small>Deze week</small><strong>—</strong></div><div class="metric"><small>Deze maand</small><strong>—</strong></div>
+    </div>
+    <article class="card full" style="margin-top:16px"><div class="subhead"><h3>Bezoeken per dag · laatste 30 dagen</h3><span id="websiteAnalyticsUpdated" class="muted">Nog niet geladen</span></div><div style="overflow-x:auto"><div id="websiteAnalyticsChart" class="bars" style="min-width:720px"></div></div></article>
+    <p class="muted" style="font-size:13px;margin-top:12px">Dit zijn paginaweergaven van de publieke startpagina, geen unieke personen. Herladen of opnieuw bezoeken kan opnieuw meetellen. Er worden geen IP-adressen, namen of e-mailadressen voor deze statistiek opgeslagen.</p>
+    <div id="websiteAnalyticsMessage" class="muted" role="status" style="margin-top:10px"></div>
   </section>
   <section id="tab-timeline" class="tab-panel"><article class="card full"><div class="subhead"><h3>Tijdlijn</h3><span id="timelineLabel" class="muted">Alle zaken</span></div><div id="timelineView" class="timeline"></div></article></section>
   <section id="tab-audit" class="tab-panel"><article class="card full"><div class="topline"><h3>Recente activiteiten</h3><div class="filters"><input id="activitySearch" placeholder="Zoek gebruiker, module of actie"><select id="moduleFilter"><option value="">Alle modules</option></select></div></div><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Zaak</th><th>Gebruiker</th><th>Module</th><th>Actie</th><th>Details</th></tr></thead><tbody id="activityRows"></tbody></table></div></article></section>
@@ -81,7 +90,38 @@ function detail(label,value){return `<div class="detail-item"><small>${esc(label
 function setLoggedIn(ok,email=''){$('loginPanel').classList.toggle('hidden',ok);$('dashboard').classList.toggle('hidden',!ok);$('refreshBtn').classList.toggle('hidden',!ok);$('logoutBtn').classList.toggle('hidden',!ok);$('status').textContent=ok?`Aangemeld als ${email}`:'Niet aangemeld'}
 function selectedName(){return selectedBusiness?.name||'Alle zaken'}
 function activityForSelection(x){if(selectedBusinessId==='all')return true;return String(x.business_id||'')===String(selectedBusinessId)||String(x.business_name||'').toLowerCase()===String(selectedBusiness?.name||'').toLowerCase()}
-async function loadDashboard(){$('status').textContent='Dashboard wordt geladen...';$('refreshBtn').disabled=true;const {data,error}=await sb.rpc('get_platform_dashboard');$('refreshBtn').disabled=false;if(error){alert(error.message);$('status').textContent='Laden mislukt';return}dashboardData=data||{};normalizeData();fillControls();renderAll();$('status').textContent='Dashboard bijgewerkt'}
+async function loadDashboard(){$('status').textContent='Dashboard wordt geladen...';$('refreshBtn').disabled=true;const {data,error}=await sb.rpc('get_platform_dashboard');$('refreshBtn').disabled=false;if(error){alert(error.message);$('status').textContent='Laden mislukt';return}dashboardData=data||{};normalizeData();fillControls();renderAll();$('status').textContent='Dashboard bijgewerkt';if(document.getElementById('tab-website-analytics')?.classList.contains('active'))await loadWebsiteAnalytics()}
+async function loadWebsiteAnalytics(){
+  const message=$('websiteAnalyticsMessage');
+  const refresh=$('websiteAnalyticsRefresh');
+  if(refresh)refresh.disabled=true;
+  if(message)message.textContent='Statistieken worden geladen...';
+  try{
+    const {data,error}=await sb.rpc('get_platform_website_analytics');
+    if(error)throw error;
+    const stats=data||{};
+    const metrics=[
+      ['Vandaag',Number(stats.today||0)],
+      ['Deze week',Number(stats.week||0)],
+      ['Deze maand',Number(stats.month||0)]
+    ];
+    $('websiteAnalyticsMetrics').innerHTML=metrics.map(([label,value])=>metric(label,value.toLocaleString('nl-BE'))).join('');
+    const days=Array.isArray(stats.daily)?stats.daily:[];
+    const max=Math.max(1,...days.map(x=>Number(x.visits||0)));
+    $('websiteAnalyticsChart').innerHTML=days.map(x=>{
+      const value=Number(x.visits||0);
+      const height=Math.max(3,Math.round(value/max*100));
+      const date=new Date(String(x.date)+'T12:00:00');
+      const label=date.toLocaleDateString('nl-BE',{day:'2-digit',month:'2-digit'});
+      return '<div class="bar-wrap" title="'+esc(label+': '+value+' bezoeken')+'"><span class="bar-value">'+value+'</span><div class="bar" style="height:'+height+'%"></div><span class="bar-label">'+esc(label)+'</span></div>';
+    }).join('')||'<div class="empty">Nog geen websitebezoeken geregistreerd.</div>';
+    $('websiteAnalyticsUpdated').textContent='Bijgewerkt om '+new Date().toLocaleTimeString('nl-BE');
+    if(message)message.textContent='De statistieken zijn bijgewerkt.';
+  }catch(error){
+    if(message)message.textContent='De websitecijfers konden niet worden geladen: '+(error?.message||'Onbekende fout');
+    $('websiteAnalyticsChart').innerHTML='<div class="empty">Geen statistieken beschikbaar.</div>';
+  }finally{if(refresh)refresh.disabled=false}
+}
 function normalizeData(){dashboardData.summary=dashboardData.summary||{};dashboardData.businesses=dashboardData.businesses||[];dashboardData.daily_activity=dashboardData.daily_activity||[];dashboardData.recent_activity=dashboardData.recent_activity||[];dashboardData.recent_errors=dashboardData.recent_errors||[];if(selectedBusinessId!=='all'){selectedBusiness=dashboardData.businesses.find(b=>String(b.id)===String(selectedBusinessId))||null;if(!selectedBusiness){selectedBusinessId='all'}}}
 function fillControls(){const current=selectedBusinessId;$('businessSelector').innerHTML='<option value="all">Alle zaken</option>'+dashboardData.businesses.map(b=>`<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('');$('businessSelector').value=current;const modules=[...new Set(dashboardData.recent_activity.map(x=>x.module).filter(Boolean))].sort();$('moduleFilter').innerHTML='<option value="">Alle modules</option>'+modules.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')}
 function filteredBusinesses(){const q=$('businessSearch').value.trim().toLowerCase(),status=$('businessStatus').value,problem=$('problemFilter').value;return dashboardData.businesses.filter(b=>{if(selectedBusinessId!=='all'&&String(b.id)!==String(selectedBusinessId))return false;if(q&&!`${b.name||''} ${b.owner_email||''} ${b.enterprise_number||''}`.toLowerCase().includes(q))return false;if(status==='active'&&!active(b))return false;if(status==='inactive'&&active(b))return false;if(problem==='errors'&&Number(b.errors_7d||0)===0)return false;if(problem==='inactive'&&active(b))return false;if(problem==='low-health'&&health(b)>=70)return false;return true})}
@@ -103,7 +143,7 @@ function openPreview(){if(!selectedBusiness)return;const b=selectedBusiness,acti
 function closePreview(){$('previewLayer').classList.add('hidden');$('previewLayer').setAttribute('aria-hidden','true')}
 function setTab(name){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===name));document.querySelectorAll('.tab-panel').forEach(x=>x.classList.toggle('active',x.id===`tab-${name}`))}
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginMessage').classList.add('hidden');const {data,error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){$('loginMessage').textContent=error.message;$('loginMessage').classList.remove('hidden');return}setLoggedIn(true,data.user.email);await loadDashboard()});
-$('logoutBtn').onclick=async()=>{await sb.auth.signOut();dashboardData=null;selectedBusinessId='all';selectedBusiness=null;setLoggedIn(false)};$('refreshBtn').onclick=loadDashboard;$('businessSelector').onchange=e=>selectBusiness(e.target.value);['businessSearch','businessStatus','problemFilter'].forEach(id=>$(id).addEventListener(id==='businessSearch'?'input':'change',renderAll));$('activitySearch').oninput=renderActivities;$('moduleFilter').onchange=renderActivities;$('errorFilter').onchange=renderErrors;document.querySelectorAll('.tab').forEach(x=>x.onclick=()=>setTab(x.dataset.tab));$('previewBtn').onclick=openPreview;$('closePreview').onclick=closePreview;$('previewLayer').onclick=e=>{if(e.target===$('previewLayer'))closePreview()};document.addEventListener('keydown',e=>{if(e.key==='Escape')closePreview()});
+$('logoutBtn').onclick=async()=>{await sb.auth.signOut();dashboardData=null;selectedBusinessId='all';selectedBusiness=null;setLoggedIn(false)};$('refreshBtn').onclick=loadDashboard;$('businessSelector').onchange=e=>selectBusiness(e.target.value);['businessSearch','businessStatus','problemFilter'].forEach(id=>$(id).addEventListener(id==='businessSearch'?'input':'change',renderAll));$('activitySearch').oninput=renderActivities;$('moduleFilter').onchange=renderActivities;$('errorFilter').onchange=renderErrors;document.querySelectorAll('.tab').forEach(x=>x.onclick=()=>{setTab(x.dataset.tab);if(x.dataset.tab==='website-analytics')loadWebsiteAnalytics()});$('websiteAnalyticsRefresh').onclick=loadWebsiteAnalytics;$('previewBtn').onclick=openPreview;$('closePreview').onclick=closePreview;$('previewLayer').onclick=e=>{if(e.target===$('previewLayer'))closePreview()};document.addEventListener('keydown',e=>{if(e.key==='Escape')closePreview()});
 (async()=>{const {data}=await sb.auth.getSession();if(data.session){setLoggedIn(true,data.session.user.email);await loadDashboard()}else setLoggedIn(false)})();
 </script>
 </body>
