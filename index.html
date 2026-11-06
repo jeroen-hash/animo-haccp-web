@@ -677,8 +677,8 @@ async function prepareCloudSession(user,options={}){
           if(!select.options.length)throw new Error('Geen beschikbare horecazaken gevonden.');
           get('cloudBusinessChoice').classList.remove('cloud-hidden');
           get('cloudContinue').classList.add('cloud-hidden');
-          get('cloudSessionText').textContent='Je account is gekoppeld aan meerdere horecazaken. Kies hieronder welke zaak je wilt openen.';
           showSession(authUser);
+          get('cloudSessionText').textContent='Je account is gekoppeld aan meerdere horecazaken. Kies hieronder welke zaak je wilt openen.';
           window.__favvPendingBusinessUser=authUser;
           setStatus('Kies je horecazaak');
           return false;
