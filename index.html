@@ -751,6 +751,7 @@ async function continueToCloudApp(){
     // Alleen bij toegestane toegang de HACCP-gegevens laden.
     rememberOfflineSession(sessionUser,subscription);
     window.FAVVOfflineMode=false;
+    if(!window.FAVVSyncConflict)clearOfflineNotice();
     let r=window.__favvCloudRow;
     const forceClean=localStorage.getItem('favv-force-clean-new-business-v1')==='true';
 
