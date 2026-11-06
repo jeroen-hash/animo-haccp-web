@@ -44,22 +44,15 @@ function getInvoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
 
 function shouldIgnoreSubscriptionOverwrite(
   currentSubscriptionId: string | null,
-  currentSubscriptionStatus: string | null,
+  currentSubscriptionCreated: number | null,
   incomingSubscriptionId: string,
+  incomingSubscriptionCreated: number,
 ) {
-  const currentSubscriptionStillBlocksReplacement = [
-    "active",
-    "trialing",
-    "past_due",
-    "unpaid",
-    "incomplete",
-    "paused",
-  ].includes(currentSubscriptionStatus ?? "");
-
   return Boolean(
     currentSubscriptionId &&
     currentSubscriptionId !== incomingSubscriptionId &&
-    currentSubscriptionStillBlocksReplacement
+    currentSubscriptionCreated !== null &&
+    currentSubscriptionCreated >= incomingSubscriptionCreated
   );
 }
 
@@ -142,7 +135,7 @@ async function saveSubscription(
   const { data: currentBusinessSubscription, error: currentBusinessSubscriptionError } =
     await supabaseAdmin
       .from("subscriptions")
-      .select("stripe_subscription_id, status")
+      .select("stripe_subscription_id")
       .eq("business_id", businessId)
       .maybeSingle();
 
@@ -152,23 +145,33 @@ async function saveSubscription(
 
   const currentSubscriptionId =
     currentBusinessSubscription?.stripe_subscription_id ?? null;
-  const currentSubscriptionStatus =
-    currentBusinessSubscription?.status ?? null;
-
   if (
-    shouldIgnoreSubscriptionOverwrite(
-      currentSubscriptionId,
-      currentSubscriptionStatus,
-      subscription.id,
-    )
+    currentSubscriptionId &&
+    currentSubscriptionId !== subscription.id
   ) {
-    console.warn("Verouderd Stripe-event genegeerd; bestaand abonnement blijft gekoppeld:", {
-      business_id: businessId,
-      incoming_subscription_id: subscription.id,
-      current_subscription_id: currentSubscriptionId,
-      current_status: currentSubscriptionStatus,
-    });
-    return;
+    // Compare Stripe's immutable creation timestamps rather than status.
+    // A late event from an older subscription must not revive it after a
+    // newer subscription was canceled or replaced.
+    const currentStripeSubscription =
+      await stripe.subscriptions.retrieve(currentSubscriptionId);
+
+    if (
+      shouldIgnoreSubscriptionOverwrite(
+        currentSubscriptionId,
+        currentStripeSubscription.created,
+        subscription.id,
+        subscription.created,
+      )
+    ) {
+      console.warn("Verouderd Stripe-event genegeerd; nieuwer abonnement blijft gekoppeld:", {
+        business_id: businessId,
+        incoming_subscription_id: subscription.id,
+        incoming_created: subscription.created,
+        current_subscription_id: currentSubscriptionId,
+        current_created: currentStripeSubscription.created,
+      });
+      return;
+    }
   }
 
   const customerId =
