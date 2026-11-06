@@ -227,3 +227,15 @@ Therefore the user's statement that legacy managers had the same access as owner
 - Current source counts remain: 10 temperature records, 7 temperature templates, 6 corrective actions, 15 cleaning templates, 6 cleaning checks, 0 cleaning tasks, 2 allergen plan items, 1 day closing, 1 business settings row, and 5 audit events.
 - The isolated target `afe00335-d959-4b7f-bb12-15d047a880ee` is still owned by `jeroen@animo-apps.com`, has 0 business members and 1 default starter `app_data` row.
 - No legacy rows, memberships, credentials, or subscriptions were copied or changed. No existing SaaS business was modified.
+
+
+### Database permission checks
+
+Read-only inspection of the SaaS database policies/functions found:
+
+- Active business members can read, insert, update and delete the shared `app_data` snapshot under the current RLS policies; the policies check active membership rather than a role distinction.
+- The `businesses` update policy allows the owner account or an active `owner`/`manager` member to update the business row.
+- `list_business_members()` permits both `owner` and `manager` to view the member list.
+- The client-side member-management UI still reserves role changes and membership activation/removal for the owner role.
+
+This suggests that the manager role already has broad access to the shared HACCP data at the database-policy level, while some member-administration actions remain owner-only in the client. This is not a complete security audit: all related RPCs, triggers, edge functions and RLS policies must be checked before claiming full parity. No policies or functions were changed.
