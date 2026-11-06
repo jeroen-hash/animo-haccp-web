@@ -332,6 +332,7 @@ body:has(#cloudGate:not(.hidden)) .mobile-nav{display:none!important}
     </form>
     <form id="cloudSignupForm" class="cloud-hidden">
       <h2 style="margin:8px 0;color:#103e2a">Nieuwe klant registreren</h2>
+      <p class="cloud-small">Maak zelf je account en horecazaak aan. Na bevestiging van je e-mailadres start automatisch je gratis proefperiode van 14 dagen.</p>
       <div class="field"><label for="signupBusinessName">Naam van de zaak</label><input id="signupBusinessName" required maxlength="100" autocomplete="organization"></div>
       <div class="field"><label for="signupEnterpriseNumber">Ondernemingsnummer</label><input id="signupEnterpriseNumber" required maxlength="30" placeholder="Bijvoorbeeld BE 0123.456.789"></div>
       <div class="field"><label for="signupFullName">Naam eigenaar</label><input id="signupFullName" required maxlength="100" autocomplete="name"></div>
@@ -353,6 +354,10 @@ body:has(#cloudGate:not(.hidden)) .mobile-nav{display:none!important}
     </form>
     <div id="cloudSessionBox" class="cloud-hidden">
       <div id="cloudSessionText" class="cloud-message ok show"></div>
+      <div id="cloudBusinessChoice" class="cloud-hidden">
+        <div class="field"><label for="cloudBusinessSelect">Kies de horecazaak</label><select id="cloudBusinessSelect"></select></div>
+        <div class="cloud-actions"><button id="cloudSelectBusiness" class="btn" type="button">Deze zaak openen</button></div>
+      </div>
       <div class="cloud-actions"><button id="cloudContinue" class="btn" type="button">Doorgaan naar app</button><button id="cloudSignOut" class="btn secondary" type="button">Afmelden</button></div>
     </div>
   </div>
@@ -501,20 +506,31 @@ async function loadMembership(options={}){
   const {data:{user},error:userError}=await cloudClient.auth.getUser();
   if(userError)throw userError;
   if(!user)throw new Error('Geen aangemelde gebruiker gevonden.');
+  const selectionKey='animo-active-business-id';
   let lastError=null;
   for(let attempt=1;attempt<=attempts;attempt++){
-    const {data:members,error:e}=await cloudClient.from('business_members').select('business_id,role,active').eq('user_id',user.id).eq('active',true).limit(1);
+    const {data:members,error:e}=await cloudClient.from('business_members').select('business_id,role,active').eq('user_id',user.id).eq('active',true);
     if(e)lastError=e;
     else if(Array.isArray(members)&&members.length){
-      const m=members[0];
-      const {data:b,error:be}=await cloudClient.from('businesses').select('id,name,enterprise_number').eq('id',m.business_id).single();
-      if(be)lastError=be;
-      else{
-        cloudBusiness={...b,role:m.role};
-        window.FAVVCloudRole=m.role;
-        window.FAVVCloudBusiness=cloudBusiness;
-        window.FAVVApplyCloudRole?.(m.role);
-        return cloudBusiness;
+      const requestedBusinessId=options.businessId||localStorage.getItem(selectionKey);
+      let m=null;
+      if(requestedBusinessId){
+        m=members.find(member=>member.business_id===requestedBusinessId)||null;
+        if(!m)localStorage.removeItem(selectionKey);
+      }
+      if(!m&&members.length===1)m=members[0];
+      if(!m&&members.length>1)throw new Error('Je account is gekoppeld aan meerdere horecazaken. Kies eerst de juiste zaak voordat ANIMO HACCP verdergaat.');
+      if(m){
+        const {data:b,error:be}=await cloudClient.from('businesses').select('id,name,enterprise_number').eq('id',m.business_id).single();
+        if(be)lastError=be;
+        else{
+          localStorage.setItem(selectionKey,m.business_id);
+          cloudBusiness={...b,role:m.role};
+          window.FAVVCloudRole=m.role;
+          window.FAVVCloudBusiness=cloudBusiness;
+          window.FAVVApplyCloudRole?.(m.role);
+          return cloudBusiness;
+        }
       }
     }else lastError=new Error('Geen actieve zaak gekoppeld.');
     if(attempt<attempts)await wait(delay*attempt);
@@ -605,10 +621,10 @@ async function saveCloudState(x){
 }
 window.FAVVCloudSync={schedule(x){clearTimeout(saveTimer);saveTimer=setTimeout(()=>saveCloudState(JSON.parse(JSON.stringify(x))),900)}};
 window.FAVVInviteBusinessMember=async(payload)=>{if(!cloudClient)throw new Error('Supabase is niet verbonden.');const {data,error}=await cloudClient.functions.invoke('invite-business-member',{body:payload});if(error){let message=error.message||'De uitnodiging kon niet worden verstuurd.';try{const context=await error.context?.json();if(context?.error)message=context.error}catch(e){}throw new Error(message)}if(data?.error)throw new Error(data.error);return data};
-window.FAVVListBusinessMembers=async()=>{if(!cloudClient)throw new Error('Supabase is niet verbonden.');const {data,error}=await cloudClient.rpc('list_business_members');if(error)throw new Error(error.message||'De gebruikerslijst kon niet worden geladen.');return Array.isArray(data)?data:[]};
+window.FAVVListBusinessMembers=async()=>{if(!cloudClient)throw new Error('Supabase is niet verbonden.');const businessId=cloudBusiness?.id||window.FAVVCloudBusiness?.id||'';if(!businessId)throw new Error('De actieve horecazaak kon niet worden bepaald. Meld opnieuw aan.');const {data,error}=await cloudClient.rpc('list_business_members',{p_business_id:businessId});if(error)throw new Error(error.message||'De gebruikerslijst kon niet worden geladen.');return Array.isArray(data)?data:[]};
 window.FAVVGetSubscriptionStatus=async()=>{if(!cloudClient)throw new Error('Supabase is niet verbonden.');const {data,error}=await cloudClient.functions.invoke('subscription-status',{body:{businessId:cloudBusiness?.id||window.FAVVCloudBusiness?.id||''}});if(error){let message=error.message||'De abonnementsstatus kon niet worden opgehaald.';try{const context=await error.context?.json();if(context?.error)message=context.error}catch(e){}throw new Error(message)}if(data?.error)throw new Error(data.error);return data};
 window.FAVVOpenBillingPortal=async()=>{if(!cloudClient)throw new Error('Supabase is niet verbonden.');const {data,error}=await cloudClient.functions.invoke('create-portal-session',{body:{businessId:cloudBusiness?.id||window.FAVVCloudBusiness?.id||''}});if(error){let message=error.message||'Het klantenportaal kon niet worden geopend.';try{const context=await error.context?.json();if(context?.error)message=context.error}catch(e){}throw new Error(message)}if(data?.error)throw new Error(data.error);if(!data?.url)throw new Error('Stripe heeft geen portaal-URL teruggestuurd.');return data.url};
-window.FAVVCreateCheckout=async(plan)=>{if(!cloudClient)throw new Error('Supabase is niet verbonden.');const {data,error}=await cloudClient.functions.invoke('create-checkout',{body:{plan}});if(error){let message=error.message||'De betaalpagina kon niet worden gestart.';try{const context=await error.context?.json();if(context?.error)message=context.error}catch(e){}throw new Error(message)}if(data?.error)throw new Error(data.error);if(!data?.url)throw new Error('Stripe heeft geen betaalpagina teruggestuurd.');return data.url};
+window.FAVVCreateCheckout=async(plan)=>{if(!cloudClient)throw new Error('Supabase is niet verbonden.');const businessId=cloudBusiness?.id||window.FAVVCloudBusiness?.id||'';if(!businessId)throw new Error('De actieve horecazaak kon niet worden bepaald. Meld opnieuw aan.');const {data,error}=await cloudClient.functions.invoke('create-checkout',{body:{plan,businessId}});if(error){let message=error.message||'De betaalpagina kon niet worden gestart.';try{const context=await error.context?.json();if(context?.error)message=context.error}catch(e){}throw new Error(message)}if(data?.error)throw new Error(data.error);if(!data?.url)throw new Error('Stripe heeft geen betaalpagina teruggestuurd.');return data.url};
 window.FAVVManageBusinessMember=async(payload)=>{if(!cloudClient)throw new Error('Supabase is niet verbonden.');const {data,error}=await cloudClient.functions.invoke('manage-business-member',{body:payload});if(error){let message=error.message||'De beheeractie kon niet worden uitgevoerd.';try{const context=await error.context?.json();if(context?.error)message=context.error}catch(e){}throw new Error(message)}if(data?.error)throw new Error(data.error);return data};
 window.FAVVUpdateCloudBusiness=async(payload)=>{
   if(!cloudClient||!cloudBusiness)throw new Error('Supabase is niet verbonden met een zaak.');
@@ -632,7 +648,7 @@ async function prepareCloudSession(user,options={}){
   try{
     window.FAVVCloudUser=user;
     setStatus('Zaakomgeving wordt geladen...');
-    const b=await loadMembership({attempts:options.attempts||1,delay:options.delay||700});
+    const b=await loadMembership({attempts:options.attempts||1,delay:options.delay||700,businessId:options.businessId});
     const r=await loadCloudState();
     get('cloudSessionText').textContent='Supabase actief voor '+(user.email||'testgebruiker')+' · zaak: '+b.name+(r?' · cloudgegevens gevonden':' · eerste cloudkopie wordt gemaakt');
     window.__favvCloudRow=r;
@@ -641,6 +657,34 @@ async function prepareCloudSession(user,options={}){
     setStatus('Supabase aangemeld',true);
     return true;
   }catch(e){
+    if(String(e?.message||'').includes('meerdere horecazaken')){
+      try{
+        const {data:{user:authUser}}=await cloudClient.auth.getUser();
+        const {data:members,error:memberError}=await cloudClient.from('business_members').select('business_id').eq('user_id',authUser.id).eq('active',true);
+        if(memberError)throw memberError;
+        const ids=[...new Set((members||[]).map(x=>x.business_id).filter(Boolean))];
+        if(ids.length>1){
+          const {data:businesses,error:businessError}=await cloudClient.from('businesses').select('id,name,enterprise_number').in('id',ids);
+          if(businessError)throw businessError;
+          const select=get('cloudBusinessSelect');
+          select.replaceChildren();
+          (businesses||[]).forEach(b=>{
+            const option=document.createElement('option');
+            option.value=b.id;
+            option.textContent=b.name+(b.enterprise_number?' · '+b.enterprise_number:'');
+            select.appendChild(option);
+          });
+          if(!select.options.length)throw new Error('Geen beschikbare horecazaken gevonden.');
+          get('cloudBusinessChoice').classList.remove('cloud-hidden');
+          get('cloudContinue').classList.add('cloud-hidden');
+          showSession(authUser);
+          get('cloudSessionText').textContent='Je account is gekoppeld aan meerdere horecazaken. Kies hieronder welke zaak je wilt openen.';
+          window.__favvPendingBusinessUser=authUser;
+          setStatus('Kies je horecazaak');
+          return false;
+        }
+      }catch(choiceError){e=choiceError}
+    }
     showLogin();
     setMessage(e.message||'Zaak laden mislukt');
     setStatus('Cloudkoppeling niet klaar');
@@ -655,7 +699,14 @@ async function continueToCloudApp(){
   );
 
   // Eerst de echte abonnementsstatus bij Supabase ophalen.
-  const subscription = await window.refreshSubscriptionStatus();
+  let subscription = await window.refreshSubscriptionStatus();
+  // Stripe-webhooks kunnen net na de terugkeer van Checkout aankomen.
+  if(!subscription.accessAllowed && new URLSearchParams(location.search).get('stripe')==='success'){
+    for(let attempt=0;attempt<5&&!subscription.accessAllowed;attempt++){
+      await wait(1500);
+      subscription=await window.refreshSubscriptionStatus();
+    }
+  }
 
   // Geen betrouwbare status ontvangen? Dan de app niet openen.
   if(!subscription || typeof subscription.accessAllowed !== 'boolean'){
@@ -666,16 +717,12 @@ async function continueToCloudApp(){
 
   // Proefperiode verlopen of geen geldig abonnement.
   if(!subscription.accessAllowed){
-    if(subscription.billingAllowed){
-      navigate('subscription');
-      openLocalApp();
-      toast('Je proefperiode is afgelopen. Kies een abonnement om verder te gaan.');
-      return;
-    }
-
-    throw new Error(
-      'De toegang tot ANIMO HACCP is momenteel geblokkeerd. Neem contact op met de zaakbeheerder.'
-    );
+    navigate('subscription');
+    openLocalApp();
+    toast(subscription.billingAllowed
+      ? 'Je proefperiode is afgelopen. Kies een abonnement om verder te gaan.'
+      : 'De toegang is geblokkeerd. Vraag de eigenaar of manager om het abonnement te activeren.');
+    return;
   }
 
   // Alleen bij toegestane toegang de HACCP-gegevens laden.
@@ -707,11 +754,17 @@ async function continueToCloudApp(){
   openLocalApp();
 }
 async function initClient(config){if(!window.supabase||!validConfig(config))return false;cloudClient=window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});cloudClient.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'&&session){showPasswordSetup('recovery');setStatus('Nieuw wachtwoord vereist')}});const {data,error}=await cloudClient.auth.getSession();if(error){setMessage(error.message);showLogin();return true}const linkType=authLinkType();if(data.session&&(linkType==='recovery'||linkType==='invite')){showPasswordSetup(linkType);setStatus(linkType==='invite'?'Accountactivatie vereist':'Nieuw wachtwoord vereist');history.replaceState(null,document.title,location.pathname);return true}if(data.session){
-  const prepared=await prepareCloudSession(data.session.user,{attempts:3,delay:500});
-  if(prepared){
-    try{await continueToCloudApp()}catch(error){console.error('Automatisch openen van bestaande sessie mislukt',error)}
+  try{
+    await finishPendingBusinessRegistration();
+    const prepared=await prepareCloudSession(data.session.user,{attempts:3,delay:500});
+    if(prepared)await continueToCloudApp();
+  }catch(error){
+    console.error('Registratie of automatisch openen van bestaande sessie mislukt',error);
+    setMessage(error?.message||'De zaakregistratie kon niet worden voltooid. Meld opnieuw aan om het opnieuw te proberen.');
+    await cloudClient.auth.signOut({scope:'local'});
+    showLogin();
   }
-}else{showLogin();setStatus('Supabase klaar voor aanmelding')}return true}
+}else{showLogin();setStatus('Supabase klaar voor aanmelding');if(new URLSearchParams(location.search).get('signup')==='1')showSignup()}return true}
 get('cloudSaveConfig').addEventListener('click',async()=>{const config={url:get('cloudUrl').value.trim().replace(/\/$/,''),key:get('cloudKey').value.trim()};if(config.key.startsWith('sb_secret_')){alert('Gebruik nooit een secret key in de browser.');return}if(!validConfig(config)){alert('Controleer de Project URL en gebruik de volledige sleutel die begint met sb_publishable_.');return}localStorage.setItem(CONFIG_KEY,JSON.stringify(config));get('cloudKey').value='';await initClient(config)});
 get('cloudLoginForm').addEventListener('submit',async e=>{
   e.preventDefault();
@@ -735,6 +788,27 @@ get('cloudLoginForm').addEventListener('submit',async e=>{
 });
 
 get('cloudContinue').addEventListener('click',async()=>{try{await continueToCloudApp()}catch(e){alert('Cloudgegevens konden niet worden geladen: '+e.message)}});
+get('cloudSelectBusiness').addEventListener('click',async()=>{
+  const user=window.__favvPendingBusinessUser;
+  const businessId=get('cloudBusinessSelect').value;
+  if(!user||!businessId)return;
+  const button=get('cloudSelectBusiness');
+  button.disabled=true;
+  button.textContent='Zaak wordt geladen...';
+  try{
+    const prepared=await prepareCloudSession(user,{attempts:2,delay:400,businessId});
+    if(!prepared)throw new Error('De gekozen horecazaak kon niet worden geopend.');
+    get('cloudBusinessChoice').classList.add('cloud-hidden');
+    get('cloudContinue').classList.remove('cloud-hidden');
+    window.__favvPendingBusinessUser=null;
+    await continueToCloudApp();
+  }catch(e){
+    get('cloudSessionText').textContent=e.message||'De gekozen horecazaak kon niet worden geopend.';
+  }finally{
+    button.disabled=false;
+    button.textContent='Deze zaak openen';
+  }
+});
 window.FAVVSupabaseSignOut=async()=>{if(cloudClient)await cloudClient.auth.signOut({scope:'local'});window.FAVVCloudUser=null;window.FAVVCloudBusiness=null;window.FAVVCloudRole=null;const gate=get('cloudGate');gate.classList.remove('hidden');gate.removeAttribute('aria-hidden');gate.style.removeProperty('display');gate.style.removeProperty('visibility');gate.style.removeProperty('pointer-events');setStatus('Supabase klaar voor aanmelding');showLogin()};get('cloudSignOut').addEventListener('click',window.FAVVSupabaseSignOut);
 get('cloudOpenSignup').addEventListener('click',showSignup);
 get('cloudOpenPasswordReset').addEventListener('click',showResetRequest);
@@ -779,11 +853,16 @@ get('cloudSignupForm').addEventListener('submit',async e=>{
   if(password!==confirmPassword){setSignupMessage('De wachtwoorden zijn niet gelijk.');return}
   if(password.length<10){setSignupMessage('Gebruik een wachtwoord van minstens 10 tekens.');return}
   setSignupMessage('Account wordt veilig aangemaakt...','ok');
-  const {data:signupData,error:signupError}=await cloudClient.auth.signUp({email,password,options:{data:{full_name:fullName}}});
+  const {data:signupData,error:signupError}=await cloudClient.auth.signUp({email,password,options:{data:{full_name:fullName,animo_pending_business_registration:{business_name:businessName,enterprise_number:enterpriseNumber}}}});
   if(signupError){setSignupMessage(signupError.message);return}
-  if(!signupData.session){setSignupMessage('Account aangemaakt. Bevestig eerst het e-mailadres en meld daarna aan. De zaakregistratie wordt na de eerste aanmelding voltooid.','ok');localStorage.setItem('favv-pending-business-registration-v1',JSON.stringify({businessName,enterpriseNumber}));return}
-  const {data:registration,error:registrationError}=await cloudClient.rpc('register_new_business',{p_business_name:businessName,p_enterprise_number:enterpriseNumber});
-  if(registrationError){await cloudClient.auth.signOut({scope:'local'});setSignupMessage('Account gemaakt, maar de zaak kon niet worden geregistreerd: '+registrationError.message);return}
+  if(!signupData.session){setSignupMessage('Account aangemaakt. Bevestig eerst je e-mailadres. Daarna kan je op elk toestel aanmelden; jouw zaakregistratie wordt automatisch voltooid en je proefperiode van 14 dagen start.','ok');return}
+  try{
+    await finishPendingBusinessRegistration();
+  }catch(registrationError){
+    await cloudClient.auth.signOut({scope:'local'});
+    setSignupMessage('Account gemaakt, maar de zaak kon niet worden geregistreerd: '+registrationError.message);
+    return;
+  }
   localStorage.removeItem('favv-pending-business-registration-v1');
   localStorage.setItem('favv-force-clean-new-business-v1','true');
   setSignupMessage('Account en zaak zijn aangemaakt. De zaakomgeving wordt geopend...','ok');
@@ -798,11 +877,29 @@ get('cloudSignupForm').addEventListener('submit',async e=>{
   }
 });
 async function finishPendingBusinessRegistration(){
-  let pending=null;try{pending=JSON.parse(localStorage.getItem('favv-pending-business-registration-v1')||'null')}catch(e){}
+  const {data:userData,error:userError}=await cloudClient.auth.getUser();
+  if(userError)throw userError;
+  const user=userData?.user;
+  const metadataPending=user?.user_metadata?.animo_pending_business_registration;
+  let pending=metadataPending&&typeof metadataPending==='object'?metadataPending:null;
+  if(!pending){
+    try{pending=JSON.parse(localStorage.getItem('favv-pending-business-registration-v1')||'null')}catch(e){}
+  }
   if(!pending)return false;
-  const {data,error}=await cloudClient.rpc('register_new_business',{p_business_name:pending.businessName,p_enterprise_number:pending.enterpriseNumber});
-  if(error){if(!String(error.message||'').includes('al aan een actieve zaak gekoppeld'))throw error}
-  localStorage.removeItem('favv-pending-business-registration-v1');localStorage.setItem('favv-force-clean-new-business-v1','true');return true;
+  const businessName=String(pending.business_name||pending.businessName||'').trim();
+  const enterpriseNumber=String(pending.enterprise_number||pending.enterpriseNumber||'').trim();
+  if(!businessName||!enterpriseNumber)throw new Error('De bewaarde zaakgegevens ontbreken. Neem contact op met ANIMO voordat je opnieuw registreert.');
+  const {error}=await cloudClient.rpc('register_new_business',{p_business_name:businessName,p_enterprise_number:enterpriseNumber});
+  if(error&&!String(error.message||'').includes('al aan een actieve zaak gekoppeld'))throw error;
+  localStorage.removeItem('favv-pending-business-registration-v1');
+  if(metadataPending&&user){
+    const updatedMetadata={...(user.user_metadata||{})};
+    delete updatedMetadata.animo_pending_business_registration;
+    const {error:metadataError}=await cloudClient.auth.updateUser({data:updatedMetadata});
+    if(metadataError)console.warn('Zaakregistratie is voltooid, maar tijdelijke registratiegegevens konden niet worden opgeschoond.',metadataError);
+  }
+  localStorage.setItem('favv-force-clean-new-business-v1','true');
+  return true;
 }
 get('cloudForgetConfig').addEventListener('click',()=>{if(!confirm('Lokale Supabase-instellingen wissen?'))return;localStorage.removeItem(CONFIG_KEY);cloudClient=null;get('cloudUrl').value='';get('cloudKey').value='';setStatus('Lokale veilige modus');showSetup()});
 const config=validConfig(PUBLIC_SUPABASE_CONFIG)?PUBLIC_SUPABASE_CONFIG:readConfig();if(validConfig(config)){localStorage.setItem(CONFIG_KEY,JSON.stringify(config));initClient(config)}else{get('cloudSetup').classList.add('cloud-hidden');get('cloudLoginForm').classList.add('cloud-hidden');get('cloudSignupForm').classList.add('cloud-hidden');get('cloudSessionBox').classList.add('cloud-hidden');hidePasswordSetup();setStatus('Configuratie ontbreekt');const card=document.querySelector('.cloud-card');card.insertAdjacentHTML('beforeend','<div class="cloud-message error show">De publieke appconfiguratie is nog niet voltooid.</div>')}
@@ -844,8 +941,8 @@ window.FAVVStartSupabaseSession=function(user,business){
   window.FAVVApplyCloudRole?.(role);updateBusinessUI();applyPriceVisibility();
   document.querySelectorAll('.user').forEach(el=>el.textContent=currentUser.name.split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase());navigate('dashboard');
 };
-window.FAVVApplyCloudRole=function(role){window.FAVVCloudRole=role;const employee=role==='employee';document.querySelectorAll('[data-page="management"],[data-page="subscription"],#management,#subscription').forEach(el=>el.classList.toggle('cloud-employee-hidden',employee));if(employee&&document.querySelector('.page.active:is(#management,#subscription)'))navigate('dashboard');const roleEl=$('sidebarRole');if(employee&&roleEl)roleEl.textContent='Medewerker'};
-function navigate(page){if(cloudIsEmployee()&&(page==='management'||page==='subscription'||page==='invoices')){toast('Medewerkers hebben geen toegang tot '+(page==='management'?'Beheer':'Abonnement'));return}if(page==='management'&&currentUser?.role!=='manager'){toast('Alleen managers hebben toegang tot Beheer');return}document.querySelectorAll('.page').forEach(el=>el.classList.toggle('active',el.id===page));document.querySelectorAll('[data-page]').forEach(el=>el.classList.toggle('active',el.dataset.page===page));if(page==='cleaning')renderCleaning();if(page==='temperatures')renderTemperatures();if(page==='actions')renderTemperatureActions();if(page==='allergens')renderDishes();if(page==='stock')renderStock();if(page==='invoices')renderInvoices();if(page==='recipes')renderRecipes();if(page==='reports')renderReport();if(page==='subscription'){renderSubscription();window.refreshSubscriptionStatus()}if(page==='management')renderUsers();window.scrollTo(0,0)}
+window.FAVVApplyCloudRole=function(role){window.FAVVCloudRole=role;const employee=role==='employee';document.querySelectorAll('[data-page="management"],[data-page="subscription"],#management').forEach(el=>el.classList.toggle('cloud-employee-hidden',employee));if(employee&&document.querySelector('.page.active:is(#management,#subscription)'))navigate('dashboard');const roleEl=$('sidebarRole');if(employee&&roleEl)roleEl.textContent='Medewerker'};
+function navigate(page){const subscription=loadSubscription();if(cloudBusiness&&currentUser&&page!=='subscription'&&subscription.accessAllowed===false){page='subscription'}if(cloudIsEmployee()&&(page==='management'||page==='invoices')){toast('Medewerkers hebben geen toegang tot '+(page==='management'?'Beheer':'Facturen'));return}if(page==='management'&&currentUser?.role!=='manager'){toast('Alleen managers hebben toegang tot Beheer');return}document.querySelectorAll('.page').forEach(el=>el.classList.toggle('active',el.id===page));document.querySelectorAll('[data-page]').forEach(el=>el.classList.toggle('active',el.dataset.page===page));if(page==='cleaning')renderCleaning();if(page==='temperatures')renderTemperatures();if(page==='actions')renderTemperatureActions();if(page==='allergens')renderDishes();if(page==='stock')renderStock();if(page==='invoices')renderInvoices();if(page==='recipes')renderRecipes();if(page==='reports')renderReport();if(page==='subscription'){renderSubscription();window.refreshSubscriptionStatus()}if(page==='management')renderUsers();window.scrollTo(0,0)}
 function renderDashboard(){const done=state.cleaning.filter(x=>x.done).length,total=state.cleaning.length,p=total?Math.round(done/total*100):0;$('dashScore').textContent=p+'%';$('dashProgress').style.width=p+'%';$('dashCleaning').textContent=total;$('dashTemps').textContent=state.temperatures.length;$('dashDishes').textContent=state.dishes.length;$('dashStock').textContent=state.stock.length;$('dashRecipes').textContent=state.recipes.length;syncTemperatureActions()}
 function renderCleaning(){const q=$('cleaningSearch').value.trim().toLowerCase();const rows=state.cleaning.filter(x=>x.name.toLowerCase().includes(q));$('cleaningList').innerHTML=rows.length?rows.map(x=>`<div class="item"><div class="item-main"><input type="checkbox" data-action="toggle-cleaning" data-id="${x.id}" ${x.done?'checked':''} aria-label="${esc(x.name)} voltooid"><div><div class="item-title">${esc(x.name)}</div><div class="item-sub"><strong>Frequentie:</strong> ${esc(x.frequency)}</div><div class="item-sub"><strong>Materiaal:</strong> ${esc(x.material||'Niet ingevuld')}</div><div class="item-sub"><strong>Product:</strong> ${esc(x.product||'Niet ingevuld')}</div></div></div><div class="actions"><button class="btn secondary small" data-action="edit-cleaning" data-id="${x.id}">Bewerken</button><button class="btn danger small" data-action="delete-cleaning" data-id="${x.id}">Verwijderen</button></div></div>`).join(''):'<div class="empty">Geen taken gevonden.</div>';const done=state.cleaning.filter(x=>x.done).length,total=state.cleaning.length;$('cleaningProgressText').textContent=done+' / '+total;$('cleaningProgress').style.width=(total?done/total*100:0)+'%'}
 function tempOk(x){const value=Number(x.value),min=x.min===''||x.min==null?null:Number(x.min),max=x.max===''||x.max==null?null:Number(x.max);if(min!=null&&Number.isFinite(min)&&value<min)return false;if(max!=null&&Number.isFinite(max)&&value>max)return false;if(min!=null||max!=null)return true;return x.type==='Koeling'?value>=0&&value<=7:x.type==='Diepvries'?value<=-18:true}
@@ -1071,10 +1168,10 @@ function printPreparationSheet(recipe,portions,production){openPrint(`Bereidings
 function produceRecipe(recipeId){const recipe=state.recipes.find(x=>x.id===recipeId),portions=Number($(`portions-${recipeId}`).value);if(!recipe||!Number.isFinite(portions)||portions<=0)return;const shortages=recipeShortages(recipe,portions);if(shortages.length){alert('Onvoldoende stock: '+shortages.map(x=>`${x.product?.name||'Onbekend product'} (${Number(x.shortage).toFixed(2)} tekort)`).join(', '));return}if(!confirm(`${portions} portie(s) van ${recipe.name} registreren en ingrediënten van de stock aftrekken?`))return;recipe.ingredients.forEach(i=>{const product=stockById(i.stockId),used=normalizedIngredientAmount(i,portions,recipe.yield);consumeBatches(product,used,`Bereiding ${recipe.name} · ${portions} portie(s)` ) });const production={id:id('prod'),recipeId:recipe.id,recipeName:recipe.name,recipeVersion:recipe.version||1,portions,createdAt:new Date().toISOString(),userId:currentUser?.id||null,userName:currentUser?.name||'',ingredients:recipe.ingredients.map(i=>({...i,used:normalizedIngredientAmount(i,portions,recipe.yield)})),totalCost:recipeCost(recipe)*(portions/Number(recipe.yield||1)),allergens:recipeAllergens(recipe),steps:clone(recipe.steps||[]),notes:recipe.notes||''};state.productions.unshift(production);persist();renderRecipes();toast('Bereiding geregistreerd, stock aangepast en PDF geopend');printPreparationSheet(recipe,portions,production)}
 function deleteRecipe(recipeId){if(currentUser?.role!=='manager'){toast('Alleen managers kunnen recepten verwijderen');return}if(!confirm('Dit recept verwijderen?'))return;state.recipes=state.recipes.filter(x=>x.id!==recipeId);persist();renderRecipes()}
 function recipeAction(action,idValue,el){if(action==='new')openRecipe();if(action==='edit')openRecipe(idValue);if(action==='close')closeRecipe();if(action==='add-ingredient'){recipeIngredientDraft.push({stockId:'',quantity:1,unit:''});renderIngredientEditors()}if(action==='add-step'){recipeStepDraft.push({text:'',minutes:0,temperature:''});renderStepEditors()}if(action==='remove-step'){recipeStepDraft.splice(Number(el.dataset.index),1);renderStepEditors()}if(action==='step-up'){const i=Number(el.dataset.index);if(i>0)[recipeStepDraft[i-1],recipeStepDraft[i]]=[recipeStepDraft[i],recipeStepDraft[i-1]];renderStepEditors()}if(action==='step-down'){const i=Number(el.dataset.index);if(i<recipeStepDraft.length-1)[recipeStepDraft[i+1],recipeStepDraft[i]]=[recipeStepDraft[i],recipeStepDraft[i+1]];renderStepEditors()}if(action==='remove-ingredient'){recipeIngredientDraft.splice(Number(el.dataset.index),1);renderIngredientEditors()}if(action==='produce')produceRecipe(idValue);if(action==='print-recipe')printRecipeSheet(idValue);if(action==='versions')showVersions(idValue);if(action==='restore-version')restoreVersion(idValue,Number(el.dataset.versionIndex));if(action==='delete')deleteRecipe(idValue)}
-const BASE_SUBSCRIPTION_PLANS={monthly:{name:'Professional maandelijks',price:39,period:'per maand',features:['Alle ANIMO HACCP-functies','Maandelijks opzegbaar','Registraties, rapporten, stock en recepten','Gebruikers- en zaakbeheer']},yearly:{name:'Professional jaarlijks',price:null,period:'per jaar',features:['Alle ANIMO HACCP-functies','Eén jaarlijkse betaling','Registraties, rapporten, stock en recepten','Gebruikers- en zaakbeheer']}};
+const BASE_SUBSCRIPTION_PLANS={monthly:{name:'Professional maandelijks',price:55,period:'per maand',features:['Alle ANIMO HACCP-functies','Maandelijks opzegbaar','Registraties, rapporten, stock en recepten','Gebruikers- en zaakbeheer']},yearly:{name:'Professional jaarlijks',price:550,period:'per jaar',features:['Alle ANIMO HACCP-functies','Eén jaarlijkse betaling','Registraties, rapporten, stock en recepten','Gebruikers- en zaakbeheer']}};
 const BUILDER_SETTINGS_KEY='favv-builder-subscription-settings-v1';
-function loadBuilderSettings(){try{return {monthlyPrice:39,yearlyPrice:'',trialDays:14,...JSON.parse(localStorage.getItem(BUILDER_SETTINGS_KEY)||'{}')}}catch(e){return {monthlyPrice:39,yearlyPrice:'',trialDays:14}}}
-function subscriptionPlans(){const c=loadBuilderSettings();return {monthly:{...BASE_SUBSCRIPTION_PLANS.monthly,price:Number(c.monthlyPrice)||39},yearly:{...BASE_SUBSCRIPTION_PLANS.yearly,price:c.yearlyPrice===''?null:Number(c.yearlyPrice)}}}
+function loadBuilderSettings(){return {monthlyPrice:55,yearlyPrice:550,trialDays:14}}
+function subscriptionPlans(){return BASE_SUBSCRIPTION_PLANS}
 function isAppBuilder(){return false}
 function saveBuilderPricing(){toast('Prijzen worden veilig in Stripe beheerd')}
 
@@ -1085,11 +1182,46 @@ function loadSubscription(){try{return {...defaultSubscription(),...JSON.parse(l
 function saveSubscription(value){value.updatedAt=new Date().toISOString();localStorage.setItem(subscriptionKey(),JSON.stringify(value))}
 function loadSubscriptionConfig(){try{return JSON.parse(localStorage.getItem(subscriptionConfigKey())||'{}')}catch(e){return {}}}
 function saveSubscriptionConfig(){localStorage.setItem(subscriptionConfigKey(),JSON.stringify({checkoutEndpoint:$('checkoutEndpoint').value.trim(),portalEndpoint:$('portalEndpoint').value.trim(),statusEndpoint:$('subscriptionStatusEndpoint').value.trim(),cancelEndpoint:$('cancelSubscriptionEndpoint').value.trim()}));toast('Abonnementsinstellingen bewaard')}
-function subscriptionStatusLabel(status){return ({trialing:'Proefperiode',active:'Actief',past_due:'Betaling mislukt',canceled:'Opgezegd',expired:'Verlopen',incomplete:'Nog niet voltooid'})[status]||status}
-function formatSubscriptionDate(value){return value?new Date(value).toLocaleDateString('nl-BE'):'Niet beschikbaar'}
-function renderSubscription(){if(!['manager','owner'].includes(currentUser?.role))return;;const plans=subscriptionPlans(),sub=loadSubscription();if(!plans[sub.plan]){sub.plan='monthly';saveSubscription(sub)}const plan=plans[sub.plan]||plans.monthly;$('subscriptionStatusCard').innerHTML=`<span class="status-badge ${esc(sub.status)}">${esc(subscriptionStatusLabel(sub.status))}</span><h2>ANIMO HACCP ${esc(plan.name)}</h2><div class="metric">${plan.price==null?'Prijs via Stripe':`€ ${Number(plan.price).toFixed(2).replace('.',',')} <small>${esc(plan.period)}</small>`}</div><div class="subscription-meta"><div><span>Proefperiode tot</span><strong>${formatSubscriptionDate(sub.trialEndsAt)}</strong></div><div><span>Volgende factuurdatum</span><strong>${formatSubscriptionDate(sub.currentPeriodEnd)}</strong></div><div><span>Zaak</span><strong>${esc(businessProfile?.businessName||'')}</strong></div><div><span>Opzegging</span><strong>${sub.cancelAtPeriodEnd?'Aan het einde van de periode':'Niet gepland'}</strong></div></div>`;$('subscriptionPlans').innerHTML=Object.entries(plans).map(([key,p])=>`<article class="plan-card ${sub.plan===key?'selected':''}"><div class="plan-name">${esc(p.name)}</div><div class="plan-price">${p.price==null?'Jaarprijs in Stripe':`€ ${Number(p.price).toFixed(2).replace('.',',')} <small>${esc(p.period)}</small>`}</div><ul class="plan-features">${p.features.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="btn ${sub.plan===key?'secondary':''}" data-subscription-action="select-plan" data-plan="${key}">${sub.plan===key?'Geselecteerd':'Kiezen'}</button></article>`).join('');const builder=$('builderPricingPanel');if(builder)builder.classList.remove('open')}
+function subscriptionStatusLabel(status){return ({none:'Geen betaald abonnement',trialing:'Gratis proefperiode',active:'Actief betaald abonnement',past_due:'Betaling mislukt',canceled:'Opgezegd',expired:'Verlopen',incomplete:'Inschrijving niet voltooid',unpaid:'Betaling vereist',incomplete_expired:'Inschrijving verlopen',paused:'Gepauzeerd'})[status]||'Status onbekend'}
+function formatSubscriptionDate(value){if(!value)return 'Niet beschikbaar';const date=new Date(value);return Number.isNaN(date.getTime())?'Niet beschikbaar':date.toLocaleDateString('nl-BE',{day:'numeric',month:'long',year:'numeric'})}
+function renderSubscription(){
+  if(currentUser?.role==='employee'){
+    $('subscriptionStatusCard').innerHTML='<h2>Abonnement vereist</h2><div class="subscription-note" style="margin-top:14px"><strong>De proefperiode van deze horecazaak is afgelopen.</strong><br>De toegang tot ANIMO HACCP is tijdelijk geblokkeerd. Vraag de eigenaar of manager om het abonnement te activeren. Zodra de betaling bevestigd is, krijg je opnieuw toegang.</div>';
+    $('subscriptionPlans').innerHTML='';
+    return;
+  }
+  if(!['manager','owner'].includes(currentUser?.role))return;
+  const plans=subscriptionPlans(),sub=loadSubscription();
+  if(!plans[sub.plan]){sub.plan='monthly';saveSubscription(sub)}
+  const plan=plans[sub.plan]||plans.monthly;
+  const status=sub.status||'none';
+  const isTrial=status==='trialing'||sub.accessReason==='trial_active';
+  const isCanceled=status==='canceled';
+  const hasPaidAccess=status==='active'&&sub.accessAllowed===true;
+  const statusForDisplay=isTrial&&status==='none'?'trialing':status;
+  const trialDate=formatSubscriptionDate(sub.trialEndsAt);
+  let accessMessage='';
+  if(isCanceled&&sub.accessAllowed===true&&sub.accessReason==='trial_active'){
+    accessMessage=`<div class="subscription-note" style="margin-top:14px"><strong>Je abonnement is opgezegd.</strong><br>Je hebt voorlopig nog toegang via je gratis proefperiode tot ${trialDate}. Er is geen volgende Stripe-factuur gepland.</div>`;
+  }else if(isCanceled){
+    accessMessage='<div class="subscription-note" style="margin-top:14px"><strong>Je abonnement is opgezegd.</strong><br>Er is geen volgende abonnementsverlenging gepland.</div>';
+  }else if(isTrial){
+    accessMessage=`<div class="subscription-note" style="margin-top:14px"><strong>Gratis proefperiode actief.</strong><br>Je proefperiode loopt tot ${trialDate}. Dit is nog geen betaald abonnement.</div>`;
+  }else if(hasPaidAccess&&sub.cancelAtPeriodEnd){
+    accessMessage=`<div class="subscription-note" style="margin-top:14px"><strong>Opzegging ingepland.</strong><br>Je behoudt toegang tot ${formatSubscriptionDate(sub.currentPeriodEnd)}. Daarna wordt het abonnement niet verlengd.</div>`;
+  }else if(hasPaidAccess){
+    accessMessage='<div class="subscription-note" style="margin-top:14px"><strong>Betaald abonnement actief.</strong><br>Je abonnement wordt volgens de gekozen betaalperiode verlengd.</div>';
+  }else{
+    accessMessage='<div class="subscription-note" style="margin-top:14px"><strong>Geen actieve betaalde toegang.</strong><br>Kies een abonnement om de betaalde toegang te activeren.</div>';
+  }
+  const periodLabel=isCanceled?'Einde abonnement':hasPaidAccess?'Volgende factuurdatum':'Proefperiode tot';
+  const periodValue=isCanceled?'Geen verlenging gepland':hasPaidAccess?formatSubscriptionDate(sub.currentPeriodEnd):trialDate;
+  $('subscriptionStatusCard').innerHTML=`<span class="status-badge ${esc(statusForDisplay)}">${esc(subscriptionStatusLabel(statusForDisplay))}</span><h2>ANIMO HACCP ${esc(plan.name)}</h2><div class="metric">${plan.price==null?'Prijs via Stripe':`€ ${Number(plan.price).toFixed(2).replace('.',',')} <small>${esc(plan.period)}</small>`}</div><div class="subscription-meta"><div><span>Toegang</span><strong>${sub.accessAllowed===true?'Toegestaan':'Niet actief'}</strong></div><div><span>${periodLabel}</span><strong>${periodValue}</strong></div><div><span>Zaak</span><strong>${esc(businessProfile?.businessName||'')}</strong></div><div><span>Opzegging</span><strong>${isCanceled?'Verwerkt':sub.cancelAtPeriodEnd?'Aan het einde van de periode':'Niet gepland'}</strong></div></div>${accessMessage}`;
+  $('subscriptionPlans').innerHTML=Object.entries(plans).map(([key,p])=>`<article class="plan-card ${sub.plan===key?'selected':''}"><div class="plan-name">${esc(p.name)}</div><div class="plan-price">${p.price==null?'Jaarprijs in Stripe':`€ ${Number(p.price).toFixed(2).replace('.',',')} <small>${esc(p.period)}</small>`}</div><ul class="plan-features">${p.features.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="btn ${sub.plan===key?'secondary':''}" data-subscription-action="select-plan" data-plan="${key}">${sub.plan===key?'Geselecteerd':'Kiezen'}</button></article>`).join('');
+  const builder=$('builderPricingPanel');if(builder)builder.classList.remove('open');
+}
 
-function selectSubscriptionPlan(plan){if(!subscriptionPlans()[plan])return;const sub=loadSubscription();sub.plan=plan;saveSubscription(sub);renderSubscription();toast('Abonnementsplan geselecteerd')}
+async function selectSubscriptionPlan(plan){if(!subscriptionPlans()[plan])return;const sub=loadSubscription();sub.plan=plan;saveSubscription(sub);renderSubscription();await openSubscriptionSession('checkout')}
 async function openSubscriptionSession(type){try{let url='';if(type==='checkout'){if(typeof window.FAVVCreateCheckout!=='function')throw new Error('De beveiligde Supabase-verbinding is nog niet klaar. Meld opnieuw aan en probeer opnieuw.');const sub=loadSubscription();if(!['monthly','yearly'].includes(sub.plan))throw new Error('Kies eerst maandelijks of jaarlijks.');url=await window.FAVVCreateCheckout(sub.plan)}else if(type==='portal'){if(typeof window.FAVVOpenBillingPortal!=='function')throw new Error('De beveiligde Supabase-verbinding is nog niet klaar. Meld opnieuw aan en probeer opnieuw.');url=await window.FAVVOpenBillingPortal()}else{throw new Error('Onbekende abonnementsactie.')}location.href=url}catch(err){alert(`${type==='portal'?'Kon het klantenportaal niet openen':'Kon de betaalpagina niet openen'}: ${err.message||err}`)}}
 
 
@@ -1115,7 +1247,10 @@ window.refreshSubscriptionStatus = async function(){
     priceId:data.priceId||'',
     currentPeriodStart:data.currentPeriodStart||null,
     currentPeriodEnd:data.currentPeriodEnd||null,
+    trialStartedAt:data.trialStartedAt||null,
     trialEndsAt:data.trialEndsAt||null,
+    trialActive:Boolean(data.trialActive),
+    trialExpired:Boolean(data.trialExpired),
     cancelAtPeriodEnd:Boolean(data.cancelAtPeriodEnd),
     accessAllowed:data.accessAllowed,
     accessReason:data.accessReason||'unknown',
@@ -1124,8 +1259,11 @@ window.refreshSubscriptionStatus = async function(){
 
   saveSubscription(sub);
 
-  if(currentUser?.role==='manager'||currentUser?.role==='owner'){
+  if(currentUser?.role==='manager'||currentUser?.role==='owner'||currentUser?.role==='employee'){
     renderSubscription();
+  }
+  if(!data.accessAllowed&&cloudBusiness&&currentUser&&document.querySelector('.page.active')?.id!=='subscription'){
+    navigate('subscription');
   }
 
   return sub;
@@ -1352,5 +1490,10 @@ $('roleModalClose').addEventListener('click',closeRoleModal);
 $('roleModalCancel').addEventListener('click',closeRoleModal);
 $('roleModalLayer').addEventListener('click',e=>{if(e.target===$('roleModalLayer'))closeRoleModal()});$('businessEditForm').addEventListener('submit',saveBusinessEdit);$('businessEditModal').addEventListener('click',e=>{if(e.target===$('businessEditModal'))closeBusinessEdit()});document.addEventListener('click',e=>{const action=e.target.closest('[data-business-edit]');if(action?.dataset.businessEdit==='close')closeBusinessEdit()});
 $('deliveryFile').addEventListener('change',e=>{const file=e.target.files[0],img=$('deliveryPreview');if(file&&file.type.startsWith('image/')){img.src=URL.createObjectURL(file);img.style.display='block'}else img.style.display='none'});document.addEventListener('input',e=>{const field=e.target.closest('[data-review]');if(field){const i=Number(field.dataset.index),key=field.dataset.review;deliveryReviewRows[i][key]=key==='quantity'?Number(field.value):field.value}const rf=e.target.closest('[data-recipe-field]');if(rf){const i=Number(rf.dataset.index),key=rf.dataset.recipeField;recipeIngredientDraft[i][key]=key==='quantity'?Number(rf.value):rf.value;if(key==='stockId'&&!recipeIngredientDraft[i].unit)recipeIngredientDraft[i].unit=stockById(rf.value)?.unit||''}const bf=e.target.closest('[data-batch-field]');if(bf){const i=Number(bf.dataset.index),key=bf.dataset.batchField;stockBatchDraft[i][key]=key==='quantity'?Number(bf.value):bf.value;if(key==='quantity')$('stockProductQuantity').value=stockBatchDraft.reduce((n,b)=>n+Number(b.quantity||0),0).toFixed(3).replace(/0+$/,'').replace(/\.$/,'')||'0'}const sf=e.target.closest('[data-step-field]');if(sf){const i=Number(sf.dataset.index),key=sf.dataset.stepField;recipeStepDraft[i][key]=key==='minutes'||key==='temperature'?(sf.value===''?'':Number(sf.value)):sf.value}});initializeAuth();
+setInterval(()=>{
+  if(cloudClient&&cloudBusiness&&currentUser&&typeof window.refreshSubscriptionStatus==='function'){
+    window.refreshSubscriptionStatus().catch(error=>console.warn('Periodieke abonnementscontrole mislukt',error));
+  }
+},60000);
 })();
 </script></body></html>

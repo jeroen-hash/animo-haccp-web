@@ -54,11 +54,12 @@ jobs:
           python3 - <<'PY'
           s = open('landing.html', encoding='utf-8').read()
           app = 'https://app.animo-apps.com'
+          s = s.replace('href="/?signup=1"', 'href="' + app + '/?signup=1"')
           s = s.replace('href="/"', 'href="' + app + '/"')
           s = s.replace('href="/onboarding-form.html"', 'href="' + app + '/onboarding-form.html"')
-          s = s.replace('https://app.freelance-animo.com/landing.html', 'https://animo-apps.com/')
-          s = s.replace('https://app.freelance-animo.com/images/', 'https://animo-apps.com/images/')
-          s = s.replace('<link rel="icon"', '<link rel="canonical" href="https://animo-apps.com/">\n<link rel="icon"', 1)
+          s = s.replace('https://app.freelance-animo.com/landing.html', 'https://www.animo-apps.com/')
+          s = s.replace('https://app.freelance-animo.com/images/', 'https://www.animo-apps.com/images/')
+          s = s.replace('<link rel="icon"', '<link rel="canonical" href="https://www.animo-apps.com/">\n<link rel="icon"', 1)
           assert 'freelance-animo' not in s, 'Oud adres staat nog in landing.html'
           open('out/landing/index.html', 'w', encoding='utf-8').write(s)
           PY
