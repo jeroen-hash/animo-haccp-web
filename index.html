@@ -354,12 +354,18 @@ body:has(#cloudGate:not(.hidden)) .mobile-nav{display:none!important}
 <style id="stock-product-modal-mobile-final-fix">
 /* Stockproduct: dialoog en bewaarknop altijd boven de vaste mobiele navigatie. */
 @media (max-width: 900px) {
-  html body #stockProductModal.modal-layer,
+  html body #stockProductModal.modal-layer:not(.open) {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
   html body #stockProductModal.modal-layer.open {
     position: fixed !important;
     inset: 0 !important;
     z-index: 3000 !important;
     display: grid !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
     align-items: start !important;
     justify-items: center !important;
     overflow-y: auto !important;
