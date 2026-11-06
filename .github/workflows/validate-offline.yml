@@ -1,0 +1,51 @@
+name: Validate ANIMO HACCP offline code
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'sw.js'
+      - 'supabase/migrations/**'
+      - '.github/workflows/validate-offline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  syntax-and-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate inline JavaScript and service worker
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/gi)]
+            .map(match => match[1])
+            .filter(source => source.trim());
+          if (scripts.length < 2) throw new Error('Expected both application inline scripts.');
+          scripts.forEach((source, index) => new vm.Script(source, { filename: `index-inline-${index + 1}.js` }));
+          const worker = fs.readFileSync('sw.js', 'utf8');
+          new vm.Script(worker, { filename: 'sw.js' });
+          const required = [
+            'function queueOfflineSnapshot',
+            'async function readOfflineSnapshot',
+            'save_app_data_if_unchanged',
+            'FAVVSyncConflict'
+          ];
+          for (const marker of required) {
+            if (!html.includes(marker)) throw new Error(`Missing offline safety marker: ${marker}`);
+          }
+          for (const apiPath of ['/rest/v1/', '/auth/v1/', '/functions/v1/', '/storage/v1/']) {
+            if (!worker.includes(apiPath)) throw new Error(`Service worker must explicitly bypass ${apiPath}`);
+          }
+          if (!worker.includes('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2')) {
+            throw new Error('Supabase SDK cache entry is missing.');
+          }
+          console.log(`Validated ${scripts.length} inline scripts, service worker, and offline safety guards.`);
+          NODE
