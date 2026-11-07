@@ -201,8 +201,8 @@ jobs:
             if (!options.includes('value="stuks"') || !options.includes('value="kg"') || !options.includes('value="liter"')) {
               throw new Error('Predefined stock units must be available.');
             }
-            if (!options.includes('Kies eenheid') && !options.includes('value=""')) {
-              throw new Error('Missing unit must require an explicit selection.');
+            if (!html.includes('<option value="">Kies eenheid</option>')) {
+              throw new Error('UBL review must show an empty placeholder requiring an explicit selection.');
             }
             const custom = deliveryUnitOptions('bussel','');
             if (!custom.includes('value="bussel"') || !custom.includes('bussel (factuurcode)')) {
