@@ -1304,7 +1304,7 @@ function parseUblInvoice(xmlText){
     invoiceNumber:ublText(ublChild(invoice,'ID')),
     invoiceDate:ublText(ublChild(invoice,'IssueDate')),
     dueDate:ublText(ublChild(invoice,'DueDate')),
-    currency:ublText(ublChild(invoice,'DocumentCurrencyCode'))||'EUR',
+    currency:ublText(ublChild(invoice,'DocumentCurrencyCode')),
     supplier,
     lineExtension:ublNumber(ublChild(monetary,'LineExtensionAmount')),
     allowanceTotal:ublNumber(ublChild(monetary,'AllowanceTotalAmount')),
@@ -1370,7 +1370,7 @@ function prepareDeliveryRows(rows){
 }
 function confirmDelivery(){
   if(!deliveryReviewRows.length)return;
-  if(deliveryInvoiceMeta?.currency&&deliveryInvoiceMeta.currency!=='EUR'){alert(`Deze factuur is in ${deliveryInvoiceMeta.currency}. Alleen EUR-facturen kunnen momenteel veilig in de voorraad worden verwerkt.`);return}
+  if(deliveryInvoiceMeta&&deliveryInvoiceMeta.currency!=='EUR'){alert(`De factuur vermeldt ${deliveryInvoiceMeta.currency||'geen valuta'}. Alleen facturen met expliciete EUR-valuta kunnen momenteel veilig in de voorraad worden verwerkt.`);return}
   if(deliveryInvoiceMeta?.invoiceNumber&&state.deliveries.some(d=>d.invoiceNumber===deliveryInvoiceMeta.invoiceNumber&&d.supplier===deliveryInvoiceMeta.supplier)){alert('Deze UBL-factuur werd al aan de stock toegevoegd.');return}
   const invalid=deliveryReviewRows.filter(x=>x.name.trim()&&(!(Number(x.quantity)>0)||!String(x.unit||'').trim()));
   if(invalid.length){alert('Vul voor elke productregel een hoeveelheid groter dan 0 én een bevestigde eenheid in. Er is nog niets gewijzigd.');return}
