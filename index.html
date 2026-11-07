@@ -1511,7 +1511,24 @@ function renderSubscription(){
   const isEmployee=currentUser?.role==='employee'||window.FAVVCloudRole==='employee';
   managerControls.forEach(el=>el.hidden=isEmployee);
   if(isEmployee){
-    $('subscriptionStatusCard').innerHTML='<h2>Abonnement vereist</h2><div class="subscription-note" style="margin-top:14px"><strong>De proefperiode van deze horecazaak is afgelopen.</strong><br>De toegang tot ANIMO HACCP is tijdelijk geblokkeerd. Vraag de eigenaar of manager om het abonnement te activeren. Zodra de betaling bevestigd is, krijg je opnieuw toegang.</div>';
+    const employeeSub=loadSubscription();
+    const employeeStatus=employeeSub.status||'none';
+    const employeeHasAccess=employeeSub.accessAllowed===true;
+    const employeePeriodEnd=formatSubscriptionDate(employeeSub.currentPeriodEnd);
+    let employeeMessage='';
+    if(employeeHasAccess&&employeeStatus==='active'&&employeeSub.cancelAtPeriodEnd){
+      employeeMessage=`<div class="subscription-note" style="margin-top:14px"><strong>Het abonnement van deze horecazaak is actief.</strong><br>De opzegging is ingepland. Je behoudt toegang tot ${employeePeriodEnd}.</div>`;
+    }else if(employeeHasAccess&&employeeStatus==='active'){
+      employeeMessage='<div class="subscription-note" style="margin-top:14px"><strong>Het betaalde abonnement van deze horecazaak is actief.</strong><br>Je hebt toegang tot ANIMO HACCP via het abonnement van de eigenaar.</div>';
+    }else if(employeeHasAccess&&employeeSub.accessReason==='trial_active'){
+      employeeMessage='<div class="subscription-note" style="margin-top:14px"><strong>De gratis proefperiode van deze horecazaak is actief.</strong><br>Je hebt toegang tot ANIMO HACCP via de eigenaar.</div>';
+    }else if(employeeHasAccess&&employeeSub.accessReason==='lifetime_free'){
+      employeeMessage='<div class="subscription-note" style="margin-top:14px"><strong>Deze horecazaak heeft blijvende toegang tot ANIMO HACCP.</strong></div>';
+    }else{
+      employeeMessage='<div class="subscription-note" style="margin-top:14px"><strong>De toegang tot ANIMO HACCP is momenteel geblokkeerd.</strong><br>Vraag de eigenaar of manager om het abonnement te controleren. Zodra de betaling bevestigd is, wordt de toegang hersteld.</div>';
+    }
+    const employeeLabel=employeeHasAccess?(employeeStatus==='active'?'Actief betaald abonnement':employeeStatus==='trialing'?'Gratis proefperiode':'Toegang actief'):'Toegang geblokkeerd';
+    $('subscriptionStatusCard').innerHTML=`<span class="status-badge ${employeeHasAccess?"active":"expired"}">${employeeLabel}</span><h2>ANIMO HACCP</h2><div class="subscription-meta"><div><span>Toegang</span><strong>${employeeHasAccess?"Toegestaan":"Geblokkeerd"}</strong></div><div><span>Betaalperiode tot</span><strong>${employeeHasAccess?employeePeriodEnd:"Niet actief"}</strong></div></div>${employeeMessage}`;
     $('subscriptionPlans').innerHTML='';
     return;
   }
