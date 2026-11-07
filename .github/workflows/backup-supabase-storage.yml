@@ -181,17 +181,17 @@ jobs:
             : > "$known_hosts"
             while IFS= read -r key_line; do
               [ -n "$key_line" ] || continue
-              printf '%s\\n' "$key_line" > "$candidate_key"
+              printf '%s\n' "$key_line" > "$candidate_key"
               fingerprint="$(ssh-keygen -lf "$candidate_key" -E sha256 | awk '{print $2}')"
               if [ "$fingerprint" = "$SFTP_HOST_KEY_SHA256" ]; then
-                printf '%s\\n' "$key_line" >> "$known_hosts"
+                printf '%s\n' "$key_line" >> "$known_hosts"
               fi
             done < "$scanned_keys"
             test -s "$known_hosts" || { echo "::error::No STRATO SSH host key matches the pinned fingerprint for retention."; exit 1; }
             chmod 600 "$known_hosts"
             rm -f "$scanned_keys" "$candidate_key"
             lftp_host_key_settings="set sftp:auto-confirm no
-          set sftp:connect-program \\"ssh -a -x -oStrictHostKeyChecking=yes -oUserKnownHostsFile=$known_hosts\\""
+          set sftp:connect-program \"ssh -a -x -oStrictHostKeyChecking=yes -oUserKnownHostsFile=$known_hosts\""
             echo "Verified STRATO SSH host key fingerprint; strict checking enabled for retention."
           else
             echo "::warning::STRATO SSH host-key pinning is not configured yet for retention."
