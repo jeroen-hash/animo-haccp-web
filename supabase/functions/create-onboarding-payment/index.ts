@@ -19,9 +19,13 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return jsonResponse({ error: "Alleen POST-verzoeken zijn toegestaan." }, 405);
 
   try {
+    const body = await req.json().catch(() => ({}));
+    const leadId = typeof body.lead_id === "string" ? body.lead_id.trim() : "";
+    const uploadToken = typeof body.upload_token === "string" ? body.upload_token.trim() : "";
+    if (!leadId) return jsonResponse({ error: "De aanvraag-ID ontbreekt." }, 400);
+
     const authorization = req.headers.get("Authorization") || "";
     const token = authorization.replace(/^Bearer\s+/i, "");
-    if (!token) return jsonResponse({ error: "Je moet als platformbeheerder aangemeld zijn." }, 401);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
@@ -31,36 +35,49 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "De serverconfiguratie is onvolledig." }, 500);
     }
 
-    const actingClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data: authData, error: authError } = await actingClient.auth.getUser(token);
-    if (authError || !authData.user) return jsonResponse({ error: "De beheerderssessie is ongeldig of verlopen." }, 401);
-
     const adminClient = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const { data: platformAdmin, error: adminError } = await adminClient
-      .from("platform_admins")
-      .select("user_id")
-      .eq("user_id", authData.user.id)
-      .maybeSingle();
-    if (adminError) throw adminError;
-    if (!platformAdmin) return jsonResponse({ error: "Alleen een platformbeheerder mag een onboardingbetaling aanvragen." }, 403);
 
-    const body = await req.json().catch(() => ({}));
-    const leadId = typeof body.lead_id === "string" ? body.lead_id.trim() : "";
-    if (!leadId) return jsonResponse({ error: "De aanvraag-ID ontbreekt." }, 400);
+    let isPublicCustomerCheckout = false;
+    if (uploadToken) {
+      const { data: publicLead, error: publicLeadError } = await adminClient
+        .from("onboarding_leads")
+        .select("id, status, contact_email, business_name, payload, upload_token")
+        .eq("id", leadId)
+        .single();
+      if (publicLeadError || !publicLead || publicLead.upload_token !== uploadToken) {
+        return jsonResponse({ error: "De aanvraag kon niet veilig worden geverifieerd." }, 403);
+      }
+      if (publicLead.status !== "new") {
+        return jsonResponse({ error: "Deze aanvraag kan niet meer via de klantbetaalpagina worden betaald." }, 409);
+      }
+      isPublicCustomerCheckout = true;
+    } else {
+      if (!token) return jsonResponse({ error: "Je moet als platformbeheerder aangemeld zijn." }, 401);
+      const actingClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const { data: authData, error: authError } = await actingClient.auth.getUser(token);
+      if (authError || !authData.user) return jsonResponse({ error: "De beheerderssessie is ongeldig of verlopen." }, 401);
+      const { data: platformAdmin, error: adminError } = await adminClient
+        .from("platform_admins")
+        .select("user_id")
+        .eq("user_id", authData.user.id)
+        .maybeSingle();
+      if (adminError) throw adminError;
+      if (!platformAdmin) return jsonResponse({ error: "Alleen een platformbeheerder mag een onboardingbetaling aanvragen." }, 403);
+    }
 
     const { data: lead, error: leadError } = await adminClient
       .from("onboarding_leads")
-      .select("id, status, contact_email, business_name, payload")
+      .select("id, status, contact_email, business_name, payload, upload_token")
       .eq("id", leadId)
       .single();
     if (leadError || !lead) return jsonResponse({ error: "De onboardingaanvraag werd niet gevonden." }, 404);
-    if (lead.status !== "approved") {
-      return jsonResponse({ error: "Keur de onboardingaanvraag eerst goed voordat je de betaling aanvraagt." }, 409);
+    if (isPublicCustomerCheckout ? lead.status !== "new" : lead.status !== "approved") {
+      return jsonResponse({ error: isPublicCustomerCheckout ? "Deze aanvraag is niet meer beschikbaar voor betaling." : "Keur de onboardingaanvraag eerst goed voordat je de betaling aanvraagt." }, 409);
     }
 
     const payload = lead.payload && typeof lead.payload === "object" && !Array.isArray(lead.payload)
@@ -154,8 +171,12 @@ Deno.serve(async (req: Request) => {
         },
       },
       integration_identifier: `animo_onboarding_${suffix}`,
-      success_url: `${appUrl}/onboarding-dashboard.html?onboarding_payment=success&lead_id=${encodeURIComponent(lead.id)}`,
-      cancel_url: `${appUrl}/onboarding-dashboard.html?onboarding_payment=cancelled&lead_id=${encodeURIComponent(lead.id)}`,
+      success_url: isPublicCustomerCheckout
+        ? `${appUrl}/onboarding-form.html?payment=success`
+        : `${appUrl}/onboarding-dashboard.html?onboarding_payment=success&lead_id=${encodeURIComponent(lead.id)}`,
+      cancel_url: isPublicCustomerCheckout
+        ? `${appUrl}/onboarding-form.html?payment=cancelled`
+        : `${appUrl}/onboarding-dashboard.html?onboarding_payment=cancelled&lead_id=${encodeURIComponent(lead.id)}`,
     });
 
     if (!session.url) throw new Error("Stripe heeft geen betaallink teruggestuurd.");
