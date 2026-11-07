@@ -87,16 +87,34 @@ jobs:
 
           remote_dir="/backups/animo-haccp-storage"
           listing="$work/remote-listing"
-          lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP > "$listing"
+          sftp_log="$work/sftp-diagnostic.log"
+
+          # Capture SFTP diagnostics privately and redact credentials before printing.
+          set +e
+          lftp -d -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP > "$listing" 2> "$sftp_log"
+          set cmd:fail-exit yes
           set sftp:auto-confirm no
-          set sftp:connect-program "ssh -a -x -oStrictHostKeyChecking=yes -oUserKnownHostsFile=$known_hosts"
-          set net:max-retries 3
+          set sftp:connect-program "ssh -a -x -oBatchMode=no -oStrictHostKeyChecking=yes -oUserKnownHostsFile=$known_hosts"
+          set net:max-retries 1
           set net:timeout 30
+          pwd
           cls -1 "$remote_dir"
           bye
           LFTP
+          sftp_status=$?
+          set -e
 
-          backup_name="$(grep -E '^animo-storage-[0-9]{8}T[0-9]{6}Z\.tar\.gz\.gpg$' "$listing" | sort | tail -n 1)"
+          if [ "$sftp_status" -ne 0 ]; then
+            echo "::error::SFTP kon de back-upmap niet uitlezen (exitcode $sftp_status). Veilige diagnose:"
+            python3 -c 'import os,sys; d=sys.stdin.read(); [None for s in (os.environ.get("SFTP_PASS",""), os.environ.get("SFTP_USER","")) if s and not (d:=d.replace(s,"[REDACTED]"))]; print("\\n".join(d.splitlines()[-80:]))' < "$sftp_log"
+            echo "SFTP pwd/listing output:"
+            cat "$listing" || true
+            exit "$sftp_status"
+          fi
+
+          echo "SFTP-verbinding en maptoegang geslaagd. Bestandslijst:"
+          cat "$listing"
+
           test -n "$backup_name" || { echo "::error::Geen geldige ANIMO Storage-back-up gevonden op STRATO."; exit 1; }
 
           encrypted="$work/$backup_name"
