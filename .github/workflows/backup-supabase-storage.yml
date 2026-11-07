@@ -25,6 +25,9 @@ jobs:
         with:
           node-version: '22'
 
+      - name: JavaScript-syntax controleren
+        run: node --check scripts/backup-supabase-storage.mjs
+
       - name: Benodigde tools installeren
         run: |
           sudo apt-get update -y
@@ -33,14 +36,14 @@ jobs:
       - name: Privébestanden uit Supabase verzamelen
         env:
           SUPABASE_URL: https://zimzsovvtdmrthrflkgm.supabase.co
-          SUPABASE_SERVICE_ROLE_KEY: \${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           BACKUP_OUTPUT_DIR: storage-backup
         run: node scripts/backup-supabase-storage.mjs
 
       - name: Back-up archiveren en versleutelen
         id: archive
         env:
-          BACKUP_PASSPHRASE: \${{ secrets.ANIMO_BACKUP_ENCRYPTION_KEY }}
+          BACKUP_PASSPHRASE: ${{ secrets.ANIMO_BACKUP_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
           test -n "$BACKUP_PASSPHRASE" || { echo "::error::Backup encryption secret is missing."; exit 1; }
@@ -62,13 +65,13 @@ jobs:
 
       - name: Versleutelde back-up uploaden naar STRATO en terug controleren
         env:
-          SFTP_HOST: \${{ secrets.STRATO_SFTP_HOST }}
-          SFTP_USER: \${{ secrets.STRATO_SFTP_USER }}
-          SFTP_PASS: \${{ secrets.STRATO_SFTP_PASSWORD }}
-          ENCRYPTED_FILE: \${{ steps.archive.outputs.encrypted_file }}
-          CHECKSUM_FILE: \${{ steps.archive.outputs.checksum_file }}
-          BACKUP_NAME: \${{ steps.archive.outputs.backup_name }}
-          BACKUP_PASSPHRASE: \${{ secrets.ANIMO_BACKUP_ENCRYPTION_KEY }}
+          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
+          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
+          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+          ENCRYPTED_FILE: ${{ steps.archive.outputs.encrypted_file }}
+          CHECKSUM_FILE: ${{ steps.archive.outputs.checksum_file }}
+          BACKUP_NAME: ${{ steps.archive.outputs.backup_name }}
+          BACKUP_PASSPHRASE: ${{ secrets.ANIMO_BACKUP_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
           for value in "$SFTP_HOST" "$SFTP_USER" "$SFTP_PASS" "$BACKUP_PASSPHRASE"; do
