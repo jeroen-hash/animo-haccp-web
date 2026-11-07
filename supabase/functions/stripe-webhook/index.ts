@@ -58,7 +58,7 @@ function shouldIgnoreSubscriptionOverwrite(
 
 async function saveSubscription(
   stripe: Stripe,
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: any,
   subscription: Stripe.Subscription,
 ) {
   const firstItem = subscription.items.data[0];
@@ -212,7 +212,7 @@ async function saveSubscription(
 
 async function retrieveAndSaveSubscription(
   stripe: Stripe,
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: any,
   subscriptionId: string,
 ) {
   const subscription =
@@ -227,7 +227,7 @@ async function retrieveAndSaveSubscription(
 
 async function logStripeRiskEvent(
   stripe: Stripe,
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: any,
   event: Stripe.Event,
   object: Record<string, unknown>,
 ) {
@@ -276,7 +276,7 @@ async function logStripeRiskEvent(
 }
 
 async function saveInvoice(
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: any,
   invoice: Stripe.Invoice,
   eventType: string,
 ) {
@@ -431,7 +431,7 @@ Deno.serve(async (req: Request) => {
 
   const stripe = new Stripe(stripeSecretKey);
 
-  const supabaseAdmin = createClient(
+  const supabaseAdmin: any = createClient(
     supabaseUrl,
     supabaseServiceRoleKey,
     {
