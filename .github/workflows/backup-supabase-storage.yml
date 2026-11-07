@@ -219,7 +219,7 @@ jobs:
               else
                 echo "Removing expired encrypted backup older than 90 days: $name"
                 lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP
-          set sftp:auto-confirm yes
+          $lftp_host_key_settings
           set net:max-retries 3
           set net:timeout 30
           rm -f "$remote_dir/$name"
