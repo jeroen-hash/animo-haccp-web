@@ -1292,7 +1292,7 @@ function ublChild(node,name){return ublChildren(node,name)[0]||null}
 function ublDesc(node,name){return Array.from(node?.getElementsByTagNameNS?.('*',name)||[])[0]||null}
 function ublText(node){return String(node?.textContent||'').trim()}
 function ublNumber(node){const n=Number(ublText(node).replace(',','.'));return Number.isFinite(n)?n:0}
-function ublUnit(code){const raw=String(code||'').trim();if(!raw)return '';const map={C62:'stuks',KGM:'kg',GRM:'g',LTR:'liter',MLT:'ml',XBX:'dozen',XPK:'pakken',XBG:'zakken',H87:'stuks'};return map[raw.toUpperCase()]||raw.toLowerCase()}
+function ublUnit(code){const raw=String(code||'').trim();if(!raw)return '';const map={C62:'stuks',KGM:'kg',GRM:'g',LTR:'liter',MLT:'ml',XBX:'doos',XPK:'verpakking',XBG:'zak',H87:'stuks'};return map[raw.toUpperCase()]||raw.toLowerCase()}
 function parseUblInvoice(xmlText){
   const doc=new DOMParser().parseFromString(xmlText,'application/xml');
   const parseError=doc.querySelector('parsererror');
