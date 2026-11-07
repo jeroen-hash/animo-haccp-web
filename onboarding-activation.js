@@ -41,6 +41,16 @@
     }
 
     if (
+      selected.source === 'lead' &&
+      selected.payload?.onboarding_payment_required === true &&
+      selected.payload?.onboarding_payment?.status !== 'paid'
+    ) {
+      return alert(
+        'De eenmalige onboardingkost is nog niet betaald. Maak eerst de Stripe-betaallink aan en wacht op de bevestigde betaling.'
+      );
+    }
+
+    if (
       typeof dirty !== 'undefined' &&
       dirty
     ) {
