@@ -274,10 +274,9 @@ jobs:
           const matchStart = html.indexOf('function findStockMatch(line)');
           const matchEnd = html.indexOf('function renderDeliveryReview()', matchStart);
           if ([start,end,unitStart,unitEnd,matchStart,matchEnd].some(x => x < 0)) throw new Error('UBL unit normalization helpers missing.');
-          const source = html.slice(unitStart,unitEnd).match(/function recipeUnitInfo[\\s\\S]*?function convertRecipeQuantity[^}]*\\}/)?.[0]
-            + html.slice(matchStart,matchEnd).match(/function findStockMatch[\\s\\S]*?\\n/)[0]
-            + html.slice(start,end);
-          const context = { state:{stock:[{id:'eggs',name:'Eieren',unit:'kg',code:'',quantity:0}]}, normalizeStockName:x=>String(x||'').toLowerCase().replace(/s$/,''), };
+          const matchLineEnd = html.indexOf('\\n', matchStart);
+          const source = html.slice(unitStart,unitEnd) + html.slice(matchStart,matchLineEnd) + html.slice(start,end);
+          const context = { state:{stock:[{id:'eggs',name:'Eieren',unit:'kg',code:'',quantity:0}]}, normalizeStockName:x=>String(x||'').toLowerCase().replace(/s$/,'') };
           vm.runInNewContext(source + `
             const grams = prepareDeliveryRows([{name:'Eieren',quantity:500,unit:'g',lineTotal:2.5}]);
             if (Math.abs(grams[0].stockQuantity - 0.5) > 0.000001) throw new Error('500 g must normalize to 0.5 kg.');
