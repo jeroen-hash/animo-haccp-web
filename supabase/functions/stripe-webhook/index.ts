@@ -282,21 +282,43 @@ async function saveInvoice(
 ) {
   const subscriptionId = getInvoiceSubscriptionId(invoice);
   const customerId = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id ?? null;
-  let query = supabaseAdmin.from("subscriptions").select("business_id").limit(1);
-  if (subscriptionId) query = query.eq("stripe_subscription_id", subscriptionId);
-  else if (customerId) query = query.eq("stripe_customer_id", customerId);
-  else {
-    console.warn("Stripe-factuur zonder klant- of abonnementsreferentie:", invoice.id);
-    return;
+  const onboardingLeadId =
+    invoice.metadata?.payment_kind === "onboarding_fee"
+      ? invoice.metadata.onboarding_lead_id ?? null
+      : null;
+
+  let businessId: string | null = null;
+  if (onboardingLeadId) {
+    const { data: lead, error: leadError } = await supabaseAdmin
+      .from("onboarding_leads")
+      .select("id, business_id")
+      .eq("id", onboardingLeadId)
+      .maybeSingle();
+    if (leadError) throw leadError;
+    if (!lead) {
+      console.warn("Onboardingaanvraag niet gevonden voor Stripe-factuur:", invoice.id);
+      return;
+    }
+    businessId = lead.business_id ?? null;
+  } else {
+    let query = supabaseAdmin.from("subscriptions").select("business_id").limit(1);
+    if (subscriptionId) query = query.eq("stripe_subscription_id", subscriptionId);
+    else if (customerId) query = query.eq("stripe_customer_id", customerId);
+    else {
+      console.warn("Stripe-factuur zonder klant- of abonnementsreferentie:", invoice.id);
+      return;
+    }
+    const { data: linked, error: linkError } = await query.maybeSingle();
+    if (linkError) throw linkError;
+    businessId = linked?.business_id ?? null;
+    if (!businessId) {
+      console.warn("Geen ANIMO-zaak gevonden voor Stripe-factuur:", invoice.id);
+      return;
+    }
   }
-  const { data: linked, error: linkError } = await query.maybeSingle();
-  if (linkError) throw linkError;
-  if (!linked?.business_id) {
-    console.warn("Geen ANIMO-zaak gevonden voor Stripe-factuur:", invoice.id);
-    return;
-  }
+
   const { error } = await supabaseAdmin.from("billing_invoices").upsert({
-    business_id: linked.business_id,
+    business_id: businessId,
     stripe_invoice_id: invoice.id,
     stripe_subscription_id: subscriptionId,
     stripe_customer_id: customerId,
@@ -315,12 +337,13 @@ async function saveInvoice(
     attempted: invoice.attempted ?? false,
     billing_reason: invoice.billing_reason ?? null,
     collection_method: invoice.collection_method ?? null,
+    source_type: onboardingLeadId ? "onboarding_fee" : "subscription",
+    source_reference: onboardingLeadId,
     last_event_type: eventType,
     synced_at: new Date().toISOString(),
   }, { onConflict: "stripe_invoice_id" });
   if (error) throw error;
 }
-
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
     return jsonResponse(
