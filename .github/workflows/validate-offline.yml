@@ -10,6 +10,10 @@ on:
       - 'tests/offline-access-window.test.mjs'
       - 'tests/stock-state-normalization.test.mjs'
       - 'tests/brussels-timezone.test.mjs'
+      - 'tests/storage-backup-manifest.test.mjs'
+      - 'scripts/backup-supabase-storage.mjs'
+      - 'scripts/verify-storage-backup.mjs'
+      - '.github/workflows/backup-supabase-storage.yml'
       - 'supabase/functions/stripe-webhook/index.ts'
       - 'supabase/functions/process-delivery-note/index.ts'
       - 'sw.js'
@@ -343,6 +347,9 @@ jobs:
           `, context);
           console.log('Recipe cost tests passed: 10 eggs €5 => €0.50/egg; 5 eggs => €2.50; unit conversions passed.');
           NODE
+
+      - name: Validate encrypted Storage backup manifest
+        run: node --test tests/storage-backup-manifest.test.mjs
 
       - name: Validate legacy stock batches and safe recipe consumption
         run: |
