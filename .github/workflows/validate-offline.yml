@@ -215,7 +215,7 @@ jobs:
           const html = fs.readFileSync('index.html', 'utf8');
           const upload = html.match(/<input id="deliveryFile"[^>]*>/)?.[0] || '';
           if (!upload.includes('accept=".xml,.ubl,application/xml,text/xml,application/ubl+xml"')) throw new Error('Stock import picker must accept only UBL/XML.');
-          if (upload.includes('application/pdf') || /image\\//.test(upload)) throw new Error('PDF/image upload must remain disabled.');
+          if (upload.includes('application/pdf') || upload.includes('image/')) throw new Error('PDF/image upload must remain disabled.');
           const start = html.indexOf('async function scanDelivery(){');
           const end = html.indexOf('function confirmDelivery()', start);
           if (start < 0 || end < 0) throw new Error('Stock import handler could not be isolated.');
