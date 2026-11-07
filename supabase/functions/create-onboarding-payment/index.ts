@@ -25,7 +25,7 @@ Deno.serve(async (req: Request) => {
     if (!leadId) return jsonResponse({ error: "De aanvraag-ID ontbreekt." }, 400);
 
     const authorization = req.headers.get("Authorization") || "";
-    const token = authorization.replace(/^Bearer\\s+/i, "");
+    const token = authorization.replace(/^Bearer\s+/i, "");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
