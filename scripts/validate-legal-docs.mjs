@@ -5,7 +5,6 @@ const required = [
   ["algemene-voorwaarden.html", ["hulpmiddel voor de organisatie en registratie", "geen garantie", "FAVV"]],
   ["verwerkersovereenkomst.html", ["artikel 28", "Supabase", "STRATO"]],
   ["landing.html", ["geen wettelijke HACCP-conformiteit"]],
-  ["algemene-voorwaarden.html", ["hulpmiddel voor de organisatie en registratie van het autocontrolesysteem", "geen garantie", "FAVV"]],
   ["docs/gdpr/README.md", ["Status", "Back-upretentie", "Juridische review"]],
   ["docs/gdpr/register-verwerkingsactiviteiten.md", ["Prospecten", "Abonnementen en betalingen", "Leveranciers"]],
   ["docs/gdpr/dpia-screening.md", ["voorlopige screening", "Restrisico"]],
