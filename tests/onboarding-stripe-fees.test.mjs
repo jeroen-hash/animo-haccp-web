@@ -10,7 +10,7 @@ const activate = read("../supabase/functions/activate-onboarding-lead/index.ts")
 const webhook = read("../supabase/functions/stripe-webhook/index.ts");
 const dashboard = read("../onboarding-dashboard.html");
 const activationUi = read("../onboarding-activation.js");
-const migration = read("../supabase/migrations/20261107193000_add_onboarding_invoice_reporting.sql");
+const migration = read("../supabase/migrations/20261107102332_add_onboarding_invoice_reporting.sql");
 const adminDashboard = read("../admin-dashboard.html");
 
 test("public onboarding form keeps the one-time fees separate from subscriptions", () => {
