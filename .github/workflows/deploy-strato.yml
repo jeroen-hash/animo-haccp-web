@@ -110,3 +110,46 @@ jobs:
           mirror -R --verbose out/app /app
           bye
           LFTP
+
+      - name: Validate atomic recipe stock consumption
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const extract = (start, end) => {
+            const a = html.indexOf(start), b = html.indexOf(end, a);
+            if (a < 0 || b < 0) throw new Error('Missing recipe helper: ' + start);
+            return html.slice(a, b);
+          };
+          const planCode = extract('function recipeConsumptionPlan(', 'function recipeShortages(');
+          const consumeCode = extract('function consumeRecipePlan(', 'function recipeAvailable(');
+          const products = [{id:'eggs',quantity:3,batches:[{quantity:3}]},{id:'milk',quantity:5,batches:[{quantity:5}]}];
+          const context = {
+            stockById: id => products.find(p => p.id === id),
+            normalizedIngredientAmount: i => Number(i.quantity),
+            clone: value => JSON.parse(JSON.stringify(value)),
+            state: {stockMovements:[{delta:1}]},
+            consumeBatches: (product, amount) => {
+              if (product.id === 'milk') return false;
+              product.batches[0].quantity -= amount;
+              product.quantity -= amount;
+              context.state.stockMovements.push({delta:-amount});
+              return true;
+            }
+          };
+          vm.runInNewContext(planCode + consumeCode + `
+            const recipe = {yield:1,ingredients:[{stockId:'eggs',quantity:2},{stockId:'eggs',quantity:2}]};
+            const plan = recipeConsumptionPlan(recipe,1);
+            if (plan.length !== 1 || plan[0].need !== 4 || plan[0].shortage !== 1) {
+              throw new Error('Duplicate recipe ingredients must be aggregated before stock validation.');
+            }
+            const validPlan = [{product:products[0],need:1},{product:products[1],need:1}];
+            if (consumeRecipePlan(validPlan,'Test',1)) throw new Error('A failed ingredient consumption must reject the whole production.');
+            if (products[0].quantity !== 3 || products[0].batches[0].quantity !== 3) {
+              throw new Error('Earlier ingredient deductions must be rolled back after a later failure.');
+            }
+            if (state.stockMovements.length !== 1) throw new Error('Failed production must not leave stock movements.');
+          `, context);
+          console.log('Atomic recipe stock consumption tests passed.');
+          NODE
