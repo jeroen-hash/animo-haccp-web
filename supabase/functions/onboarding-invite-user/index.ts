@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-const APP_URL = (Deno.env.get("APP_URL") ?? "https://app.animo-apps.com/").replace(/\/?$/, "/");
+const APP_URL = "https://app.animo-apps.com/";
 
 import { withSupabase } from "jsr:@supabase/server@^1";
 

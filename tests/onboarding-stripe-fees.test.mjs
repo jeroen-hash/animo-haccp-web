@@ -10,6 +10,7 @@ const activate = read("../supabase/functions/activate-onboarding-lead/index.ts")
 const webhook = read("../supabase/functions/stripe-webhook/index.ts");
 const dashboard = read("../onboarding-dashboard.html");
 const activationUi = read("../onboarding-activation.js");
+const invite = read("../supabase/functions/onboarding-invite-user/index.ts");
 const migration = read("../supabase/migrations/20261107102332_add_onboarding_invoice_reporting.sql");
 const adminDashboard = read("../admin-dashboard.html");
 
@@ -80,4 +81,20 @@ test("one-time Stripe invoices are included in the real payments report", () => 
   assert.match(migration, /source_reference/);
   assert.match(migration, /l\.business_name/);
   assert.match(adminDashboard, /Eenmalige onboarding/);
+});
+
+test("onboarding payment success and cancel URLs always return to the official ANIMO app", () => {
+  assert.ok(checkout.includes('const appUrl = "https://app.animo-apps.com";'));
+  assert.ok(checkout.includes("success_url: isPublicCustomerCheckout"));
+  assert.ok(checkout.includes("onboarding-form.html?payment=success"));
+  assert.ok(!checkout.includes('Deno.env.get("APP_URL")'));
+});
+
+test("onboarding invitations always redirect to the official ANIMO app", () => {
+  assert.ok(activate.includes('const APP_URL = "https://app.animo-apps.com/";'));
+  assert.ok(activate.includes("redirectTo: APP_URL"));
+  assert.ok(invite.includes('const APP_URL = "https://app.animo-apps.com/";'));
+  assert.ok(invite.includes("redirectTo: APP_URL"));
+  assert.ok(!activate.includes('Deno.env.get("APP_URL")'));
+  assert.ok(!invite.includes('Deno.env.get("APP_URL")'));
 });
