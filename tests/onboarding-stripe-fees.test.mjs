@@ -76,6 +76,14 @@ test("platform onboarding dashboard exposes the payment link only after approval
   assert.match(dashboard, /latestPayload/);
   assert.match(dashboard, /pay\.status==='paid'/);
 });
+test("onboarding invites use latest prepared users saved on the lead", () => {
+  assert.match(invite, /relatedLead/);
+  assert.match(invite, /leadPreparedSetup/);
+  assert.match(invite, /hasLeadPreparedUsers/);
+  assert.match(invite, /source: hasLeadPreparedUsers \? "onboarding_lead" : "onboarding_intake"/);
+  assert.match(inviteUi, /bestaand\(e\) account\(s\) gevonden/);
+});
+
 test("onboarding invite endpoint resolves either an intake ID or a converted lead ID", () => {
   assert.match(invite, /let resolvedIntakeId = intake_id/);
   assert.match(invite, /\.from\("onboarding_leads"\)/);
