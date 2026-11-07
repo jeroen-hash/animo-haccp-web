@@ -12,7 +12,7 @@ Dit register is opgesteld als werkdocument op basis van de huidige app-architect
 |---|---|
 | Doel | Aanvragen ontvangen, horecazaken beoordelen en inrichten, contracten beheren, klanten ondersteunen |
 | Betrokkenen | Contactpersonen van prospects en klanten, zaakvoerders en vertegenwoordigers |
-| Gegevens | Naam, e-mail, telefoon, zaaknaam, adres, ondernemingsnummer, gekozen dienstverlening, communicatie en eventueel door de prospect aangeleverde documenten |
+| Gegevens | Naam, e-mail, telefoon, zaaknaam, adres, ondernemingsnummer, gekozen dienstverlening, communicatie, eventueel door de prospect aangeleverde documenten en akkoordversie/-tijdstip |
 | Rechtsgrond | Precontractuele maatregelen en uitvoering overeenkomst; gerechtvaardigd belang voor beperkte opvolging en beveiliging; wettelijke verplichting waar toepasselijk |
 | Ontvangers | Bevoegde ANIMO-medewerkers; Supabase; STRATO e-mail/hosting; eventueel Stripe voor betaalde diensten |
 | Bewaring | Zolang nodig voor aanvraag/relatie en wettelijke administratie; verwijder of anonimiseer afgewezen aanvragen volgens een vast te bepalen termijn |
