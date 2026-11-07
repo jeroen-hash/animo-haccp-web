@@ -19,9 +19,13 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return jsonResponse({ error: "Alleen POST-verzoeken zijn toegestaan." }, 405);
 
   try {
+    const body = await req.json().catch(() => ({}));
+    const leadId = typeof body.lead_id === "string" ? body.lead_id.trim() : "";
+    const uploadToken = typeof body.upload_token === "string" ? body.upload_token.trim() : "";
+    if (!leadId) return jsonResponse({ error: "De aanvraag-ID ontbreekt." }, 400);
+
     const authorization = req.headers.get("Authorization") || "";
-    const token = authorization.replace(/^Bearer\s+/i, "");
-    if (!token) return jsonResponse({ error: "Je moet als platformbeheerder aangemeld zijn." }, 401);
+    const token = authorization.replace(/^Bearer\\s+/i, "");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
