@@ -11,7 +11,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-function jsonResponse(body, status = 200) {
+function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
@@ -21,7 +21,7 @@ function jsonResponse(body, status = 200) {
   });
 }
 
-function getBearerToken(request) {
+function getBearerToken(request: Request) {
   const authorization =
     request.headers.get("Authorization") || "";
 
@@ -32,7 +32,7 @@ function getBearerToken(request) {
   return authorization.slice(7).trim();
 }
 
-function safeFileName(fileName) {
+function safeFileName(fileName: string) {
   return String(fileName || "document")
     .normalize("NFKD")
     .replace(/[^a-zA-Z0-9._-]/g, "-")
@@ -40,7 +40,7 @@ function safeFileName(fileName) {
     .slice(-120);
 }
 
-async function findUserByEmail(adminClient, email) {
+async function findUserByEmail(adminClient: any, email: string) {
   for (let page = 1; page <= 20; page++) {
     const { data, error } =
       await adminClient.auth.admin.listUsers({
@@ -53,7 +53,7 @@ async function findUserByEmail(adminClient, email) {
     }
 
     const user = data.users.find(
-      (item) =>
+      (item: { email?: string | null }) =>
         String(item.email || "").toLowerCase() ===
         email.toLowerCase()
     );
