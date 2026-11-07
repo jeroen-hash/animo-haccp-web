@@ -226,6 +226,41 @@ jobs:
           console.log('UBL-only stock import guard passed; AI/PDF parser cannot be invoked from stock upload.');
           NODE
 
+      - name: Validate manual stock batch adjustments
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const extract = (start, end) => {
+            const a = html.indexOf(start);
+            const b = html.indexOf(end, a);
+            if (a < 0 || b < 0) throw new Error('Missing stock helper: ' + start);
+            return html.slice(a, b).trim();
+          };
+          const sorted = extract('function sortedBatches(product){', 'function applyPriceVisibility');
+          const sync = extract('function syncProductQuantity(product){', 'function expiryInfo');
+          const consume = extract('function consumeBatches(product,amount,reason){', 'function applyPriceVisibility');
+          const adjust = extract('function adjustStock(productId){', 'function deleteStock');
+          const context = {
+            state: { stock: [{ id: 'p1', name: 'Eieren', unit: 'stuks', quantity: 4, batches: [{ id: 'old', quantity: 4, expiryDate: '2026-12-01', receivedAt: '2026-11-01' }] }] },
+            prompt: (() => { const values = ['3', '2026-12-05']; return () => values.shift(); })(),
+            alert: message => { throw new Error('Unexpected alert: ' + message); },
+            id: prefix => prefix + '-new',
+            stockMovement: () => {},
+            stockSave: () => { context.saved = true; }
+          };
+          vm.runInNewContext(sorted + ';' + sync + ';' + consume + ';' + adjust + `
+            const before = state.stock[0].quantity;
+            adjustStock('p1');
+            if (state.stock[0].quantity !== before + 3) throw new Error('Manual stock addition did not increase total stock.');
+            if (state.stock[0].batches.length !== 2) throw new Error('Manual stock addition did not create a batch.');
+            if (state.stock[0].batches[1].expiryDate !== '2026-12-05') throw new Error('Expiry date was not saved on the new batch.');
+          `, context);
+          if (!context.saved) throw new Error('Manual stock addition did not save.');
+          console.log('Manual stock addition test passed: quantity, expiry batch, and save.');
+          NODE
+
       - name: Validate recipe unit-cost and quantity calculations
         run: |
           node <<'NODE'
