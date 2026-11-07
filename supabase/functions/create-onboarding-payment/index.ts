@@ -81,7 +81,7 @@ Deno.serve(async (req: Request) => {
       ? payload.onboarding_payment as Record<string, unknown>
       : {};
     if (payment.status === "paid") {
-      return jsonResponse({ error: "Deze onboardingkost is al betaald.", paid: true }, 409);
+      return jsonResponse({ message: "Deze onboardingkost is al betaald.", paid: true });
     }
 
     const stripe = new Stripe(stripeSecretKey);
@@ -104,6 +104,9 @@ Deno.serve(async (req: Request) => {
       if (existingSession.status === "open" && existingSession.url) {
         return jsonResponse({ url: existingSession.url, reused: true, amount_ex_vat: fee.amount, currency: "eur" });
       }
+      if (existingSession.status === "complete" && existingSession.payment_status !== "paid") {
+        return jsonResponse({ error: "De betaling wordt nog door Stripe verwerkt. Wacht op de bevestiging voordat je een nieuwe betaallink maakt." }, 409);
+      }
     }
 
     const suffix = Array.from(crypto.getRandomValues(new Uint8Array(8)))
@@ -125,6 +128,7 @@ Deno.serve(async (req: Request) => {
         },
       }],
       automatic_tax: { enabled: true },
+      tax_id_collection: { enabled: true },
       invoice_creation: {
         enabled: true,
         invoice_data: {
