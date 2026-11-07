@@ -14,9 +14,11 @@ const migration = read("../supabase/migrations/20261107102332_add_onboarding_inv
 const adminDashboard = read("../admin-dashboard.html");
 
 test("public onboarding form keeps the one-time fees separate from subscriptions", () => {
-  assert.match(form, /Gedeeltelijke inrichting door ANIMO \(€75 eenmalig, excl\. btw\)/);
-  assert.match(form, /Volledige inrichting door ANIMO \(€175 eenmalig, excl\. btw\)/);
+  assert.match(form, /Gedeeltelijke inrichting door ANIMO \(€75 eenmalig, excl\. btw \(€90,75 incl\. btw\)\)/);
+  assert.match(form, /Volledige inrichting door ANIMO \(€175 eenmalig, excl\. btw \(€211,75 incl\. btw\)\)/);
   assert.match(form, /Zelfstandig starten na activatie \(gratis\)/);
+  assert.match(form, /create-onboarding-payment/);
+  assert.match(form, /window\.location\.assign\(checkout\.url\)/);
 });
 
 test("server locks the public service choice to fixed EUR cent amounts", () => {
@@ -36,6 +38,8 @@ test("one-time Checkout uses fixed amounts, exclusive tax, automatic tax and inv
   assert.match(checkout, /invoice_data:\s*\{/);
   assert.match(checkout, /tax_id_collection:\s*\{\s*enabled:\s*true\s*\}/);
   assert.match(checkout, /platform_admins/);
+  assert.match(checkout, /upload_token/);
+  assert.match(checkout, /isPublicCustomerCheckout/);
 });
 
 test("new paid onboarding requests cannot activate before a confirmed payment", () => {
@@ -59,6 +63,7 @@ test("platform onboarding dashboard exposes the payment link only after approval
   assert.match(dashboard, /Betalingsstatus/);
   assert.match(dashboard, /mailto:/);
   assert.match(dashboard, /latestPayload/);
+  assert.match(dashboard, /pay\.status==='paid'/);
 });
 test("one-time Stripe invoices are included in the real payments report", () => {
   assert.match(checkout, /payment_kind: "onboarding_fee"/);
