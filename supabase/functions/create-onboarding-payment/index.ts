@@ -128,7 +128,7 @@ Deno.serve(async (req: Request) => {
 
     const suffix = Array.from(crypto.getRandomValues(new Uint8Array(8)))
       .map((n) => "abcdefghijklmnopqrstuvwxyz"[n % 26]).join("");
-    const appUrl = (Deno.env.get("APP_URL") || "https://app.animo-apps.com").replace(/\/$/, "");
+    const appUrl = "https://app.animo-apps.com";
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       allow_promotion_codes: true,
