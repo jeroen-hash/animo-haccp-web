@@ -80,7 +80,7 @@ test("onboarding user invitations pass the converted intake ID, not the public l
   assert.match(dashboard, /converted_intake_id:l\.converted_intake_id/);
   assert.match(dashboard, /data-intake-id=/);
   assert.match(inviteUi, /data-intake-id/);
-  assert.match(invite, /dataset\.intakeId/);
+  assert.match(inviteUi, /dataset\.intakeId/);
   assert.match(inviteUi, /Deze aanvraag is nog niet geactiveerd/);
   assert.match(read("../supabase/functions/onboarding-invite-user/index.ts"), /\.maybeSingle\(\)/);
 });
