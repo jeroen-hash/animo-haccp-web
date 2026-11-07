@@ -21,12 +21,12 @@ function jsonResponse(
   });
 }
 
-function isValidFutureDate(value: string | null) {
+function isValidFutureDate(value: string | null, now = Date.now()) {
   if (!value) return false;
 
   const timestamp = new Date(value).getTime();
 
-  return Number.isFinite(timestamp) && timestamp > Date.now();
+  return Number.isFinite(timestamp) && timestamp > now;
 }
 
 function getAccessDecision(input: any) {
@@ -41,7 +41,7 @@ function getAccessDecision(input: any) {
     trialStart <= now && Number.isFinite(trialEnd) && trialEnd > now;
   const trialExpired = Number.isFinite(trialEnd) && trialEnd <= now;
   const subscriptionActive = input.subscriptionStatus === "active" &&
-    isValidFutureDate(input.subscriptionPeriodEnd);
+    isValidFutureDate(input.subscriptionPeriodEnd, now);
 
   if (input.lifetimeFree) {
     return { accessAllowed: true, accessReason: "lifetime_free", trialActive, trialExpired };
