@@ -261,6 +261,32 @@ jobs:
           console.log('Manual stock addition test passed: quantity, expiry batch, and save.');
           NODE
 
+      - name: Validate UBL stock unit normalization
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const start = html.indexOf('function prepareDeliveryRows(rows){');
+          const end = html.indexOf('function confirmDelivery()', start);
+          const unitStart = html.indexOf('function recipeUnitInfo(unit)');
+          const unitEnd = html.indexOf('function saveRecipe(e)', unitStart);
+          const matchStart = html.indexOf('function findStockMatch(line)');
+          const matchEnd = html.indexOf('function renderDeliveryReview()', matchStart);
+          if ([start,end,unitStart,unitEnd,matchStart,matchEnd].some(x => x < 0)) throw new Error('UBL unit normalization helpers missing.');
+          const matchLineEnd = html.indexOf(String.fromCharCode(10), matchStart);
+          const source = html.slice(unitStart,unitEnd) + html.slice(matchStart,matchLineEnd) + html.slice(start,end);
+          const context = { state:{stock:[{id:'eggs',name:'Eieren',unit:'kg',code:'',quantity:0}]}, normalizeStockName:x=>String(x||'').toLowerCase().replace(/s$/,'') };
+          vm.runInNewContext(source + `
+            const grams = prepareDeliveryRows([{name:'Eieren',quantity:500,unit:'g',lineTotal:2.5}]);
+            if (Math.abs(grams[0].stockQuantity - 0.5) > 0.000001) throw new Error('500 g must normalize to 0.5 kg.');
+            let rejected = false;
+            try { prepareDeliveryRows([{name:'Eieren',quantity:2,unit:'dozen',lineTotal:10}]); } catch(e) { rejected = /Eenheid komt niet overeen/.test(e.message); }
+            if (!rejected) throw new Error('Incompatible package units must be rejected.');
+            console.log('UBL unit normalization passed: 500 g -> 0.5 kg; incompatible package unit rejected.');
+          `,context);
+          NODE
+
       - name: Validate recipe unit-cost and quantity calculations
         run: |
           node <<'NODE'
