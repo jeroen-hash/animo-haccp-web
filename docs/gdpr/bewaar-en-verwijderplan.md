@@ -12,7 +12,7 @@ Persoonsgegevens worden niet langer bewaard dan nodig voor het doel. Een contrac
 | Actieve cloudregistraties van horecazaak | Contractduur + 90 dagen exportperiode | Na exportperiode verwijderen via gecontroleerde account-/zaakverwijderprocedure; technische uitvoering moet periodiek getest worden |
 | Offline browserkopieën en synchronisatiewachtrij | Tot gebruiker browserdata wist; kan langer blijven staan | Klant moet eerst synchronisatie controleren en daarna browseropslag van de app wissen; app biedt geen remote wipe |
 | Private onboarding- en documentbestanden | Contract-/aanvraagdoel plus noodzakelijke bewaartermijn | Supabase Storage; versleutelde kopieën op STRATO volgens backupworkflow |
-| STRATO back-upbestanden | Momenteel geen automatische verwijdertermijn in workflow gedocumenteerd | **OPEN ACTIE:** automatische retentie instellen, voorstel maximaal 90 dagen, met gecontroleerde uitzonderingsprocedure |
+| STRATO back-upbestanden | Maximaal 90 dagen vanaf de datum in de bestandsnaam | De dagelijkse back-upworkflow verwijdert na succesvolle upload-, checksum- en decryptiecontrole de versleutelde back-ups en bijbehorende checksums ouder dan 90 dagen. Alleen bestanden met het verwachte ANIMO-back-upnaamformaat worden verwijderd. |
 | Facturen en boekhoudstukken | Belgische wettelijke bewaartermijn | Beperkte boekhoudtoegang; niet verwijderen vóór wettelijke termijn |
 | Account- en beveiligingslogs | Stel korte, aantoonbare termijn in (voorstel 6–12 maanden afhankelijk van logtype) | **OPEN ACTIE:** inventariseer Supabase, STRATO, GitHub logs en stel per leverancier werkelijke termijn vast |
 | Prospectaanvragen die niet klant worden | Voorstel 12 maanden na laatste betekenisvolle contact | **OPEN ACTIE:** implementeer verwijder-/reviewmoment en documenteer uitzonderingen |
@@ -27,8 +27,8 @@ Persoonsgegevens worden niet langer bewaard dan nodig voor het doel. Een contrac
 6. Laat back-upkopieën automatisch vervallen volgens de vastgelegde termijn; bij herstel mogen verwijderde gegevens niet opnieuw onbedoeld actief worden.
 7. Informeer de klant over wat verwijderd is en welke kopieën nog tijdelijk in back-ups kunnen zitten.
 
-## 4. Back-upretentie – blokkerende actie
-De bestaande technische documentatie over storage-back-ups beschrijft versleutelde GPG-kopieën van de private buckets onboarding-lead-documents en onboarding-documents op STRATO en vermeldt dat oude back-ups momenteel niet automatisch verwijderd worden. Totdat retentie is ingesteld en getest, mag ANIMO niet verklaren dat alle kopieën exact 90 dagen na einde contract definitief verdwenen zijn.
+## 4. Back-upretentie – technische uitvoering
+De dagelijkse GitHub Actions-back-upworkflow bewaart versleutelde GPG-kopieën van de private buckets onboarding-lead-documents en onboarding-documents op STRATO. Na een geslaagde upload, terug-download, checksumcontrole, decryptie en inhoudscontrole verwijdert de workflow uitsluitend bestanden met het patroon `animo-storage-YYYYMMDDTHHMMSSZ.tar.gz.gpg` die ouder zijn dan 90 dagen, plus hun `.sha256`-bestand. De eerste uitvoering van deze nieuwe retentiestap moet nog succesvol worden getest. Dit is een termijn voor technische back-upkopieën en staat los van de exportperiode van 90 dagen voor actieve cloudgegevens. Bij een mislukte retentiestap faalt de workflow en wordt de bestaande incidentmelding geactiveerd.
 
 ## 5. Offline opslag – klantinformatie
 ANIMO HACCP bewaart voor offline gebruik appgegevens in browseropslag, waaronder localStorage en IndexedDB. Een gebruiker kan uitloggen zonder dat alle lokale bedrijfsgegevens automatisch worden verwijderd. Klanten moeten daarom:
