@@ -269,6 +269,35 @@ serve(async (request) => {
       );
     }
 
+    const leadPayloadForPayment =
+      lead.payload &&
+      typeof lead.payload === "object" &&
+      !Array.isArray(lead.payload)
+        ? lead.payload
+        : {};
+    const onboardingPayment =
+      leadPayloadForPayment.onboarding_payment &&
+      typeof leadPayloadForPayment.onboarding_payment === "object"
+        ? leadPayloadForPayment.onboarding_payment
+        : {};
+
+    // New paid-service applications must be paid before any business setup is activated.
+    // Older leads without this explicit flag retain their existing activation path.
+    if (
+      leadPayloadForPayment.onboarding_payment_required === true &&
+      leadPayloadForPayment.service_level !== "zelfstandig" &&
+      onboardingPayment.status !== "paid"
+    ) {
+      return jsonResponse(
+        {
+          error: "De eenmalige onboardingkost is nog niet betaald. Maak eerst de Stripe-betaallink aan en wacht op de bevestigde betaling.",
+          code: "onboarding_payment_required",
+          payment_status: onboardingPayment.status || "unpaid",
+        },
+        402
+      );
+    }
+
     const allowedStatuses = [
       "in_review",
       "approved",
