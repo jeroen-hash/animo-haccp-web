@@ -4,7 +4,6 @@ import crypto from 'node:crypto';
 
 const root = path.resolve(process.env.BACKUP_EXTRACT_DIR || 'storage-backup-restore-check');
 const manifestPath = path.join(root, 'manifest.json');
-const allowedBuckets = new Set(['onboarding-lead-documents', 'onboarding-documents']);
 
 const manifestStat = await fs.lstat(manifestPath).catch(() => null);
 if (!manifestStat?.isFile() || manifestStat.isSymbolicLink()) {
@@ -15,14 +14,18 @@ const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
 if (manifest.format !== 1 || manifest.project !== 'zimzsovvtdmrthrflkgm') {
   throw new Error('Backup manifest format or Supabase project ID is unexpected.');
 }
-if (!Array.isArray(manifest.objects) || !Number.isInteger(manifest.objectCount) ||
-    manifest.objectCount !== manifest.objects.length || manifest.objectCount < 1) {
+if (!Array.isArray(manifest.buckets) || manifest.buckets.length < 1 ||
+    manifest.buckets.some(name => typeof name !== 'string' || !/^[a-z0-9][a-z0-9_-]{0,99}$/.test(name)) ||
+    new Set(manifest.buckets).size !== manifest.buckets.length ||
+    manifest.bucketCount !== manifest.buckets.length ||
+    !Array.isArray(manifest.objects) || !Number.isInteger(manifest.objectCount) ||
+    manifest.objectCount !== manifest.objects.length || manifest.objectCount < 0) {
   throw new Error('Backup manifest object count is invalid.');
 }
 
 const seen = new Set();
 for (const item of manifest.objects) {
-  if (!item || !allowedBuckets.has(item.bucket) || typeof item.path !== 'string' ||
+  if (!item || !manifest.buckets.includes(item.bucket) || typeof item.path !== 'string' ||
       item.path.length === 0 || item.path.startsWith('/') || item.path.includes('\\') ||
       item.path.split('/').some(part => !part || part === '.' || part === '..') ||
       !Number.isInteger(item.size) || item.size < 0 ||
@@ -53,4 +56,4 @@ for (const item of manifest.objects) {
   }
 }
 
-console.log('Verified ' + manifest.objects.length + ' restored object(s): every file exists and matches its recorded size and SHA-256 hash.');
+console.log('Verified ' + manifest.buckets.length + ' bucket(s) and ' + manifest.objects.length + ' restored object(s): every file exists and matches its recorded size and SHA-256 hash.');
