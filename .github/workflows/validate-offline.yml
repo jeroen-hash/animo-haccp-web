@@ -282,7 +282,7 @@ jobs:
           const end = html.indexOf('function confirmDelivery()', start);
           const unitStart = html.indexOf('function recipeUnitInfo(unit)');
           const unitEnd = html.indexOf('function saveRecipe(e)', unitStart);
-          const matchStart = html.indexOf('function findStockMatch(line)');
+          const matchStart = html.indexOf('function findStockMatch(');
           const matchEnd = html.indexOf('function renderDeliveryReview()', matchStart);
           if ([start,end,unitStart,unitEnd,matchStart,matchEnd].some(x => x < 0)) throw new Error('UBL unit normalization helpers missing.');
           const matchLineEnd = html.indexOf(String.fromCharCode(10), matchStart);
