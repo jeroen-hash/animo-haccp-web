@@ -1810,7 +1810,11 @@ async function renderUsers(){
   try{
     if(!window.FAVVListBusinessMembers)throw new Error('Supabase is niet verbonden.');
     const members=await window.FAVVListBusinessMembers();
-    box.innerHTML=members.length?members.map(member=>{
+    // Verwijderde/gedeactiveerde koppelingen blijven veilig in de database
+    // zodat dezelfde persoon later opnieuw kan worden uitgenodigd, maar
+    // worden niet langer in de actieve teamlijst of met hun e-mailadres getoond.
+    const activeMembers=members.filter(member=>member.active===true);
+    box.innerHTML=activeMembers.length?activeMembers.map(member=>{
       const roleLabel=member.member_role==='owner'?'Eigenaar':member.member_role==='manager'?'Manager':'Medewerker';
       const statusLabel=!member.active?'Gedeactiveerd':member.confirmed_at?'Actief':'Uitnodiging verzonden';
       const statusClass=!member.active?'warning':member.confirmed_at?'':'warning';
