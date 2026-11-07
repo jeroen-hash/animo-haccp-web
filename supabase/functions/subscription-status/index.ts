@@ -29,14 +29,7 @@ function isValidFutureDate(value: string | null) {
   return Number.isFinite(timestamp) && timestamp > Date.now();
 }
 
-function getAccessDecision(input: {
-  lifetimeFree: boolean;
-  subscriptionStatus: string | null;
-  subscriptionPeriodEnd: string | null;
-  trialStartedAt: string | null;
-  trialEndsAt: string | null;
-  now?: number;
-}) {
+function getAccessDecision(input: any) {
   const now = input.now ?? Date.now();
   const trialStart = input.trialStartedAt
     ? new Date(input.trialStartedAt).getTime()
