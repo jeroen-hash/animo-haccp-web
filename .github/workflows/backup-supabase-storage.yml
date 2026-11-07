@@ -97,10 +97,10 @@ jobs:
             : > "$known_hosts"
             while IFS= read -r key_line; do
               [ -n "$key_line" ] || continue
-              printf '%s\\n' "$key_line" > "$candidate_key"
+              printf '%s\n' "$key_line" > "$candidate_key"
               fingerprint="$(ssh-keygen -lf "$candidate_key" -E sha256 | awk '{print $2}')"
               if [ "$fingerprint" = "$SFTP_HOST_KEY_SHA256" ]; then
-                printf '%s\\n' "$key_line" >> "$known_hosts"
+                printf '%s\n' "$key_line" >> "$known_hosts"
               fi
             done < "$scanned_keys"
 
