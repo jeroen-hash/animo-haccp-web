@@ -88,6 +88,7 @@ test("onboarding invite endpoint resolves either an intake ID or a converted lea
   assert.match(invite, /let resolvedIntakeId = intake_id/);
   assert.match(invite, /\.from\("onboarding_leads"\)/);
   assert.match(invite, /converted_intake_id/);
+  assert.match(invite, /select\("id, converted_intake_id, status, payload"\)/);
   assert.match(invite, /resolvedIntakeId = lead\.converted_intake_id/);
   assert.match(invite, /nog niet geactiveerd naar een klantonboarding/);
 });
