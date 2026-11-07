@@ -5,7 +5,6 @@ import crypto from 'node:crypto';
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/+$/, '');
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const outputDir = process.env.BACKUP_OUTPUT_DIR || 'storage-backup';
-const buckets = ['onboarding-lead-documents', 'onboarding-documents'];
 const pageSize = 1000;
 
 if (!supabaseUrl || !serviceKey) {
@@ -16,6 +15,19 @@ const headers = {
   apikey: serviceKey,
   Authorization: 'Bearer ' + serviceKey,
 };
+
+async function listBuckets() {
+  const response = await fetch(supabaseUrl + '/storage/v1/bucket', { headers });
+  if (!response.ok) throw new Error('Supabase Storage bucket inventory failed (HTTP ' + response.status + ').');
+  const result = await response.json();
+  if (!Array.isArray(result)) throw new Error('Unexpected Supabase Storage bucket inventory response.');
+  const names = result.map(bucket => String(bucket?.name || bucket?.id || '')).sort();
+  if (names.length === 0 || names.some(name => !/^[a-z0-9][a-z0-9_-]{0,99}$/.test(name))) {
+    throw new Error('Storage bucket inventory is empty or contains an unsafe bucket name.');
+  }
+  if (new Set(names).size !== names.length) throw new Error('Storage bucket inventory contains duplicate names.');
+  return names;
+}
 
 async function listPage(bucket, prefix, offset) {
   const response = await fetch(supabaseUrl + '/storage/v1/object/list/' + encodeURIComponent(bucket), {
@@ -93,13 +105,11 @@ async function discoverAndDownload(bucket, prefix = '', seenFolders = new Set(),
 await fs.rm(outputDir, { recursive: true, force: true });
 await fs.mkdir(outputDir, { recursive: true, mode: 0o700 });
 
+const buckets = await listBuckets();
+console.log('Discovered ' + buckets.length + ' Storage bucket(s): ' + buckets.join(', '));
 const manifest = [];
 for (const bucket of buckets) {
   await discoverAndDownload(bucket, '', new Set(), manifest);
-}
-
-if (manifest.length === 0) {
-  throw new Error('No Storage objects were found; refusing to create an empty backup.');
 }
 
 manifest.sort((a, b) => (a.bucket + '/' + a.path).localeCompare(b.bucket + '/' + b.path));
@@ -110,10 +120,11 @@ await fs.writeFile(
     createdAt: new Date().toISOString(),
     project: 'zimzsovvtdmrthrflkgm',
     buckets,
+    bucketCount: buckets.length,
     objectCount: manifest.length,
     objects: manifest,
   }, null, 2) + '\n',
   { mode: 0o600 },
 );
 
-console.log('Storage backup source collection completed. Object count: ' + manifest.length);
+console.log('Storage backup source collection completed. Bucket count: ' + buckets.length + '; object count: ' + manifest.length);
