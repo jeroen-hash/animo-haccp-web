@@ -483,6 +483,41 @@ body:has(#cloudGate:not(.hidden)) .mobile-nav{display:none!important}
   }
 }
 </style>
+<style id="favv-export-mobile-fix">
+/* Dit hoort bij de app-overlay, niet bij de HTML van een af te drukken PDF. */
+@media(max-width:900px){
+  #favvExportModal{
+    position:fixed!important;inset:0!important;z-index:1200!important;
+    display:none!important;align-items:flex-start!important;justify-content:center!important;
+    overflow:hidden!important;
+    padding:calc(8px + env(safe-area-inset-top)) 10px calc(88px + env(safe-area-inset-bottom))!important;
+  }
+  #favvExportModal.open{display:flex!important}
+  #favvExportModal>.export-modal{
+    display:flex!important;flex-direction:column!important;
+    width:100%!important;max-width:680px!important;
+    height:calc(100vh - 104px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;
+    max-height:calc(100vh - 104px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;
+    max-height:calc(100dvh - 104px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;
+    min-height:0!important;overflow:hidden!important;margin:0!important;
+  }
+  #favvExportModal .export-modal-head{flex:0 0 auto}
+  #favvExportModal #favvExportForm{
+    display:flex!important;flex:1 1 auto!important;flex-direction:column!important;
+    min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;
+    overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;
+    padding-bottom:12px!important;
+  }
+  #favvExportModal .modal-actions{
+    position:sticky!important;bottom:0!important;z-index:5!important;
+    display:grid!important;grid-template-columns:1fr!important;flex:0 0 auto!important;
+    gap:8px!important;background:#fff!important;
+    padding:12px 0 max(12px,env(safe-area-inset-bottom))!important;
+    margin-top:12px!important;box-shadow:0 -8px 14px rgba(255,255,255,.98)!important;
+  }
+  #favvExportModal .modal-actions .btn{display:block!important;width:100%!important;min-height:48px!important}
+}
+</style>
 </head><body>
 <div id="cloudStatus" class="cloud-status">Lokale veilige modus</div>
 <div id="cloudGate" class="cloud-gate">
@@ -1709,53 +1744,44 @@ td{padding:8px;font-size:8.5pt;line-height:1.4}
 }
 
 
-/* Mobiele correctie: autocontrole-export blijft volledig bereikbaar boven de vaste navigatiebalk. */
-@media(max-width:900px){
-  #favvExportModal{
-    z-index:1200!important;
-    position:fixed!important;
-    inset:0!important;
-    display:none;
-    align-items:flex-start!important;
-    justify-content:center!important;
-    overflow-y:auto!important;
-    padding:calc(12px + env(safe-area-inset-top)) 10px calc(96px + env(safe-area-inset-bottom))!important;
-  }
-  #favvExportModal.open{display:flex!important}
-  #favvExportModal>.export-modal{
-    display:flex!important;
-    flex-direction:column!important;
-    width:100%!important;
-    max-width:680px!important;
-    max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 112px)!important;
-    max-height:calc(100vh - 124px)!important;
-    overflow:hidden!important;
-    margin:auto 0!important;
-  }
-  #favvExportModal .export-modal-head{flex:0 0 auto}
-  #favvExportModal #favvExportForm{
-    display:flex!important;
-    flex:1 1 auto!important;
-    flex-direction:column!important;
-    min-height:0!important;
-    overflow-y:auto!important;
-    -webkit-overflow-scrolling:touch;
-    padding-bottom:max(16px,env(safe-area-inset-bottom))!important;
-  }
-  #favvExportModal .modal-actions{
-    position:sticky!important;
-    bottom:0!important;
-    z-index:2!important;
-    display:flex!important;
-    flex-wrap:wrap!important;
-    background:#fff!important;
-    padding:12px 0 max(12px,env(safe-area-inset-bottom))!important;
-    margin-top:auto!important;
-    box-shadow:0 -8px 14px rgba(255,255,255,.96)!important;
-  }
-  #favvExportModal .modal-actions .btn{min-height:46px}
+
+.doc-logo-image{display:block;width:64px;height:64px;object-fit:contain;background:#fff;border-radius:14px;padding:5px;flex:0 0 64px}
+.brand-wrap{gap:16px}
+.doc-header{min-height:104px;padding:22px 24px;margin-bottom:22px}
+.doc-title{font-size:22pt;line-height:1.12}
+.doc-subtitle{font-size:9pt;margin-top:6px;letter-spacing:.15px}
+.doc-meta{min-width:118px;padding-left:14px;border-left:1px solid rgba(255,255,255,.35)}
+.summary-grid{gap:9px;margin-bottom:22px}
+.summary-card{min-height:76px;display:flex;flex-direction:column;justify-content:center}
+.section-title{margin-bottom:12px;padding-bottom:8px}
+table{font-size:8.5pt;border:1px solid #d7e2da;border-radius:8px}
+thead th:first-child{border-top-left-radius:7px}
+thead th:last-child{border-top-right-radius:7px}
+.status{white-space:nowrap}
+.allergen-tags{gap:5px}
+.tag{border:1px solid #d4e8da;padding:4px 7px}
+.signature-grid{margin-top:38px}
+.signature{min-height:52px;padding-top:28px;border-top:1px solid #8c9b91;border-bottom:0}
+.doc-footer{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.doc-footer-main{display:block;min-width:120px}
+@media(max-width:700px){
+ .doc-header{padding:15px;gap:12px}
+ .doc-logo-image{width:48px;height:48px;flex-basis:48px}
+ .doc-title{font-size:16pt}
+ .doc-meta{font-size:7pt;min-width:88px}
+ .summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .report-info{grid-template-columns:1fr}
+ .chart-grid,.device-charts,.device-overview,.trend-grid{grid-template-columns:1fr}
+ .doc-footer{display:block}
 }
-</style></head><body><header class="doc-header"><div class="brand-wrap"><div class="doc-logo">A</div><div><div class="doc-title">${esc(title)}</div><div class="doc-subtitle">Animo HACCP · Registratieoverzicht</div></div></div><div class="doc-meta">Aangemaakt<br><strong>${esc(now)}</strong></div></header>${body}<div class="legal-note"><strong>Belangrijk:</strong> dit document is automatisch samengesteld uit gegevens die de gebruiker heeft ingevoerd. De gebruiker is verantwoordelijk voor de juistheid, volledigheid, opvolging en naleving van de toepasselijke verplichtingen. Animo HACCP is een onafhankelijk registratiehulpmiddel, is niet verbonden aan, erkend door of partner van het FAVV en vervangt geen officiële gids, inspectie of professioneel advies.</div><footer class="doc-footer"><div class="doc-footer-main"><span>Animo HACCP</span><span>Intern registratieoverzicht</span></div><span>Controleer alle gegevens vóór gebruik of voorlegging.</span></footer><script>window.onload=()=>{setTimeout(()=>window.print(),250)}<\/script>
+@media print{
+ .doc-header{background:#103e2a!important;box-shadow:none}
+ .doc-logo-image{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ .summary-card,.info-box,.device-card,.trend-card,.chart-card{break-inside:avoid}
+ .section-title{break-after:avoid}
+ table{font-size:8pt}
+}
+</style></head><body><header class="doc-header"><div class="brand-wrap"><img class="doc-logo-image" src="${location.origin}/images/animo-logo.png.png" alt="ANIMO HACCP"><div><div class="doc-title">${esc(title)}</div><div class="doc-subtitle">Animo HACCP · Registratieoverzicht</div></div></div><div class="doc-meta">Aangemaakt<br><strong>${esc(now)}</strong></div></header>${body}<div class="legal-note"><strong>Belangrijk:</strong> dit document is automatisch samengesteld uit gegevens die de gebruiker heeft ingevoerd. De gebruiker is verantwoordelijk voor de juistheid, volledigheid, opvolging en naleving van de toepasselijke verplichtingen. Animo HACCP is een onafhankelijk registratiehulpmiddel, is niet verbonden aan, erkend door of partner van het FAVV en vervangt geen officiële gids, inspectie of professioneel advies.</div><footer class="doc-footer"><div class="doc-footer-main"><span>Animo HACCP</span><span>Intern registratieoverzicht</span></div><span>Controleer alle gegevens vóór gebruik of voorlegging.</span></footer><script>window.onload=()=>{setTimeout(()=>window.print(),250)}<\/script>
 <style id="stock-product-mobile-nav-fix">
 /* Stockproductvenster moet boven de vaste iPhone-navigatiebalk liggen. */
 @media(max-width:900px){
