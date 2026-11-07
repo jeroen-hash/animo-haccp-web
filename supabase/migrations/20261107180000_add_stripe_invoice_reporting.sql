@@ -72,7 +72,7 @@ begin
       'paid_amount_30d_eur', round(coalesce(sum(amount_paid) filter (where currency='eur' and status='paid' and paid_at >= now()-interval '30 days'),0)::numeric/100,2),
       'paid_count_30d', count(*) filter (where status='paid' and paid_at >= now()-interval '30 days'),
       'open_amount_eur', round(coalesce(sum(amount_remaining) filter (where currency='eur' and status='open'),0)::numeric/100,2),
-      'failed_attempts_30d', count(*) filter (where currency='eur' and status='open' and attempted=true and last_event_type in ('invoice.payment_failed','invoice.payment_action_required') and synced_at >= now()-interval '30 days')
+      'failed_attempts_30d', count(*) filter (where currency='eur' and status='open' and attempted=true and attempt_count > 0 and synced_at >= now()-interval '30 days')
     ) from public.billing_invoices),
     'recent_invoices', coalesce((
       select jsonb_agg(jsonb_build_object(
