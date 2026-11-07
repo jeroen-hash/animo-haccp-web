@@ -11,7 +11,7 @@ Persoonsgegevens worden niet langer bewaard dan nodig voor het doel. Een contrac
 |---|---|---|
 | Actieve cloudregistraties van horecazaak | Contractduur + 90 dagen exportperiode | Na exportperiode verwijderen via gecontroleerde account-/zaakverwijderprocedure; technische uitvoering moet periodiek getest worden |
 | Offline browserkopieën en synchronisatiewachtrij | Tot gebruiker browserdata wist; kan langer blijven staan | Klant moet eerst synchronisatie controleren en daarna browseropslag van de app wissen; app biedt geen remote wipe |
-| Private onboarding- en documentbestanden | Contract-/aanvraagdoel plus noodzakelijke bewaartermijn | Supabase Storage; versleutelde kopieën op STRATO volgens backupworkflow |
+| Private onboarding- en documentbestanden | Contract-/aanvraagdoel plus noodzakelijke bewaartermijn | Supabase Storage; de eigen STRATO-workflow kopieert momenteel alleen de twee expliciet ingestelde buckets `onboarding-lead-documents` en `onboarding-documents`. Controleer of dit alle relevante bestanden omvat. |
 | STRATO back-upbestanden | Maximaal 90 dagen vanaf de datum in de bestandsnaam | De dagelijkse back-upworkflow verwijdert na succesvolle upload-, checksum- en decryptiecontrole de versleutelde back-ups en bijbehorende checksums ouder dan 90 dagen. Alleen bestanden met het verwachte ANIMO-back-upnaamformaat worden verwijderd. |
 | Facturen en boekhoudstukken | Belgische wettelijke bewaartermijn | Beperkte boekhoudtoegang; niet verwijderen vóór wettelijke termijn |
 | Account- en beveiligingslogs | Stel korte, aantoonbare termijn in (voorstel 6–12 maanden afhankelijk van logtype) | **OPEN ACTIE:** inventariseer Supabase, STRATO, GitHub logs en stel per leverancier werkelijke termijn vast |
