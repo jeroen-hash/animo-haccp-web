@@ -85,14 +85,28 @@ jobs:
           # Pin the SSH host key when the independently verified fingerprint secret is configured.
           # Keep the existing backup operational until the owner has added that secret.
           known_hosts="$RUNNER_TEMP/strato_known_hosts"
+          scanned_keys="$RUNNER_TEMP/strato_scanned_keys"
+          candidate_key="$RUNNER_TEMP/strato_candidate_key"
           lftp_host_key_settings='set sftp:auto-confirm yes'
           if [ -n "${SFTP_HOST_KEY_SHA256:-}" ]; then
-            ssh-keyscan -p 22 "$SFTP_HOST" 2>/dev/null > "$known_hosts"
-            test -s "$known_hosts" || { echo "::error::Could not retrieve the STRATO SSH host key."; exit 1; }
-            if ! ssh-keygen -lf "$known_hosts" -E sha256 | awk '{print $2}' | grep -Fxq "$SFTP_HOST_KEY_SHA256"; then
-              echo "::error::STRATO SSH host key fingerprint does not match the pinned value."; exit 1
-            fi
+            ssh-keyscan -p 22 "$SFTP_HOST" 2>/dev/null > "$scanned_keys"
+            test -s "$scanned_keys" || { echo "::error::Could not retrieve the STRATO SSH host key."; exit 1; }
+
+            # Trust only the exact key whose fingerprint was independently verified.
+            # Do not put other keys from ssh-keyscan into known_hosts.
+            : > "$known_hosts"
+            while IFS= read -r key_line; do
+              [ -n "$key_line" ] || continue
+              printf '%s\\n' "$key_line" > "$candidate_key"
+              fingerprint="$(ssh-keygen -lf "$candidate_key" -E sha256 | awk '{print $2}')"
+              if [ "$fingerprint" = "$SFTP_HOST_KEY_SHA256" ]; then
+                printf '%s\\n' "$key_line" >> "$known_hosts"
+              fi
+            done < "$scanned_keys"
+
+            test -s "$known_hosts" || { echo "::error::No STRATO SSH host key matches the pinned fingerprint."; exit 1; }
             chmod 600 "$known_hosts"
+            rm -f "$scanned_keys" "$candidate_key"
             lftp_host_key_settings="set sftp:auto-confirm no
           set sftp:connect-program \"ssh -a -x -oStrictHostKeyChecking=yes -oUserKnownHostsFile=$known_hosts\""
             echo "Verified STRATO SSH host key fingerprint; strict host-key checking enabled."
