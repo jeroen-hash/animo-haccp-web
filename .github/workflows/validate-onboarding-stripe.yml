@@ -4,6 +4,8 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - "landing.html"
+      - "index.html"
       - "onboarding-form.html"
       - "onboarding-dashboard.html"
       - "admin-dashboard.html"
