@@ -89,6 +89,8 @@ Deno.serve(async (req) => {
     const targetUserId = String(
       body.userId ?? "",
     ).trim();
+    const businessId = String(body.businessId ?? "").trim();
+    if (!businessId) return jsonResponse({ error: "De actieve horecazaak ontbreekt. Meld opnieuw aan." }, 400);
 
     if (!targetUserId) {
       return jsonResponse(
@@ -119,6 +121,7 @@ Deno.serve(async (req) => {
       .from("business_members")
       .select("business_id, role, active")
       .eq("user_id", requestingUser.id)
+      .eq("business_id", businessId)
       .eq("active", true)
       .maybeSingle();
 
