@@ -6,11 +6,6 @@ const root = path.resolve(process.env.BACKUP_EXTRACT_DIR || 'storage-backup-rest
 const manifestPath = path.join(root, 'manifest.json');
 const allowedBuckets = new Set(['onboarding-lead-documents', 'onboarding-documents']);
 
-function fail(message) {
-  console.error('BACKUP CONTENT VERIFICATION FAILED: ' + message);
-  process.exitCode = 1;
-}
-
 const manifestStat = await fs.lstat(manifestPath).catch(() => null);
 if (!manifestStat?.isFile() || manifestStat.isSymbolicLink()) {
   throw new Error('manifest.json is missing or is not a regular file.');
