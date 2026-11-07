@@ -98,6 +98,13 @@ tbody tr:hover{background:#f4faf6}
 .toolbar{position:relative;top:auto;z-index:1}
 .tabs{position:sticky;top:78px;z-index:45;isolation:isolate}
 @media(max-width:760px){.tabs{top:66px;z-index:45}.toolbar{position:relative;top:auto;z-index:1}}
+
+/* Definitive mobile navigation fix: tabs stay in normal document flow.
+   Direct click handlers above switch the panels and bring them into view. */
+.tabs{position:relative!important;top:auto!important;z-index:2!important;overflow-x:auto;scrollbar-width:thin;touch-action:pan-x pan-y}
+.toolbar{position:relative!important;top:auto!important;z-index:1!important}
+.tab{position:relative;z-index:3;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:rgba(8,115,77,.15)}
+.tab-panel{scroll-margin-top:16px}
 </style>
 </head>
 <body>
@@ -224,7 +231,7 @@ function openPreview(){if(!selectedBusiness)return;const b=selectedBusiness,acti
 function closePreview(){$('previewLayer').classList.add('hidden');$('previewLayer').setAttribute('aria-hidden','true')}
 function setTab(name){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===name));document.querySelectorAll('.tab-panel').forEach(x=>x.classList.toggle('active',x.id===`tab-${name}`))}
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginMessage').classList.add('hidden');const {data,error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){$('loginMessage').textContent=error.message;$('loginMessage').classList.remove('hidden');return}setLoggedIn(true,data.user.email);await loadDashboard()});
-$('logoutBtn').onclick=async()=>{await sb.auth.signOut();dashboardData=null;selectedBusinessId='all';selectedBusiness=null;setLoggedIn(false)};$('refreshBtn').onclick=loadDashboard;$('businessSelector').onchange=e=>selectBusiness(e.target.value);['businessSearch','businessStatus','problemFilter'].forEach(id=>$(id).addEventListener(id==='businessSearch'?'input':'change',renderAll));$('activitySearch').oninput=renderActivities;$('moduleFilter').onchange=renderActivities;$('errorFilter').onchange=renderErrors;document.querySelector('.tabs').addEventListener('click',e=>{const tab=e.target.closest('button[data-tab]');if(!tab)return;const name=tab.dataset.tab;setTab(name);if(name==='website-analytics')loadWebsiteAnalytics()});$('websiteAnalyticsRefresh').onclick=loadWebsiteAnalytics;$('previewBtn').onclick=openPreview;$('closePreview').onclick=closePreview;$('previewLayer').onclick=e=>{if(e.target===$('previewLayer'))closePreview()};document.addEventListener('keydown',e=>{if(e.key==='Escape')closePreview()});
+$('logoutBtn').onclick=async()=>{await sb.auth.signOut();dashboardData=null;selectedBusinessId='all';selectedBusiness=null;setLoggedIn(false)};$('refreshBtn').onclick=loadDashboard;$('businessSelector').onchange=e=>selectBusiness(e.target.value);['businessSearch','businessStatus','problemFilter'].forEach(id=>$(id).addEventListener(id==='businessSearch'?'input':'change',renderAll));$('activitySearch').oninput=renderActivities;$('moduleFilter').onchange=renderActivities;$('errorFilter').onchange=renderErrors;document.querySelectorAll('.tabs button[data-tab]').forEach(tab=>{tab.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const name=tab.getAttribute('data-tab');if(!name)return;setTab(name);document.querySelectorAll('.tabs button[data-tab]').forEach(button=>button.setAttribute('aria-selected',String(button===tab)));if(name==='website-analytics')loadWebsiteAnalytics();const panel=document.getElementById('tab-'+name);if(panel)panel.scrollIntoView({behavior:'smooth',block:'start'})})});$('websiteAnalyticsRefresh').onclick=loadWebsiteAnalytics;$('previewBtn').onclick=openPreview;$('closePreview').onclick=closePreview;$('previewLayer').onclick=e=>{if(e.target===$('previewLayer'))closePreview()};document.addEventListener('keydown',e=>{if(e.key==='Escape')closePreview()});
 (async()=>{const {data}=await sb.auth.getSession();if(data.session){setLoggedIn(true,data.session.user.email);await loadDashboard()}else setLoggedIn(false)})();
 </script>
 </body>
