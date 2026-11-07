@@ -40,9 +40,9 @@ footer a{margin-right:14px}
 </div></header>
 <main><div class="wrap">
 <h1>Verwerkersovereenkomst</h1>
-<p class="upd">Laatst bijgewerkt: 5 november 2026</p>
+<p class="upd">Laatst bijgewerkt: 7 november 2026</p>
 
-<div class="box"><p>Deze verwerkersovereenkomst is een aanvulling op de <a href="algemene-voorwaarden.html">algemene voorwaarden</a> en wordt aanvaard wanneer de Klant die aanvaardt of de Dienst gebruikt. Ze voldoet aan artikel 28 van de AVG.</p></div>
+<div class="box"><p>Deze verwerkersovereenkomst is een aanvulling op de <a href="algemene-voorwaarden.html">algemene voorwaarden</a> en vormt de regeling tussen Klant als verwerkingsverantwoordelijke en ANIMO als verwerker voor de gegevens die de Klant in de Dienst invoert. De Klant aanvaardt de overeenkomst tijdens de onboarding vóór de verwerking start. De onboarding registreert de aanvaarde documentversie en het tijdstip. De overeenkomst is opgesteld met het oog op artikel 28 AVG.</p></div>
 
 <h2>Artikel 1. Partijen en rollen</h2>
 <p>De <strong>Klant</strong> (de horecazaak) is verwerkingsverantwoordelijke. <strong>ANIMO VOF</strong> (<strong>ANIMO VOF</strong>, handelsnaam <strong>ANIMO HACCP</strong>, Voorzorgstraat 23, 8930 Menen, België, Ondernemings- en btw-nummer: BE1014408578, Vennoten: Jeroen Marin en Melissa Marreel) is verwerker. ANIMO verwerkt persoonsgegevens enkel om de Dienst ANIMO HACCP te leveren.</p>
@@ -87,7 +87,7 @@ footer a{margin-right:14px}
 <tr><td>Soorten gegevens</td><td>Gegevens die de Klant invoert: naam, e-mailadres en rol van gebruikers; registraties en rapporten met door gebruikers ingevoerde namen en handtekeningen; contactgegevens van leveranciers; geüploade documenten</td></tr>
 <tr><td>Betrokkenen</td><td>Medewerkers en gebruikers van de Klant; contactpersonen van leveranciers van de Klant</td></tr>
 <tr><td>Aard van de verwerking</td><td>Opslaan, raadplegen, wijzigen, exporteren, back-ups maken en verwijderen</td></tr>
-<tr><td>Opslaglocatie</td><td>Europese regio</td></tr>
+<tr><td>Primaire opslaglocatie</td><td>Supabase-projectregio eu-west-2 (Londen, Verenigd Koninkrijk). De EU heeft momenteel een adequaatheidsbesluit voor het VK; de actuele geldigheid en eventuele verdere internationale toegang worden periodiek gecontroleerd.</td></tr>
 <tr><td>Bewaartermijn</td><td>Looptijd van het Abonnement plus 90 dagen</td></tr>
 </table></div>
 
@@ -96,17 +96,21 @@ footer a{margin-right:14px}
 <li>Versleutelde verbinding (HTTPS) tussen gebruiker en Dienst.</li>
 <li>Aanmelding per gebruiker met een wachtwoord dat niet leesbaar wordt opgeslagen.</li>
 <li>Rollen en rechten in de Dienst; toegang tot gegevens beperkt tot de gebruikers van de betrokken zaak.</li>
-<li>Opslag in een Europese regio.</li>
-<li>Dagelijkse automatische back-ups.</li>
+<li>Primaire database-, Auth- en Storage-regio: Supabase eu-west-2 (Londen, Verenigd Koninkrijk); de geldende doorgiftegrond en leveranciersdocumentatie worden bijgehouden.</li>
+<li>Rolgebaseerde en zaakgebonden toegangsbeperking.</li>
+<li>Versleutelde back-upbestanden voor geselecteerde private documentopslag.</li>
+<li>De app kan een lokale offlinekopie en niet-gesynchroniseerde wijzigingen in browseropslag bewaren; de Klant wordt geïnformeerd over synchronisatie en lokale verwijdering.</li>
 <li>Melding van datalekken binnen 24 uur.</li>
 </ul>
 
 <h2>Bijlage C. Sub-verwerkers</h2>
 <div class="scroll"><table>
 <tr><th>Sub-verwerker</th><th>Doel</th><th>Locatie</th></tr>
-<tr><td>Supabase</td><td>Database, aanmelding en opslag</td><td>Europese regio</td></tr>
-<tr><td>STRATO</td><td>Hosting van de applicatiebestanden en e-mail</td><td>Europese Unie</td></tr>
+<tr><td>Supabase</td><td>Database, authenticatie, opslag en backendfuncties</td><td>Primaire regio Londen, VK; beperkte ondersteunings-/operationele verwerking kan elders plaatsvinden. Supabase DPA en actuele subverwerkerslijst zijn van toepassing.</td></tr>
+<tr><td>STRATO</td><td>Hosting publieke website/appbestanden, e-mail en opslag van versleutelde back-upbestanden</td><td>Volgens de betrokken STRATO-dienst en contractuele voorwaarden; actuele locaties moeten bij STRATO worden bevestigd.</td></tr>
+
 </table></div>
+<p>Stripe wordt niet gebruikt voor de operationele HACCP-registraties of personeelsgegevens die de Klant in de Dienst invoert. Stripe ontvangt afzonderlijk bepaalde ANIMO-account-, zaak- en abonnementsgegevens voor facturatie en betalingen; de rol van Stripe wordt toegelicht in de privacyverklaring. GitHub wordt gebruikt voor broncodebeheer en software-uitrol en niet als opslagplaats voor klantregistraties. Deze leveranciers vallen voor die afzonderlijke verwerkingen niet onder de lijst van sub-verwerkers van de operationele klantgegevens in deze overeenkomst.</p>
 
 </div></main>
 <footer><div class="wrap">

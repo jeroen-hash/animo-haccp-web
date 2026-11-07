@@ -1,0 +1,35 @@
+name: Validate legal and GDPR documentation
+
+on:
+  pull_request:
+    paths:
+      - "privacy.html"
+      - "algemene-voorwaarden.html"
+      - "verwerkersovereenkomst.html"
+      - "landing.html"
+      - "index.html"
+      - "docs/gdpr/**"
+      - "scripts/validate-legal-docs.mjs"
+      - ".github/workflows/validate-legal-docs.yml"
+  push:
+    branches: [main]
+    paths:
+      - "privacy.html"
+      - "algemene-voorwaarden.html"
+      - "verwerkersovereenkomst.html"
+      - "landing.html"
+      - "index.html"
+      - "docs/gdpr/**"
+      - "scripts/validate-legal-docs.mjs"
+      - ".github/workflows/validate-legal-docs.yml"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Controleer juridische en GDPR-documenten
+        run: node scripts/validate-legal-docs.mjs
