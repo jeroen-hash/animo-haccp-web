@@ -427,6 +427,68 @@ Deno.serve(async (req: Request) => {
           session.payment_status === "no_payment_required";
 
         if (
+          session.mode === "payment" &&
+          session.metadata?.payment_kind === "onboarding_fee" &&
+          paymentComplete
+        ) {
+          const leadId = session.metadata.onboarding_lead_id;
+          if (!leadId) throw new Error("Onboardingbetaling mist onboarding_lead_id.");
+
+          const { data: lead, error: leadError } = await supabaseAdmin
+            .from("onboarding_leads")
+            .select("id, payload")
+            .eq("id", leadId)
+            .maybeSingle();
+          if (leadError) throw leadError;
+          if (!lead) throw new Error(`Onboardingaanvraag ${leadId} niet gevonden voor betaalde Stripe-sessie.`);
+
+          const payload =
+            lead.payload &&
+            typeof lead.payload === "object" &&
+            !Array.isArray(lead.payload)
+              ? lead.payload
+              : {};
+          const previousPayment =
+            payload.onboarding_payment &&
+            typeof payload.onboarding_payment === "object"
+              ? payload.onboarding_payment
+              : {};
+          const paymentIntentId =
+            typeof session.payment_intent === "string"
+              ? session.payment_intent
+              : session.payment_intent?.id ?? null;
+          const invoiceId =
+            typeof session.invoice === "string"
+              ? session.invoice
+              : session.invoice?.id ?? null;
+
+          const { error: updateError } = await supabaseAdmin
+            .from("onboarding_leads")
+            .update({
+              payload: {
+                ...payload,
+                onboarding_payment_required: true,
+                onboarding_payment: {
+                  ...previousPayment,
+                  status: "paid",
+                  checkout_session_id: session.id,
+                  payment_intent_id: paymentIntentId,
+                  invoice_id: invoiceId,
+                  amount_paid: session.amount_total ?? 0,
+                  amount_tax: session.total_details?.amount_tax ?? 0,
+                  currency: String(session.currency ?? "eur").toLowerCase(),
+                  paid_at: stripeDate(session.created) ?? new Date().toISOString(),
+                },
+              },
+            })
+            .eq("id", leadId);
+          if (updateError) throw updateError;
+          console.log("Eenmalige onboardingbetaling bevestigd:", {
+            lead_id: leadId,
+            checkout_session_id: session.id,
+            amount_paid: session.amount_total ?? 0,
+          });
+        } else if (
           session.mode === "subscription" &&
           session.subscription &&
           paymentComplete
@@ -443,6 +505,51 @@ Deno.serve(async (req: Request) => {
           );
         }
 
+        break;
+      }
+
+      case "checkout.session.async_payment_failed":
+      case "checkout.session.expired": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.mode === "payment" && session.metadata?.payment_kind === "onboarding_fee") {
+          const leadId = session.metadata.onboarding_lead_id;
+          if (leadId) {
+            const { data: lead, error: leadError } = await supabaseAdmin
+              .from("onboarding_leads")
+              .select("id, payload")
+              .eq("id", leadId)
+              .maybeSingle();
+            if (leadError) throw leadError;
+            if (lead) {
+              const payload =
+                lead.payload &&
+                typeof lead.payload === "object" &&
+                !Array.isArray(lead.payload)
+                  ? lead.payload
+                  : {};
+              const payment =
+                payload.onboarding_payment &&
+                typeof payload.onboarding_payment === "object"
+                  ? payload.onboarding_payment
+                  : {};
+              if (payment.status !== "paid") {
+                const { error: updateError } = await supabaseAdmin
+                  .from("onboarding_leads")
+                  .update({
+                    payload: {
+                      ...payload,
+                      onboarding_payment: {
+                        ...payment,
+                        status: event.type === "checkout.session.expired" ? "expired" : "failed",
+                      },
+                    },
+                  })
+                  .eq("id", leadId);
+                if (updateError) throw updateError;
+              }
+            }
+          }
+        }
         break;
       }
 
