@@ -55,12 +55,12 @@ jobs:
           set -euo pipefail
           test -n "$DATABASE_URL"
           stamp="$(date -u +'%Y%m%dT%H%M%SZ')"
-          dump="$RUNNER_TEMP/animo-database-$stamp.dump"
+          dump="$RUNNER_TEMP/animo-database.dump"
           docker run --rm \
             -e DATABASE_URL="$DATABASE_URL" \
             -v "$RUNNER_TEMP:/backup" \
             postgres:17-alpine \
-            sh -ec 'pg_dump "$DATABASE_URL" --format=custom --no-owner --no-acl --compress=6 --schema=public --schema=private --schema=auth --schema=storage --file="/backup/'"$(basename "$dump")"'"'
+            sh -ec 'pg_dump "$DATABASE_URL" --format=custom --no-owner --no-acl --compress=6 --schema=public --schema=private --schema=auth --schema=storage --file=/backup/animo-database.dump
           test -s "$dump"
           echo "Database dump created. File size: $(stat -c '%s' "$dump") bytes."
           unset DATABASE_URL
@@ -98,6 +98,7 @@ jobs:
           ENCRYPTED_FILE: ${{ steps.archive.outputs.encrypted_file }}
           CHECKSUM_FILE: ${{ steps.archive.outputs.checksum_file }}
           BACKUP_NAME: ${{ steps.archive.outputs.backup_name }}
+          BACKUP_PASSPHRASE: ${{ secrets.ANIMO_BACKUP_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
           known_hosts="$RUNNER_TEMP/strato_database_known_hosts"
@@ -147,14 +148,14 @@ jobs:
 
           passfile="$RUNNER_TEMP/database-backup-passphrase"
           restored="$RUNNER_TEMP/verified-database.dump"
-          printf '%s' "${{ secrets.ANIMO_BACKUP_ENCRYPTION_KEY }}" > "$passfile"
+          printf '%s' "$BACKUP_PASSPHRASE" > "$passfile"
           chmod 600 "$passfile"
           gpg --batch --yes --pinentry-mode loopback --passphrase-file "$passfile" \
             --decrypt --output "$restored" "$downloaded"
           docker run --rm -v "$RUNNER_TEMP:/backup" postgres:17-alpine \
             pg_restore --list "/backup/verified-database.dump" >/dev/null
           rm -f "$passfile" "$restored" "$downloaded" "$downloaded.sha256" "$known_hosts"
-          unset SFTP_PASS
+          unset SFTP_PASS BACKUP_PASSPHRASE
           echo "Encrypted database backup uploaded, downloaded, checksum-verified, decrypted and archive-verified successfully."
 
       - name: Foutmelding bij mislukte back-up
