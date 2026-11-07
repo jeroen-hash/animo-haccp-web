@@ -400,21 +400,15 @@ Deno.serve(async (req) => {
     if (action === "remove_membership") {
       const { error } = await adminClient
         .from("business_members")
-        .delete()
-        .eq(
-          "business_id",
-          requesterMembership.business_id,
-        )
+        .update({ active: false })
+        .eq("business_id", requesterMembership.business_id)
         .eq("user_id", targetUserId);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       return jsonResponse({
         success: true,
-        message:
-          "De gebruiker is uit deze zaak verwijderd.",
+        message: "De gebruiker is uit deze zaak verwijderd. Het account blijft bestaan en kan later opnieuw worden uitgenodigd.",
       });
     }
 
