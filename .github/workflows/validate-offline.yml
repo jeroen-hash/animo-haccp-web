@@ -9,6 +9,7 @@ on:
       - 'tests/subscription-access-entitlements.test.mjs'
       - 'tests/offline-access-window.test.mjs'
       - 'tests/stock-state-normalization.test.mjs'
+      - 'tests/brussels-timezone.test.mjs'
       - 'supabase/functions/stripe-webhook/index.ts'
       - 'supabase/functions/process-delivery-note/index.ts'
       - 'sw.js'
@@ -218,6 +219,9 @@ jobs:
 
       - name: Validate legacy stock state collection defaults
         run: node --test tests/stock-state-normalization.test.mjs
+
+      - name: Validate Brussels timezone and temperature registration timestamps
+        run: node --test tests/brussels-timezone.test.mjs
 
       - name: Validate UBL-only stock import (AI disabled)
         run: |
