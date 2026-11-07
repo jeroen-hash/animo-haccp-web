@@ -57,7 +57,7 @@ jobs:
           app = 'https://app.animo-apps.com'
           s = s.replace('href="/?signup=1"', 'href="' + app + '/?signup=1"')
           s = s.replace('href="/"', 'href="' + app + '/"')
-          s = s.replace('href="/onboarding-form.html"', 'href="' + app + '/onboarding-form.html"')
+          # Onboardingformulier wordt op het publieke websitedomein gepubliceerd.
           s = s.replace('https://app.freelance-animo.com/landing.html', 'https://www.animo-apps.com/')
           s = s.replace('https://app.freelance-animo.com/images/', 'https://www.animo-apps.com/images/')
           s = s.replace('<link rel="icon"', '<link rel="canonical" href="https://www.animo-apps.com/">\n<link rel="icon"', 1)
@@ -69,6 +69,17 @@ jobs:
           for f in privacy.html algemene-voorwaarden.html verwerkersovereenkomst.html; do
             if [ -f "$f" ]; then cp "$f" "out/landing/$f"; fi
           done
+
+          # Publiceer het onboardingformulier ook op het publieke websitedomein.
+          cp onboarding-form.html out/landing/onboarding-form.html
+          python3 - <<'PY'
+          p = 'out/landing/onboarding-form.html'
+          s = open(p, encoding='utf-8').read()
+          s = s.replace('href="/"', 'href="https://www.animo-apps.com/"')
+          s = s.replace('href="/?signup=1"', 'href="https://app.animo-apps.com/?signup=1"')
+          s = s.replace('https://animo-apps.com/', 'https://www.animo-apps.com/')
+          open(p, 'w', encoding='utf-8').write(s)
+          PY
 
           # App
           cp index.html out/app/index.html
