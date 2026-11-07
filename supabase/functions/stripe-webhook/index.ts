@@ -58,7 +58,7 @@ function shouldIgnoreSubscriptionOverwrite(
 
 async function saveSubscription(
   stripe: Stripe,
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: any,
   subscription: Stripe.Subscription,
 ) {
   const firstItem = subscription.items.data[0];
@@ -212,7 +212,7 @@ async function saveSubscription(
 
 async function retrieveAndSaveSubscription(
   stripe: Stripe,
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: any,
   subscriptionId: string,
 ) {
   const subscription =
@@ -227,7 +227,7 @@ async function retrieveAndSaveSubscription(
 
 async function logStripeRiskEvent(
   stripe: Stripe,
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: any,
   event: Stripe.Event,
   object: Record<string, unknown>,
 ) {
@@ -276,27 +276,49 @@ async function logStripeRiskEvent(
 }
 
 async function saveInvoice(
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: any,
   invoice: Stripe.Invoice,
   eventType: string,
 ) {
   const subscriptionId = getInvoiceSubscriptionId(invoice);
   const customerId = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id ?? null;
-  let query = supabaseAdmin.from("subscriptions").select("business_id").limit(1);
-  if (subscriptionId) query = query.eq("stripe_subscription_id", subscriptionId);
-  else if (customerId) query = query.eq("stripe_customer_id", customerId);
-  else {
-    console.warn("Stripe-factuur zonder klant- of abonnementsreferentie:", invoice.id);
-    return;
+  const onboardingLeadId =
+    invoice.metadata?.payment_kind === "onboarding_fee"
+      ? invoice.metadata.onboarding_lead_id ?? null
+      : null;
+
+  let businessId: string | null = null;
+  if (onboardingLeadId) {
+    const { data: lead, error: leadError } = await supabaseAdmin
+      .from("onboarding_leads")
+      .select("id, business_id")
+      .eq("id", onboardingLeadId)
+      .maybeSingle();
+    if (leadError) throw leadError;
+    if (!lead) {
+      console.warn("Onboardingaanvraag niet gevonden voor Stripe-factuur:", invoice.id);
+      return;
+    }
+    businessId = lead.business_id ?? null;
+  } else {
+    let query = supabaseAdmin.from("subscriptions").select("business_id").limit(1);
+    if (subscriptionId) query = query.eq("stripe_subscription_id", subscriptionId);
+    else if (customerId) query = query.eq("stripe_customer_id", customerId);
+    else {
+      console.warn("Stripe-factuur zonder klant- of abonnementsreferentie:", invoice.id);
+      return;
+    }
+    const { data: linked, error: linkError } = await query.maybeSingle();
+    if (linkError) throw linkError;
+    businessId = linked?.business_id ?? null;
+    if (!businessId) {
+      console.warn("Geen ANIMO-zaak gevonden voor Stripe-factuur:", invoice.id);
+      return;
+    }
   }
-  const { data: linked, error: linkError } = await query.maybeSingle();
-  if (linkError) throw linkError;
-  if (!linked?.business_id) {
-    console.warn("Geen ANIMO-zaak gevonden voor Stripe-factuur:", invoice.id);
-    return;
-  }
+
   const { error } = await supabaseAdmin.from("billing_invoices").upsert({
-    business_id: linked.business_id,
+    business_id: businessId,
     stripe_invoice_id: invoice.id,
     stripe_subscription_id: subscriptionId,
     stripe_customer_id: customerId,
@@ -315,12 +337,58 @@ async function saveInvoice(
     attempted: invoice.attempted ?? false,
     billing_reason: invoice.billing_reason ?? null,
     collection_method: invoice.collection_method ?? null,
+    source_type: onboardingLeadId ? "onboarding_fee" : "subscription",
+    source_reference: onboardingLeadId,
     last_event_type: eventType,
     synced_at: new Date().toISOString(),
   }, { onConflict: "stripe_invoice_id" });
   if (error) throw error;
-}
 
+  if (onboardingLeadId) {
+    const { data: lead, error: leadError } = await supabaseAdmin
+      .from("onboarding_leads")
+      .select("id, payload")
+      .eq("id", onboardingLeadId)
+      .maybeSingle();
+    if (leadError) throw leadError;
+    if (lead) {
+      const payload =
+        lead.payload &&
+        typeof lead.payload === "object" &&
+        !Array.isArray(lead.payload)
+          ? lead.payload
+          : {};
+      const payment =
+        payload.onboarding_payment &&
+        typeof payload.onboarding_payment === "object"
+          ? payload.onboarding_payment
+          : {};
+      const paymentStatus =
+        invoice.status === "paid" || eventType === "invoice.paid"
+          ? "paid"
+          : eventType === "invoice.payment_failed" && payment.status !== "paid"
+            ? "failed"
+            : payment.status || "pending";
+      const { error: leadUpdateError } = await supabaseAdmin
+        .from("onboarding_leads")
+        .update({
+          payload: {
+            ...payload,
+            onboarding_payment: {
+              ...payment,
+              status: paymentStatus,
+              invoice_id: invoice.id,
+              amount_paid: invoice.amount_paid ?? 0,
+              currency: String(invoice.currency ?? "eur").toLowerCase(),
+              paid_at: stripeDate(invoice.status_transitions?.paid_at) ?? payment.paid_at ?? null,
+            },
+          },
+        })
+        .eq("id", onboardingLeadId);
+      if (leadUpdateError) throw leadUpdateError;
+    }
+  }
+}
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
     return jsonResponse(
@@ -363,7 +431,7 @@ Deno.serve(async (req: Request) => {
 
   const stripe = new Stripe(stripeSecretKey);
 
-  const supabaseAdmin = createClient(
+  const supabaseAdmin: any = createClient(
     supabaseUrl,
     supabaseServiceRoleKey,
     {
@@ -427,6 +495,68 @@ Deno.serve(async (req: Request) => {
           session.payment_status === "no_payment_required";
 
         if (
+          session.mode === "payment" &&
+          session.metadata?.payment_kind === "onboarding_fee" &&
+          paymentComplete
+        ) {
+          const leadId = session.metadata.onboarding_lead_id;
+          if (!leadId) throw new Error("Onboardingbetaling mist onboarding_lead_id.");
+
+          const { data: lead, error: leadError } = await supabaseAdmin
+            .from("onboarding_leads")
+            .select("id, payload")
+            .eq("id", leadId)
+            .maybeSingle();
+          if (leadError) throw leadError;
+          if (!lead) throw new Error(`Onboardingaanvraag ${leadId} niet gevonden voor betaalde Stripe-sessie.`);
+
+          const payload =
+            lead.payload &&
+            typeof lead.payload === "object" &&
+            !Array.isArray(lead.payload)
+              ? lead.payload
+              : {};
+          const previousPayment =
+            payload.onboarding_payment &&
+            typeof payload.onboarding_payment === "object"
+              ? payload.onboarding_payment
+              : {};
+          const paymentIntentId =
+            typeof session.payment_intent === "string"
+              ? session.payment_intent
+              : session.payment_intent?.id ?? null;
+          const invoiceId =
+            typeof session.invoice === "string"
+              ? session.invoice
+              : session.invoice?.id ?? null;
+
+          const { error: updateError } = await supabaseAdmin
+            .from("onboarding_leads")
+            .update({
+              payload: {
+                ...payload,
+                onboarding_payment_required: true,
+                onboarding_payment: {
+                  ...previousPayment,
+                  status: "paid",
+                  checkout_session_id: session.id,
+                  payment_intent_id: paymentIntentId,
+                  invoice_id: invoiceId,
+                  amount_paid: session.amount_total ?? 0,
+                  amount_tax: session.total_details?.amount_tax ?? 0,
+                  currency: String(session.currency ?? "eur").toLowerCase(),
+                  paid_at: new Date().toISOString(),
+                },
+              },
+            })
+            .eq("id", leadId);
+          if (updateError) throw updateError;
+          console.log("Eenmalige onboardingbetaling bevestigd:", {
+            lead_id: leadId,
+            checkout_session_id: session.id,
+            amount_paid: session.amount_total ?? 0,
+          });
+        } else if (
           session.mode === "subscription" &&
           session.subscription &&
           paymentComplete
@@ -443,6 +573,51 @@ Deno.serve(async (req: Request) => {
           );
         }
 
+        break;
+      }
+
+      case "checkout.session.async_payment_failed":
+      case "checkout.session.expired": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.mode === "payment" && session.metadata?.payment_kind === "onboarding_fee") {
+          const leadId = session.metadata.onboarding_lead_id;
+          if (leadId) {
+            const { data: lead, error: leadError } = await supabaseAdmin
+              .from("onboarding_leads")
+              .select("id, payload")
+              .eq("id", leadId)
+              .maybeSingle();
+            if (leadError) throw leadError;
+            if (lead) {
+              const payload =
+                lead.payload &&
+                typeof lead.payload === "object" &&
+                !Array.isArray(lead.payload)
+                  ? lead.payload
+                  : {};
+              const payment =
+                payload.onboarding_payment &&
+                typeof payload.onboarding_payment === "object"
+                  ? payload.onboarding_payment
+                  : {};
+              if (payment.status !== "paid") {
+                const { error: updateError } = await supabaseAdmin
+                  .from("onboarding_leads")
+                  .update({
+                    payload: {
+                      ...payload,
+                      onboarding_payment: {
+                        ...payment,
+                        status: event.type === "checkout.session.expired" ? "expired" : "failed",
+                      },
+                    },
+                  })
+                  .eq("id", leadId);
+                if (updateError) throw updateError;
+              }
+            }
+          }
+        }
         break;
       }
 
