@@ -275,6 +275,52 @@ async function logStripeRiskEvent(
   if (error) throw error;
 }
 
+async function saveInvoice(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  invoice: Stripe.Invoice,
+  eventType: string,
+) {
+  const subscriptionId = getInvoiceSubscriptionId(invoice);
+  const customerId = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id ?? null;
+  let query = supabaseAdmin.from("subscriptions").select("business_id").limit(1);
+  if (subscriptionId) query = query.eq("stripe_subscription_id", subscriptionId);
+  else if (customerId) query = query.eq("stripe_customer_id", customerId);
+  else {
+    console.warn("Stripe-factuur zonder klant- of abonnementsreferentie:", invoice.id);
+    return;
+  }
+  const { data: linked, error: linkError } = await query.maybeSingle();
+  if (linkError) throw linkError;
+  if (!linked?.business_id) {
+    console.warn("Geen ANIMO-zaak gevonden voor Stripe-factuur:", invoice.id);
+    return;
+  }
+  const { error } = await supabaseAdmin.from("billing_invoices").upsert({
+    business_id: linked.business_id,
+    stripe_invoice_id: invoice.id,
+    stripe_subscription_id: subscriptionId,
+    stripe_customer_id: customerId,
+    invoice_number: invoice.number ?? null,
+    status: invoice.status ?? "draft",
+    currency: String(invoice.currency ?? "eur").toLowerCase(),
+    amount_due: invoice.amount_due ?? 0,
+    amount_paid: invoice.amount_paid ?? 0,
+    amount_remaining: invoice.amount_remaining ?? 0,
+    stripe_created_at: stripeDate(invoice.created) ?? new Date().toISOString(),
+    due_at: stripeDate(invoice.due_date),
+    paid_at: stripeDate(invoice.status_transitions?.paid_at),
+    period_start: stripeDate(invoice.period_start),
+    period_end: stripeDate(invoice.period_end),
+    attempt_count: invoice.attempt_count ?? 0,
+    attempted: invoice.attempted ?? false,
+    billing_reason: invoice.billing_reason ?? null,
+    collection_method: invoice.collection_method ?? null,
+    last_event_type: eventType,
+    synced_at: new Date().toISOString(),
+  }, { onConflict: "stripe_invoice_id" });
+  if (error) throw error;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
     return jsonResponse(
@@ -415,6 +461,12 @@ Deno.serve(async (req: Request) => {
         break;
       }
 
+      case "invoice.created":
+      case "invoice.updated":
+      case "invoice.finalized":
+      case "invoice.finalization_failed":
+      case "invoice.voided":
+      case "invoice.marked_uncollectible":
       case "invoice.paid": {
         const invoice =
           event.data.object as Stripe.Invoice;
@@ -434,6 +486,7 @@ Deno.serve(async (req: Request) => {
             invoice.id,
           );
         }
+        await saveInvoice(supabaseAdmin, invoice, event.type);
 
         break;
       }
@@ -452,6 +505,7 @@ Deno.serve(async (req: Request) => {
             subscriptionId,
           );
         }
+        await saveInvoice(supabaseAdmin, invoice, event.type);
 
         console.log("Betaling mislukt:", invoice.id);
         break;
@@ -471,6 +525,7 @@ Deno.serve(async (req: Request) => {
             subscriptionId,
           );
         }
+        await saveInvoice(supabaseAdmin, invoice, event.type);
 
         console.log(
           "Betalingsactie vereist:",
