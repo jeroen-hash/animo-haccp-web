@@ -10,6 +10,8 @@ const activate = read("../supabase/functions/activate-onboarding-lead/index.ts")
 const webhook = read("../supabase/functions/stripe-webhook/index.ts");
 const dashboard = read("../onboarding-dashboard.html");
 const activationUi = read("../onboarding-activation.js");
+const migration = read("../supabase/migrations/20261107193000_add_onboarding_invoice_reporting.sql");
+const adminDashboard = read("../admin-dashboard.html");
 
 test("public onboarding form keeps the one-time fees separate from subscriptions", () => {
   assert.match(form, /Gedeeltelijke inrichting door ANIMO \(€75 eenmalig, excl\. btw\)/);
@@ -51,4 +53,11 @@ test("platform onboarding dashboard exposes the payment link only after approval
   assert.match(dashboard, /create-onboarding-payment/);
   assert.match(dashboard, /x\.status==='approved'/);
   assert.match(dashboard, /Betalingsstatus/);
+});
+test("one-time Stripe invoices are included in the real payments report", () => {
+  assert.match(checkout, /payment_kind: "onboarding_fee"/);
+  assert.match(webhook, /source_type: onboardingLeadId \? "onboarding_fee" : "subscription"/);
+  assert.match(migration, /source_reference/);
+  assert.match(migration, /l\.business_name/);
+  assert.match(adminDashboard, /Eenmalige onboarding/);
 });
