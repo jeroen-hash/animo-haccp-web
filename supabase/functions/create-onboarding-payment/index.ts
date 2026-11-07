@@ -131,6 +131,7 @@ Deno.serve(async (req: Request) => {
     const appUrl = (Deno.env.get("APP_URL") || "https://app.animo-apps.com").replace(/\/$/, "");
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      allow_promotion_codes: true,
       customer_email: String(lead.contact_email || "").trim().toLowerCase(),
       line_items: [{
         quantity: 1,
