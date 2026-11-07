@@ -4,9 +4,8 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
 const source = readFileSync(new URL("../supabase/functions/subscription-status/index.ts", import.meta.url), "utf8");
-const match = source.match(/function getAccessDecision\(input: \{[\s\S]*?\n\}\n(?=\nDeno\.serve)/);
+const match = source.match(/function getAccessDecision\\(input: any\\) \\{[\\s\\S]*?\\n\\}/);
 assert.ok(match, "subscription access decision helper must exist");
-const validDate = (value) => Boolean(value) && Number.isFinite(Date.parse(value)) && Date.parse(value) > Date.now();
 const context = { isValidFutureDate: (value, now = Date.now()) => Boolean(value) && Number.isFinite(Date.parse(value)) && Date.parse(value) > now };
 vm.createContext(context);
 vm.runInContext(match[0] + "\nglobalThis.decide = getAccessDecision;", context);
