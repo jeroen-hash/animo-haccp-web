@@ -71,6 +71,7 @@ jobs:
           SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
           SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
           SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+          SFTP_HOST_KEY_SHA256: ${{ secrets.STRATO_SFTP_HOST_KEY_SHA256 }}
           ENCRYPTED_FILE: ${{ steps.archive.outputs.encrypted_file }}
           CHECKSUM_FILE: ${{ steps.archive.outputs.checksum_file }}
           BACKUP_NAME: ${{ steps.archive.outputs.backup_name }}
@@ -81,9 +82,26 @@ jobs:
             test -n "$value" || { echo "::error::A required backup secret is missing."; exit 1; }
           done
 
+          # Pin the SSH host key when the independently verified fingerprint secret is configured.
+          # Keep the existing backup operational until the owner has added that secret.
+          known_hosts="$RUNNER_TEMP/strato_known_hosts"
+          lftp_host_key_settings='set sftp:auto-confirm yes'
+          if [ -n "${SFTP_HOST_KEY_SHA256:-}" ]; then
+            ssh-keyscan -p 22 "$SFTP_HOST" 2>/dev/null > "$known_hosts"
+            test -s "$known_hosts" || { echo "::error::Could not retrieve the STRATO SSH host key."; exit 1; }
+            if ! ssh-keygen -lf "$known_hosts" -E sha256 | awk '{print $2}' | grep -Fxq "$SFTP_HOST_KEY_SHA256"; then
+              echo "::error::STRATO SSH host key fingerprint does not match the pinned value."; exit 1
+            fi
+            chmod 600 "$known_hosts"
+            lftp_host_key_settings="set sftp:auto-confirm no
+          set sftp:connect-program \"ssh -a -x -oStrictHostKeyChecking=yes -oUserKnownHostsFile=$known_hosts\""
+            echo "Verified STRATO SSH host key fingerprint; strict host-key checking enabled."
+          else
+            echo "::warning::STRATO SSH host-key pinning is not configured yet. Add repository secret STRATO_SFTP_HOST_KEY_SHA256 after verifying the fingerprint with STRATO."
+          fi
           remote_dir="/backups/animo-haccp-storage"
           lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP
-          set sftp:auto-confirm yes
+          $lftp_host_key_settings
           set net:max-retries 3
           set net:timeout 30
           mkdir -p $remote_dir
