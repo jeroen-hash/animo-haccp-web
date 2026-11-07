@@ -126,6 +126,7 @@ jobs:
           const consumeCode = extract('function consumeRecipePlan(', 'function recipeAvailable(');
           const products = [{id:'eggs',quantity:3,batches:[{quantity:3}]},{id:'milk',quantity:5,batches:[{quantity:5}]}];
           const context = {
+            products,
             stockById: id => products.find(p => p.id === id),
             normalizedIngredientAmount: i => Number(i.quantity),
             clone: value => JSON.parse(JSON.stringify(value)),
