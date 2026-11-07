@@ -8,6 +8,7 @@ on:
       - 'supabase/functions/subscription-status/index.ts'
       - 'tests/subscription-access-entitlements.test.mjs'
       - 'tests/offline-access-window.test.mjs'
+      - 'tests/stock-state-normalization.test.mjs'
       - 'supabase/functions/stripe-webhook/index.ts'
       - 'supabase/functions/process-delivery-note/index.ts'
       - 'sw.js'
