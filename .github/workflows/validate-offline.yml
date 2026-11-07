@@ -274,7 +274,7 @@ jobs:
           const matchStart = html.indexOf('function findStockMatch(line)');
           const matchEnd = html.indexOf('function renderDeliveryReview()', matchStart);
           if ([start,end,unitStart,unitEnd,matchStart,matchEnd].some(x => x < 0)) throw new Error('UBL unit normalization helpers missing.');
-          const matchLineEnd = html.indexOf('\\n', matchStart);
+          const matchLineEnd = html.indexOf(String.fromCharCode(10), matchStart);
           const source = html.slice(unitStart,unitEnd) + html.slice(matchStart,matchLineEnd) + html.slice(start,end);
           const context = { state:{stock:[{id:'eggs',name:'Eieren',unit:'kg',code:'',quantity:0}]}, normalizeStockName:x=>String(x||'').toLowerCase().replace(/s$/,'') };
           vm.runInNewContext(source + `
