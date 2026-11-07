@@ -84,17 +84,17 @@ test("one-time Stripe invoices are included in the real payments report", () => 
 });
 
 test("onboarding payment success and cancel URLs always return to the official ANIMO app", () => {
-  assert.match(checkout, /const appUrl = "https:\\/\\/app\\.animo-apps\\.com";/);
-  assert.match(checkout, /success_url: isPublicCustomerCheckout/);
-  assert.match(checkout, /onboarding-form\\.html\\?payment=success/);
-  assert.doesNotMatch(checkout, /Deno\\.env\\.get\\("APP_URL"\\)/);
+  assert.ok(checkout.includes('const appUrl = "https://app.animo-apps.com";'));
+  assert.ok(checkout.includes("success_url: isPublicCustomerCheckout"));
+  assert.ok(checkout.includes("onboarding-form.html?payment=success"));
+  assert.ok(!checkout.includes('Deno.env.get("APP_URL")'));
 });
 
 test("onboarding invitations always redirect to the official ANIMO app", () => {
-  assert.match(activate, /const APP_URL = "https:\\/\\/app\\.animo-apps\\.com\\/";/);
-  assert.match(activate, /redirectTo: APP_URL/);
-  assert.match(invite, /const APP_URL = "https:\\/\\/app\\.animo-apps\\.com\\/";/);
-  assert.match(invite, /redirectTo: APP_URL/);
-  assert.doesNotMatch(activate, /Deno\\.env\\.get\\("APP_URL"\\)/);
-  assert.doesNotMatch(invite, /Deno\\.env\\.get\\("APP_URL"\\)/);
+  assert.ok(activate.includes('const APP_URL = "https://app.animo-apps.com/";'));
+  assert.ok(activate.includes("redirectTo: APP_URL"));
+  assert.ok(invite.includes('const APP_URL = "https://app.animo-apps.com/";'));
+  assert.ok(invite.includes("redirectTo: APP_URL"));
+  assert.ok(!activate.includes('Deno.env.get("APP_URL")'));
+  assert.ok(!invite.includes('Deno.env.get("APP_URL")'));
 });
