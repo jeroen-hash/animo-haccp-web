@@ -101,9 +101,22 @@ jobs:
           set -e
           sudo apt-get update -y
           sudo apt-get install -y lftp
-          # Alleen uploaden, nooit verwijderen op de server
-          lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<'LFTP'
-          set sftp:auto-confirm yes
+          # Controleer de STRATO SSH-hostkey tegen de fingerprint die
+          # tijdens de eerste SFTP-verbinding in FileZilla is waargenomen.
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          ssh-keyscan -T 15 -p 22 -t ed25519 "$SFTP_HOST" > "$RUNNER_TEMP/strato_known_hosts" 2>/dev/null
+          test -s "$RUNNER_TEMP/strato_known_hosts"
+          ACTUAL_FINGERPRINT="$(ssh-keygen -lf "$RUNNER_TEMP/strato_known_hosts" -E sha256 | awk '{print $2}')"
+          EXPECTED_FINGERPRINT="SHA256:1gx2w8Rtv3wCgi7Jh8myf/KVd72cRQbow03UP8P095Q"
+          if [ "$ACTUAL_FINGERPRINT" != "$EXPECTED_FINGERPRINT" ]; then
+            echo "::error::STRATO SSH-hostkey fingerprint komt niet overeen. Upload afgebroken."
+            exit 1
+          fi
+          chmod 600 "$RUNNER_TEMP/strato_known_hosts"
+          # Alleen uploaden, nooit verwijderen op de server. SSH weigert
+          # elke hostkey die niet overeenkomt met de gecontroleerde key.
+          lftp -e "set sftp:connect-program 'ssh -a -x -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/strato_known_hosts'" -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<'LFTP'
           set net:max-retries 3
           set net:timeout 30
           mirror -R --verbose out/landing /landing
