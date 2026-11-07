@@ -262,6 +262,25 @@ data: {
               );
             }
 
+            // Bestaande eigenaarstoegang mag nooit worden afgezwakt
+            // doordat een voorbereide rol leeg of onbekend is.
+            const {
+              data: existingMembership,
+              error: existingMembershipError,
+            } = await admin
+              .from("business_members")
+              .select("role")
+              .eq("business_id", intake.business_id)
+              .eq("user_id", authUser.id)
+              .maybeSingle();
+
+            if (existingMembershipError) {
+              throw existingMembershipError;
+            }
+
+            const membershipRole =
+              existingMembership?.role === "owner" ? "owner" : role;
+
             // Gebruiker aan de juiste horecazaak koppelen
             const { error: membershipError } = await admin
               .from("business_members")
@@ -269,7 +288,7 @@ data: {
                 {
                   business_id: intake.business_id,
                   user_id: authUser.id,
-                  role,
+                  role: membershipRole,
                   active: true,
                 },
                 {
