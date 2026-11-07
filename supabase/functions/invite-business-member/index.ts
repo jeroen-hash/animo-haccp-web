@@ -89,6 +89,8 @@ const fullName = String(body.fullName ?? "")
 const requestedRole = String(body.role ?? "")
 .trim()
 .toLowerCase();
+const businessId = String(body.businessId ?? "").trim();
+if (!businessId) return jsonResponse({ error: "De actieve horecazaak ontbreekt. Meld opnieuw aan." }, 400);
  
 if (!email || !email.includes("@")) {
 return jsonResponse(
@@ -121,6 +123,7 @@ error: membershipError,
 .from("business_members")
 .select("business_id, role, active")
 .eq("user_id", requestingUser.id)
+.eq("business_id", businessId)
 .eq("active", true)
 .maybeSingle();
  
