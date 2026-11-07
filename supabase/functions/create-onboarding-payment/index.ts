@@ -125,7 +125,16 @@ Deno.serve(async (req: Request) => {
         },
       }],
       automatic_tax: { enabled: true },
-      invoice_creation: { enabled: true },
+      invoice_creation: {
+        enabled: true,
+        invoice_data: {
+          metadata: {
+            payment_kind: "onboarding_fee",
+            onboarding_lead_id: lead.id,
+            service_level: serviceLevel,
+          },
+        },
+      },
       client_reference_id: lead.id,
       metadata: {
         payment_kind: "onboarding_fee",
