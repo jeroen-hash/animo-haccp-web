@@ -40,7 +40,7 @@ footer a{margin-right:14px}
 </div></header>
 <main><div class="wrap">
 <h1>Verwerkersovereenkomst</h1>
-<p class="upd">Laatst bijgewerkt: 5 november 2026</p>
+<p class="upd">Laatst bijgewerkt: 7 november 2026</p>
 
 <div class="box"><p>Deze verwerkersovereenkomst is een aanvulling op de <a href="algemene-voorwaarden.html">algemene voorwaarden</a> en wordt aanvaard wanneer de Klant die aanvaardt of de Dienst gebruikt. Ze voldoet aan artikel 28 van de AVG.</p></div>
 
@@ -87,7 +87,7 @@ footer a{margin-right:14px}
 <tr><td>Soorten gegevens</td><td>Gegevens die de Klant invoert: naam, e-mailadres en rol van gebruikers; registraties en rapporten met door gebruikers ingevoerde namen en handtekeningen; contactgegevens van leveranciers; geüploade documenten</td></tr>
 <tr><td>Betrokkenen</td><td>Medewerkers en gebruikers van de Klant; contactpersonen van leveranciers van de Klant</td></tr>
 <tr><td>Aard van de verwerking</td><td>Opslaan, raadplegen, wijzigen, exporteren, back-ups maken en verwijderen</td></tr>
-<tr><td>Opslaglocatie</td><td>Europese regio</td></tr>
+<tr><td>Primaire opslaglocatie</td><td>Supabase-projectregio eu-west-2 (Londen, Verenigd Koninkrijk). De EU heeft momenteel een adequaatheidsbesluit voor het VK; de actuele geldigheid en eventuele verdere internationale toegang worden periodiek gecontroleerd.</td></tr>
 <tr><td>Bewaartermijn</td><td>Looptijd van het Abonnement plus 90 dagen</td></tr>
 </table></div>
 
@@ -96,16 +96,20 @@ footer a{margin-right:14px}
 <li>Versleutelde verbinding (HTTPS) tussen gebruiker en Dienst.</li>
 <li>Aanmelding per gebruiker met een wachtwoord dat niet leesbaar wordt opgeslagen.</li>
 <li>Rollen en rechten in de Dienst; toegang tot gegevens beperkt tot de gebruikers van de betrokken zaak.</li>
-<li>Opslag in een Europese regio.</li>
-<li>Dagelijkse automatische back-ups.</li>
+<li>Primaire database-, Auth- en Storage-regio: Supabase eu-west-2 (Londen, Verenigd Koninkrijk); de geldende doorgiftegrond en leveranciersdocumentatie worden bijgehouden.</li>
+<li>Rolgebaseerde en zaakgebonden toegangsbeperking.</li>
+<li>Versleutelde back-upbestanden voor geselecteerde private documentopslag.</li>
+<li>De app kan een lokale offlinekopie en niet-gesynchroniseerde wijzigingen in browseropslag bewaren; de Klant wordt geïnformeerd over synchronisatie en lokale verwijdering.</li>
 <li>Melding van datalekken binnen 24 uur.</li>
 </ul>
 
 <h2>Bijlage C. Sub-verwerkers</h2>
 <div class="scroll"><table>
 <tr><th>Sub-verwerker</th><th>Doel</th><th>Locatie</th></tr>
-<tr><td>Supabase</td><td>Database, aanmelding en opslag</td><td>Europese regio</td></tr>
-<tr><td>STRATO</td><td>Hosting van de applicatiebestanden en e-mail</td><td>Europese Unie</td></tr>
+<tr><td>Supabase</td><td>Database, authenticatie, opslag en backendfuncties</td><td>Primaire regio Londen, VK; beperkte ondersteunings-/operationele verwerking kan elders plaatsvinden. Supabase DPA en actuele subverwerkerslijst zijn van toepassing.</td></tr>
+<tr><td>STRATO</td><td>Hosting publieke website/appbestanden, e-mail en opslag van versleutelde back-upbestanden</td><td>Volgens de betrokken STRATO-dienst en contractuele voorwaarden; actuele locaties moeten bij STRATO worden bevestigd.</td></tr>
+<tr><td>Stripe</td><td>Abonnementen, checkout, betalingen, klant- en abonnementsreferenties. Stripe kan afhankelijk van de verwerking verwerker of zelfstandig verwerkingsverantwoordelijke zijn.</td><td>Volgens Stripe DPA, Data Transfers Addendum en actuele subverwerkerslijst.</td></tr>
+<tr><td>GitHub</td><td>Broncodebeheer en software-uitrol; geen normale opslag van klantregistraties. Technische logs kunnen beperkte gegevens bevatten.</td><td>Volgens GitHub Data Protection Agreement en actuele subverwerkerslijst.</td></tr>
 </table></div>
 
 </div></main>
