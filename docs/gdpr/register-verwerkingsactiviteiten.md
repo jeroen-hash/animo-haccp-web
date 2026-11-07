@@ -68,7 +68,7 @@ Dit register is opgesteld als werkdocument op basis van de huidige app-architect
 
 ## Leveranciers en doorgiften
 - **Supabase:** primaire projectregio eu-west-2, Londen (VK). De Europese Commissie heeft voor het VK een adequaatheidsbesluit vernieuwd; verifieer de actuele status en de actuele Supabase DPA/subverwerkerslijst.
-- **STRATO:** hosting, e-mail en bestemming voor versleutelde back-ups. De exacte locaties moeten per gebruikte dienst uit de actuele contractinformatie worden bevestigd.
+- **STRATO:** hosting, e-mail en bestemming voor versleutelde back-ups. STRATO vermeldt eigen datacenters in Berlijn en Karlsruhe en gegevensverwerking in Duitsland. Bewaar en controleer de AVV en actuele subverwerkersinformatie voor de concreet afgenomen diensten.
 - **Stripe:** abonnementen en betalingen; rol verschilt per verwerking. Stripe DPA en actuele subverwerkerslijst raadplegen.
 - **GitHub:** broncodebeheer en CI/CD. Beperk logs en toegangsrechten; plaats geen gewone klantregistraties in repository/issues.
 - Documenteer voor iedere leverancier: contract/DPA, subverwerkers, locaties, transfermechanisme, beveiligingsinformatie, contactpunt en datum van laatste controle.
