@@ -154,3 +154,34 @@ jobs:
           `, context);
           console.log('Atomic recipe stock consumption tests passed.');
           NODE
+
+      - name: Validate UBL unit and currency safety
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const extract = (start, end) => {
+            const a = html.indexOf(start), b = html.indexOf(end, a);
+            if (a < 0 || b < 0) throw new Error('Missing UBL helper: ' + start);
+            return html.slice(a, b);
+          };
+          const context = {
+            findStockMatch: () => ({id:'eggs',unit:'stuks'}),
+            convertRecipeQuantity: (q, from, to) => from === to ? q : null
+          };
+          vm.runInNewContext(extract('function ublUnit(', 'function parseUblInvoice(') +
+            extract('function prepareDeliveryRows(', 'function confirmDelivery()') + `
+            if (ublUnit('') !== '') throw new Error('Missing UBL unit must stay empty, not default to stuks.');
+            if (ublUnit('C62') !== 'stuks' || ublUnit('KGM') !== 'kg') throw new Error('Known UBL unit mappings must remain supported.');
+            let blocked = false;
+            try { prepareDeliveryRows([{name:'Eieren',quantity:10,unit:''}]); } catch (e) { blocked = /Kies eerst een bevestigde eenheid/.test(e.message); }
+            if (!blocked) throw new Error('A missing unit must block stock import.');
+            const valid = prepareDeliveryRows([{name:'Eieren',quantity:10,unit:'stuks'}]);
+            if (valid.length !== 1 || valid[0].stockQuantity !== 10) throw new Error('A manually confirmed unit should import normally.');
+          `, context);
+          const currencyGuard = html.includes("currency:ublText(ublChild(invoice,'DocumentCurrencyCode')),") &&
+            html.includes("deliveryInvoiceMeta.currency!=='EUR'");
+          if (!currencyGuard) throw new Error('UBL import must require explicit EUR currency.');
+          console.log('UBL unit and currency safety tests passed.');
+          NODE
