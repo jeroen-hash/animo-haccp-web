@@ -31,9 +31,15 @@
       const linked = Number(data?.linked || 0);
       const failed = Array.isArray(data?.failed) ? data.failed : [];
       const existing = Number(data?.existing || 0);
-      alert(`${invited} nieuwe uitnodiging(en) verstuurd. ` +
-        ${existing} bestaand(e) account(s) gevonden. ` +
-        ${linked} gebruiker(s) aan de zaak gekoppeld.${failed.length ? `\n\nNiet gelukt:\n${failed.map(x => `${x.email}: ${x.error}`).join('\n')}` : ''}`);
+      const summary = [
+        `${invited} nieuwe uitnodiging(en) verstuurd.`,
+        `${existing} bestaand(e) account(s) gevonden.`,
+        `${linked} gebruiker(s) aan de zaak gekoppeld.`,
+        ...(failed.length
+          ? ["", "Niet gelukt:", ...failed.map(x => `${x.email}: ${x.error}`)]
+          : []),
+      ];
+      alert(summary.join("\\n"));
     } catch (error) {
       alert(error.message || String(error));
     } finally {
