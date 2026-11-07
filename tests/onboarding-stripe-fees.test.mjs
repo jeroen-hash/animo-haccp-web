@@ -75,6 +75,15 @@ test("platform onboarding dashboard exposes the payment link only after approval
   assert.match(dashboard, /latestPayload/);
   assert.match(dashboard, /pay\.status==='paid'/);
 });
+test("onboarding user invitations pass the converted intake ID, not the public lead ID", () => {
+  assert.match(dashboard, /converted_intake_id:l\.converted_intake_id/);
+  assert.match(dashboard, /data-intake-id=/);
+  assert.match(invite, /data-intake-id/);
+  assert.match(invite, /dataset\.intakeId/);
+  assert.match(invite, /Deze aanvraag is nog niet geactiveerd/);
+  assert.match(read("../supabase/functions/onboarding-invite-user/index.ts"), /\.maybeSingle\(\)/);
+});
+
 test("one-time Stripe invoices are included in the real payments report", () => {
   assert.match(checkout, /payment_kind: "onboarding_fee"/);
   assert.match(webhook, /source_type: onboardingLeadId \? "onboarding_fee" : "subscription"/);
