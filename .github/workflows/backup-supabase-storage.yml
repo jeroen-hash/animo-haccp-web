@@ -163,13 +163,44 @@ jobs:
           SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
           SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
           SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+          SFTP_HOST_KEY_SHA256: ${{ secrets.STRATO_SFTP_HOST_KEY_SHA256 }}
           RETENTION_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.retention_dry_run || 'false' }}
         run: |
           set -euo pipefail
+          for value in "$SFTP_HOST" "$SFTP_USER" "$SFTP_PASS"; do
+            test -n "$value" || { echo "::error::A required SFTP retention secret is missing."; exit 1; }
+          done
+
+          known_hosts="$RUNNER_TEMP/strato_retention_known_hosts"
+          scanned_keys="$RUNNER_TEMP/strato_retention_scanned_keys"
+          candidate_key="$RUNNER_TEMP/strato_retention_candidate_key"
+          lftp_host_key_settings='set sftp:auto-confirm yes'
+          if [ -n "${SFTP_HOST_KEY_SHA256:-}" ]; then
+            ssh-keyscan -p 22 "$SFTP_HOST" 2>/dev/null > "$scanned_keys"
+            test -s "$scanned_keys" || { echo "::error::Could not retrieve the STRATO SSH host key for retention."; exit 1; }
+            : > "$known_hosts"
+            while IFS= read -r key_line; do
+              [ -n "$key_line" ] || continue
+              printf '%s\\n' "$key_line" > "$candidate_key"
+              fingerprint="$(ssh-keygen -lf "$candidate_key" -E sha256 | awk '{print $2}')"
+              if [ "$fingerprint" = "$SFTP_HOST_KEY_SHA256" ]; then
+                printf '%s\\n' "$key_line" >> "$known_hosts"
+              fi
+            done < "$scanned_keys"
+            test -s "$known_hosts" || { echo "::error::No STRATO SSH host key matches the pinned fingerprint for retention."; exit 1; }
+            chmod 600 "$known_hosts"
+            rm -f "$scanned_keys" "$candidate_key"
+            lftp_host_key_settings="set sftp:auto-confirm no
+          set sftp:connect-program \\"ssh -a -x -oStrictHostKeyChecking=yes -oUserKnownHostsFile=$known_hosts\\""
+            echo "Verified STRATO SSH host key fingerprint; strict checking enabled for retention."
+          else
+            echo "::warning::STRATO SSH host-key pinning is not configured yet for retention."
+          fi
+
           remote_dir="/backups/animo-haccp-storage"
           listing="$RUNNER_TEMP/animo-backup-listing"
           lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP > "$listing"
-          set sftp:auto-confirm yes
+          $lftp_host_key_settings
           set net:max-retries 3
           set net:timeout 30
           cls -1 "$remote_dir"
@@ -187,7 +218,7 @@ jobs:
               else
                 echo "Removing expired encrypted backup older than 90 days: $name"
                 lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP
-          set sftp:auto-confirm yes
+          $lftp_host_key_settings
           set net:max-retries 3
           set net:timeout 30
           rm -f "$remote_dir/$name"
