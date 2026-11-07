@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'tests/offline-access-window.test.mjs'
       - 'supabase/functions/stripe-webhook/index.ts'
       - 'supabase/functions/process-delivery-note/index.ts'
       - 'sw.js'
@@ -84,6 +85,8 @@ jobs:
           }
           console.log('Subscription billing data access and owner/manager policy checks passed.');
           NODE
+      - name: Validate offline access expiry
+        run: node --test tests/offline-access-window.test.mjs
       - name: Validate inline JavaScript and service worker
         run: |
           node <<'NODE'
