@@ -67,13 +67,20 @@ export default {
           .from("onboarding_intakes")
           .select("id, business_id, payload")
           .eq("id", intake_id)
-          .single();
+          .maybeSingle();
 
         if (intakeError) {
           throw intakeError;
         }
 
-        if (!intake?.business_id) {
+        if (!intake) {
+          return Response.json(
+            { error: "De klantonboarding werd niet gevonden. Vernieuw het dashboard en selecteer de juiste actieve klantonboarding." },
+            { status: 404 }
+          );
+        }
+
+        if (!intake.business_id) {
           return Response.json(
             { error: "Deze onboarding is nog niet aan een zaak gekoppeld." },
             { status: 400 }
