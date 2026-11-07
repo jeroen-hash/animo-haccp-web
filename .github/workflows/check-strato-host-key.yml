@@ -1,0 +1,27 @@
+name: Check STRATO SSH host key fingerprint
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fingerprint:
+    name: Read public SSH host key fingerprints
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Scan STRATO SSH host keys
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOST="5021815840.ssh.w2.strato.hosting"
+          echo "Reading public SSH host keys from ${HOST}:22"
+          echo "This step does not authenticate, upload, download, or modify files."
+          KEYS="$(ssh-keyscan -T 10 -p 22 -t ed25519,ecdsa,rsa "${HOST}" 2>/dev/null || true)"
+          if [ -z "${KEYS}" ]; then
+            echo "::error::No SSH host keys were returned. Check the hostname/network or ask STRATO support."
+            exit 1
+          fi
+          printf '%s\n' "${KEYS}" | ssh-keygen -E sha256 -lf -
