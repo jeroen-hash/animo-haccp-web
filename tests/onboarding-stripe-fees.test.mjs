@@ -32,7 +32,7 @@ test("one-time Checkout uses fixed amounts, exclusive tax, automatic tax and inv
   assert.match(checkout, /mode:\s*"payment"/);
   assert.match(checkout, /tax_behavior:\s*"exclusive"/);
   assert.match(checkout, /automatic_tax:\s*\{\s*enabled:\s*true\s*\}/);
-  assert.match(checkout, /invoice_creation:\s*\{\s*enabled:\s*true\s*\}/);
+  assert.match(checkout, /invoice_creation:\s*\{/);\n  assert.match(checkout, /invoice_data:\s*\{/);\n  assert.match(checkout, /tax_id_collection:\s*\{\s*enabled:\s*true\s*\}/);
   assert.match(checkout, /platform_admins/);
 });
 
