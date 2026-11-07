@@ -21,12 +21,41 @@ function jsonResponse(
   });
 }
 
-function isValidFutureDate(value: string | null) {
+function isValidFutureDate(value: string | null, now = Date.now()) {
   if (!value) return false;
 
   const timestamp = new Date(value).getTime();
 
-  return Number.isFinite(timestamp) && timestamp > Date.now();
+  return Number.isFinite(timestamp) && timestamp > now;
+}
+
+function getAccessDecision(input: any) {
+  const now = input.now ?? Date.now();
+  const trialStart = input.trialStartedAt
+    ? new Date(input.trialStartedAt).getTime()
+    : NaN;
+  const trialEnd = input.trialEndsAt
+    ? new Date(input.trialEndsAt).getTime()
+    : NaN;
+  const trialActive = Number.isFinite(trialStart) &&
+    trialStart <= now && Number.isFinite(trialEnd) && trialEnd > now;
+  const trialExpired = Number.isFinite(trialEnd) && trialEnd <= now;
+  const subscriptionActive = input.subscriptionStatus === "active" &&
+    isValidFutureDate(input.subscriptionPeriodEnd, now);
+
+  if (input.lifetimeFree) {
+    return { accessAllowed: true, accessReason: "lifetime_free", trialActive, trialExpired };
+  }
+  if (subscriptionActive) {
+    return { accessAllowed: true, accessReason: "subscription_active", trialActive, trialExpired };
+  }
+  if (trialActive) {
+    return { accessAllowed: true, accessReason: "trial_active", trialActive, trialExpired };
+  }
+  if (trialExpired) {
+    return { accessAllowed: false, accessReason: "trial_expired", trialActive, trialExpired };
+  }
+  return { accessAllowed: false, accessReason: "trial_not_started", trialActive, trialExpired };
 }
 
 Deno.serve(async (req: Request) => {
@@ -258,66 +287,25 @@ Deno.serve(async (req: Request) => {
     }
 
     const now = Date.now();
-
-    // Gratis proefperiode uit de database.
     const trialStartedAt = business.trial_started_at;
     const trialEndsAt = business.trial_ends_at;
     const trialUsedAt = business.trial_used_at;
-
-    const trialEndTimestamp = trialEndsAt
-      ? new Date(trialEndsAt).getTime()
-      : NaN;
-
-    const trialStartedTimestamp = trialStartedAt
-      ? new Date(trialStartedAt).getTime()
-      : NaN;
-
-    const trialActive =
-      Number.isFinite(trialStartedTimestamp) &&
-      trialStartedTimestamp <= now &&
-      Number.isFinite(trialEndTimestamp) &&
-      trialEndTimestamp > now;
-
-    const trialExpired =
-      Number.isFinite(trialEndTimestamp) &&
-      trialEndTimestamp <= now;
-
-    // Levenslange gratis toegang.
     const lifetimeFree = business.lifetime_free === true;
 
-    // Betaald abonnement: alleen actief zolang de betaalperiode geldig is.
-    const subscriptionActive =
-      subscription?.status === "active" &&
-      isValidFutureDate(subscription.current_period_end);
-
-    // Opzegging aan het einde van de betaalperiode
-    // laat toegang toe tot de einddatum.
-    let accessAllowed = false;
-    let accessReason = "payment_required";
-
-    if (lifetimeFree) {
-      accessAllowed = true;
-      accessReason = "lifetime_free";
-    } else if (subscriptionActive) {
-      accessAllowed = true;
-      accessReason = "subscription_active";
-    } else if (trialActive) {
-      accessAllowed = true;
-      accessReason = "trial_active";
-    } else if (trialExpired) {
-      accessAllowed = false;
-      accessReason = "trial_expired";
-    } else if (!trialStartedAt || !trialEndsAt) {
-      accessAllowed = false;
-      accessReason = "trial_not_started";
-    }
-
-    const trialRemainingDays =
-      trialActive
-        ? Math.ceil(
-            (trialEndTimestamp - now) / 86400000,
-          )
-        : 0;
+    // Eén centrale beslissing voor proefperiode, abonnement en uitzonderingen.
+    const access = getAccessDecision({
+      lifetimeFree,
+      subscriptionStatus: subscription?.status ?? null,
+      subscriptionPeriodEnd: subscription?.current_period_end ?? null,
+      trialStartedAt,
+      trialEndsAt,
+      now,
+    });
+    const { accessAllowed, accessReason, trialActive, trialExpired } = access;
+    const trialEndTimestamp = trialEndsAt ? new Date(trialEndsAt).getTime() : NaN;
+    const trialRemainingDays = trialActive
+      ? Math.ceil((trialEndTimestamp - now) / 86400000)
+      : 0;
 
     // Stripe-identificatiegegevens alleen beschikbaar maken
     // voor eigenaar en manager.
