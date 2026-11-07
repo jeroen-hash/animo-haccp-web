@@ -6,11 +6,13 @@ on:
     paths:
       - "onboarding-form.html"
       - "onboarding-dashboard.html"
+      - "admin-dashboard.html"
       - "onboarding-activation.js"
       - "supabase/functions/submit-onboarding-lead/**"
       - "supabase/functions/activate-onboarding-lead/**"
       - "supabase/functions/create-onboarding-payment/**"
       - "supabase/functions/stripe-webhook/**"
+      - "supabase/migrations/**"
       - "tests/onboarding-stripe-fees.test.mjs"
       - ".github/workflows/validate-onboarding-stripe.yml"
 
