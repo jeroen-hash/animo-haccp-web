@@ -45,3 +45,25 @@ test("stock movement can be recorded when legacy cloud data lacks stockMovements
     'if (state.stockMovements.length !== 1 || state.stockMovements[0].delta !== 10) throw new Error("Stock movement was not recorded");';
   vm.runInNewContext(script, { state: {}, currentUser: { id: "test-user", name: "Test" } });
 });
+
+
+test("duplicate stock lines share one identity while distinct units remain separate", () => {
+  const helper = extract("function normalizeStockName(value){", "function deliveryUnitOptions(");
+  const script = helper + `
+    const a = stockIdentityKey({ name: "Grillworst", unit: "stuks" });
+    const b = stockIdentityKey({ name: "Grillworst", unit: "stuks" });
+    const c = stockIdentityKey({ name: "Grillworst", unit: "kg" });
+    if (a !== b) throw new Error("Identical products must share one stock identity");
+    if (a === c) throw new Error("Different stock units must remain separate");
+    if (stockIdentityKey({ code: " ART-01 ", name: "Grillworst", unit: "stuks" }) !== "code:art-01") throw new Error("Article code must take precedence");
+  `;
+  vm.runInNewContext(script, {});
+});
+
+test("manual stock additions merge into an existing product and UBL duplicates reuse a newly created product", () => {
+  assert.ok(html.includes("const existing=findStockMatch(obj);if(existing){existing.batches=Array.isArray(existing.batches)?existing.batches:[];existing.batches.push(...obj.batches);"));
+  assert.ok(html.includes("const productsCreatedInThisDelivery=new Map();"));
+  assert.ok(html.includes("let product=matchedProduct||productsCreatedInThisDelivery.get(identity)||null;"));
+  assert.ok(html.includes("if(identity)productsCreatedInThisDelivery.set(identity,product);"));
+  assert.ok(!html.includes("return state.stock.find(x=>normalizeStockName(x.name)===wanted)||state.stock.find(x=>{"));
+});
