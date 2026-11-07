@@ -651,6 +651,7 @@ function hidePasswordSetup(){get('cloudPasswordSetupForm').classList.add('cloud-
 function hideResetRequest(){const form=get('cloudResetRequestForm');if(form)form.classList.add('cloud-hidden')}
 function showLogin(){get('cloudSetup').classList.add('cloud-hidden');get('cloudLoginForm').classList.remove('cloud-hidden');get('cloudSignupForm').classList.add('cloud-hidden');get('cloudSessionBox').classList.add('cloud-hidden');hideResetRequest();hidePasswordSetup()}
 function showSetup(){get('cloudSetup').classList.remove('cloud-hidden');get('cloudLoginForm').classList.add('cloud-hidden');get('cloudSignupForm').classList.add('cloud-hidden');get('cloudSessionBox').classList.add('cloud-hidden');hideResetRequest();hidePasswordSetup()}
+function isBusinessSignupRequested(){return new URLSearchParams(location.search).get('signup')==='1'}
 function showSignup(){get('cloudSetup').classList.add('cloud-hidden');get('cloudLoginForm').classList.add('cloud-hidden');get('cloudSignupForm').classList.remove('cloud-hidden');get('cloudSessionBox').classList.add('cloud-hidden');hideResetRequest();hidePasswordSetup();get('signupMessage').className='cloud-message'}
 function showResetRequest(){
   get('cloudSetup').classList.add('cloud-hidden');
@@ -1021,7 +1022,17 @@ async function continueToCloudApp(){
     throw error;
   }
 }
-async function initClient(config){if(!window.supabase||!validConfig(config))return false;cloudClient=window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});cloudClient.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'&&session){showPasswordSetup('recovery');setStatus('Nieuw wachtwoord vereist')}});const {data,error}=await cloudClient.auth.getSession();if(error){if(isNetworkUnavailable(error)){try{const meta=JSON.parse(localStorage.getItem(OFFLINE_SESSION_KEY)||'null');const hasPersistedAuth=Object.keys(localStorage).some(key=>/^sb-.+-auth-token$/.test(key));if(meta?.userId&&hasPersistedAuth&&bootOfflineFromCache({id:meta.userId,email:meta.userEmail||''}))return true}catch(offlineError){console.warn('Offline sessieherstel na auth-netwerkfout niet mogelijk',offlineError)}}setMessage(error.message);showLogin();return true}const linkType=authLinkType();if(data.session&&(linkType==='recovery'||linkType==='invite')){showPasswordSetup(linkType);setStatus(linkType==='invite'?'Accountactivatie vereist':'Nieuw wachtwoord vereist');history.replaceState(null,document.title,location.pathname);return true}if(data.session){
+async function initClient(config){
+  const signupRequested=isBusinessSignupRequested();
+  if(signupRequested){
+    showSignup();
+    setTimeout(()=>get('signupBusinessName')?.focus(),0);
+  }
+  if(!window.supabase||!validConfig(config)){
+    if(signupRequested)setSignupMessage('De beveiligde registratieverbinding kon niet worden geladen. Vernieuw de pagina of probeer het opnieuw.','error');
+    return false;
+  }
+  cloudClient=window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});cloudClient.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'&&session){showPasswordSetup('recovery');setStatus('Nieuw wachtwoord vereist')}});const {data,error}=await cloudClient.auth.getSession();if(error){if(isNetworkUnavailable(error)){try{const meta=JSON.parse(localStorage.getItem(OFFLINE_SESSION_KEY)||'null');const hasPersistedAuth=Object.keys(localStorage).some(key=>/^sb-.+-auth-token$/.test(key));if(meta?.userId&&hasPersistedAuth&&bootOfflineFromCache({id:meta.userId,email:meta.userEmail||''}))return true}catch(offlineError){console.warn('Offline sessieherstel na auth-netwerkfout niet mogelijk',offlineError)}}if(signupRequested){showSignup();setSignupMessage('De registratieverbinding kon niet worden gecontroleerd. Controleer je internetverbinding en probeer opnieuw.','error')}else{setMessage(error.message);showLogin()}return true}const linkType=authLinkType();if(data.session&&(linkType==='recovery'||linkType==='invite')){showPasswordSetup(linkType);setStatus(linkType==='invite'?'Accountactivatie vereist':'Nieuw wachtwoord vereist');history.replaceState(null,document.title,location.pathname);return true}if(data.session){
   try{
     await finishPendingBusinessRegistration();
     const prepared=await prepareCloudSession(data.session.user,{attempts:3,delay:500});
@@ -1033,7 +1044,7 @@ async function initClient(config){if(!window.supabase||!validConfig(config))retu
     if(navigator.onLine)await cloudClient.auth.signOut({scope:'local'});
     showLogin();
   }
-}else{showLogin();setStatus('Supabase klaar voor aanmelding');if(new URLSearchParams(location.search).get('signup')==='1')showSignup()}return true}
+}else{if(signupRequested)showSignup();else showLogin();setStatus('Supabase klaar voor aanmelding')}return true}
 get('cloudSaveConfig').addEventListener('click',async()=>{const config={url:get('cloudUrl').value.trim().replace(/\/$/,''),key:get('cloudKey').value.trim()};if(config.key.startsWith('sb_secret_')){alert('Gebruik nooit een secret key in de browser.');return}if(!validConfig(config)){alert('Controleer de Project URL en gebruik de volledige sleutel die begint met sb_publishable_.');return}localStorage.setItem(CONFIG_KEY,JSON.stringify(config));get('cloudKey').value='';await initClient(config)});
 get('cloudLoginForm').addEventListener('submit',async e=>{
   e.preventDefault();

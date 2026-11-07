@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
+const landing = read("../landing.html");
+const app = read("../index.html");
 const form = read("../onboarding-form.html");
 const submit = read("../supabase/functions/submit-onboarding-lead/index.ts");
 const checkout = read("../supabase/functions/create-onboarding-payment/index.ts");
@@ -14,6 +16,16 @@ const invite = read("../supabase/functions/onboarding-invite-user/index.ts");
 const inviteUi = read("../onboarding-invite-users.js");
 const migration = read("../supabase/migrations/20261107102332_add_onboarding_invoice_reporting.sql");
 const adminDashboard = read("../admin-dashboard.html");
+
+test("14-day landing CTAs open the self-service business registration screen", () => {
+  const ctaUrl = 'href="https://app.animo-apps.com/?signup=1"';
+  const ctas = landing.split(ctaUrl).length - 1;
+  assert.equal(ctas, 4, "All 14-day trial CTAs must point directly to the app registration entry.");
+  assert.match(app, /function isBusinessSignupRequested\(\)\{return new URLSearchParams\(location\.search\)\.get\('signup'\)==='1'\}/);
+  assert.match(app, /if\(signupRequested\)\{\s*showSignup\(\);\s*setTimeout/);
+  assert.match(app, /if\(signupRequested\)showSignup\(\);else showLogin\(\)/);
+  assert.match(app, /De registratieverbinding kon niet worden gecontroleerd/);
+});
 
 test("public onboarding form keeps the one-time fees separate from subscriptions", () => {
   assert.match(form, /Gedeeltelijke inrichting door ANIMO \(€75 eenmalig, excl\. btw \(€90,75 incl\. btw\)\)/);
