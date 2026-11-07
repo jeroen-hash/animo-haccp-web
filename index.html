@@ -750,8 +750,33 @@ function clearOfflineNotice(){const el=document.getElementById('animoOfflineNoti
 function offlineAccessExpiry(subscription){if(subscription?.accessReason==='lifetime_free')return null;if(subscription?.accessReason==='subscription_active')return subscription.currentPeriodEnd||null;if(subscription?.accessReason==='trial_active')return subscription.trialEndsAt||null;return null}
 function rememberOfflineSession(user,subscription){if(!cloudBusiness?.id||!user?.id||subscription?.accessAllowed!==true)return;const accessValidUntil=offlineAccessExpiry(subscription);localStorage.setItem(OFFLINE_SESSION_KEY,JSON.stringify({userId:user.id,userEmail:user.email||'',businessId:cloudBusiness.id,role:cloudBusiness.role||'employee',businessName:cloudBusiness.name||'',enterpriseNumber:cloudBusiness.enterprise_number||'',verifiedAt:new Date().toISOString(),cloudUpdatedAt:cloudRowUpdatedAt,accessValidUntil,accessReason:subscription.accessReason||'unknown',accessAllowed:true}))}
 window.FAVVRememberOfflineSession=rememberOfflineSession;
+function enforceOfflineAccessWindow(){
+  if(!window.FAVVOfflineMode)return false;
+  let meta=null;
+  try{meta=JSON.parse(localStorage.getItem(OFFLINE_SESSION_KEY)||'null')}catch(e){}
+  const now=Date.now();
+  const verifiedAt=Date.parse(meta?.verifiedAt||'');
+  const age=now-verifiedAt;
+  const hasAccessExpiry=Boolean(meta?.accessValidUntil);
+  const accessExpiry=hasAccessExpiry?Date.parse(meta.accessValidUntil):null;
+  const expired=!meta||!meta.businessId||!Number.isFinite(verifiedAt)||age<0||age>24*60*60*1000||
+    (hasAccessExpiry&&(!Number.isFinite(accessExpiry)||now>=accessExpiry));
+  if(!expired)return false;
+  if(meta?.businessId){
+    const key='favv-subscription-v1:'+meta.businessId;
+    let cached={};
+    try{cached=JSON.parse(localStorage.getItem(key)||'{}')||{}}catch(e){}
+    cached.accessAllowed=false;
+    cached.accessReason=hasAccessExpiry&&Number.isFinite(accessExpiry)&&now>=accessExpiry?'access_period_expired':'offline_verification_expired';
+    localStorage.setItem(key,JSON.stringify(cached));
+  }
+  window.FAVVOfflineAccessExpired=true;
+  navigate('subscription');
+  offlineNotice('OFFLINETOEGANG VERLOPEN · Maak opnieuw verbinding om je toegangsrechten te controleren. Je offline registraties blijven bewaard.','conflict');
+  return true;
+}
 function bootOfflineFromCache(user){try{const meta=JSON.parse(localStorage.getItem(OFFLINE_SESSION_KEY)||'null');if(!meta||!user||meta.userId!==user.id||!meta.businessId||meta.accessAllowed!==true)return false;const age=Date.now()-new Date(meta.verifiedAt).getTime();if(!Number.isFinite(age)||age<0||age>24*60*60*1000)return false;if(meta.accessValidUntil&&Date.now()>=new Date(meta.accessValidUntil).getTime())return false;if(localStorage.getItem('favv-active-business-v1')!==meta.businessId)return false;if(!localStorage.getItem('favv-professional-v1:'+meta.businessId))return false;activeBusinessId=meta.businessId;let cachedSub=null;try{cachedSub=JSON.parse(localStorage.getItem('favv-subscription-v1:'+meta.businessId)||'null')}catch(e){}if(!cachedSub||cachedSub.accessAllowed!==true)return false;cloudBusiness={id:meta.businessId,name:meta.businessName||'Horecazaak',enterprise_number:meta.enterpriseNumber||'',role:meta.role||'employee'};cloudRowUpdatedAt=meta.cloudUpdatedAt||null;window.FAVVCloudBusiness=cloudBusiness;window.FAVVCloudUser=user;window.FAVVCloudRole=cloudBusiness.role;window.FAVVStartSupabaseSession(user,cloudBusiness);window.FAVVOfflineMode=true;readOfflineSnapshot(meta.businessId).then(existing=>{if(!existing){let dirty=null;try{dirty=JSON.parse(localStorage.getItem('animo-offline-dirty:'+meta.businessId)||'null')}catch(e){}if(dirty){cloudRowUpdatedAt=dirty.baseUpdatedAt??meta.cloudUpdatedAt??null;const local=window.FAVVGetLocalState?.();if(local)queueOfflineSnapshot(local)}}}).catch(()=>{});openLocalApp();offlineNotice('OFFLINEMODUS · Je werkt met lokaal bewaarde HACCP-gegevens. Nieuwe registraties worden bewaard en wachten op veilige synchronisatie. Offline toegang is maximaal 24 uur geldig na de laatste online controle.');return true}catch(e){return false}}
-window.addEventListener('online',()=>{if(window.FAVVOfflineMode){offlineNotice('Internetverbinding hersteld. Je rechten en wijzigingen worden veilig gecontroleerd...');if(cloudClient)cloudClient.auth.getSession().then(({data})=>{if(data?.session)return prepareCloudSession(data.session.user,{attempts:2,delay:400}).then(ok=>ok&&continueToCloudApp()).catch(e=>offlineNotice('Synchronisatie wacht: '+(e.message||'controle mislukt'),'conflict'))})}});
+window.addEventListener('online',()=>{if(window.FAVVOfflineMode||window.FAVVOfflineAccessExpired){offlineNotice('Internetverbinding hersteld. Je rechten en wijzigingen worden veilig gecontroleerd...');if(cloudClient)cloudClient.auth.getSession().then(({data})=>{if(data?.session)return prepareCloudSession(data.session.user,{attempts:2,delay:400}).then(ok=>ok&&continueToCloudApp()).catch(e=>offlineNotice('Synchronisatie wacht: '+(e.message||'controle mislukt'),'conflict'))})}});
 window.addEventListener('offline',()=>{if(window.FAVVCloudBusiness){window.FAVVOfflineMode=true;offlineNotice('OFFLINEMODUS · Je registraties worden lokaal bewaard. Synchronisatie volgt zodra internet terug is.')}});
 function auditItemName(item,fallback){
   if(!item||typeof item!=='object')return fallback;
@@ -943,6 +968,8 @@ async function continueToCloudApp(){
 
     // Proefperiode verlopen of geen geldig abonnement.
     if(!subscription.accessAllowed){
+      window.FAVVOfflineMode=false;
+      window.FAVVOfflineAccessExpired=false;
       navigate('subscription');
       openLocalApp();
       toast(subscription.billingAllowed
@@ -954,6 +981,7 @@ async function continueToCloudApp(){
     // Alleen bij toegestane toegang de HACCP-gegevens laden.
     rememberOfflineSession(sessionUser,subscription);
     window.FAVVOfflineMode=false;
+    window.FAVVOfflineAccessExpired=false;
     if(!window.FAVVSyncConflict)clearOfflineNotice();
     let r=window.__favvCloudRow;
     const forceClean=localStorage.getItem('favv-force-clean-new-business-v1')==='true';
@@ -1886,6 +1914,8 @@ $('roleModalLayer').addEventListener('click',e=>{if(e.target===$('roleModalLayer
 $('deliveryFile').addEventListener('change',e=>{const file=e.target.files[0],img=$('deliveryPreview');if(file&&file.type.startsWith('image/')){img.src=URL.createObjectURL(file);img.style.display='block'}else img.style.display='none'});document.addEventListener('input',e=>{const field=e.target.closest('[data-review]');if(field){const i=Number(field.dataset.index),key=field.dataset.review;deliveryReviewRows[i][key]=key==='quantity'?Number(field.value):field.value}const rf=e.target.closest('[data-recipe-field]');if(rf){const i=Number(rf.dataset.index),key=rf.dataset.recipeField;recipeIngredientDraft[i][key]=key==='quantity'?Number(rf.value):rf.value;if(key==='stockId'){recipeIngredientDraft[i].unit=stockById(rf.value)?.unit||'';renderIngredientEditors()}}const bf=e.target.closest('[data-batch-field]');if(bf){const i=Number(bf.dataset.index),key=bf.dataset.batchField;stockBatchDraft[i][key]=key==='quantity'?Number(bf.value):bf.value;if(key==='quantity')$('stockProductQuantity').value=stockBatchDraft.reduce((n,b)=>n+Number(b.quantity||0),0).toFixed(3).replace(/0+$/,'').replace(/\.$/,'')||'0'}const sf=e.target.closest('[data-step-field]');if(sf){const i=Number(sf.dataset.index),key=sf.dataset.stepField;recipeStepDraft[i][key]=key==='minutes'||key==='temperature'?(sf.value===''?'':Number(sf.value)):sf.value}});document.addEventListener('change',e=>{const field=e.target.closest('[data-review="unit"]');if(field){const i=Number(field.dataset.index);if(deliveryReviewRows[i])deliveryReviewRows[i].unit=field.value}});if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(error=>console.warn('Offline app-shell kon niet worden geregistreerd',error))}
 initializeAuth();
 setInterval(()=>{
+  // Beperk ook een sessie die open blijft staan tijdens een lange offlineperiode.
+  if(window.FAVVOfflineMode)enforceOfflineAccessWindow();
   // cloudClient en cloudBusiness leven in een andere script-scope.
   // Gebruik uitsluitend de expliciet gedeelde sessiegegevens op window.
   if(window.FAVVCloudBusiness&&window.FAVVCloudUser&&typeof window.refreshSubscriptionStatus==='function'){
