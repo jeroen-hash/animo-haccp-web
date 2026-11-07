@@ -20,7 +20,7 @@ const adminDashboard = read("../admin-dashboard.html");
 test("14-day landing CTAs open the self-service business registration screen", () => {
   const ctaUrl = 'href="https://app.animo-apps.com/?signup=1"';
   const ctas = landing.split(ctaUrl).length - 1;
-  assert.equal(ctas.length, 4, "All 14-day trial CTAs must point directly to the app registration entry.");
+  assert.equal(ctas, 4, "All 14-day trial CTAs must point directly to the app registration entry.");
   assert.match(app, /function isBusinessSignupRequested\(\)\{return new URLSearchParams\(location\.search\)\.get\('signup'\)==='1'\}/);
   assert.match(app, /if\(signupRequested\)\{\s*showSignup\(\);\s*setTimeout/);
   assert.match(app, /if\(signupRequested\)showSignup\(\);else showLogin\(\)/);
