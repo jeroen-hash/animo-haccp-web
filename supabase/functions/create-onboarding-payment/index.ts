@@ -104,7 +104,7 @@ Deno.serve(async (req: Request) => {
       if (existingSession.status === "open" && existingSession.url) {
         return jsonResponse({ url: existingSession.url, reused: true, amount_ex_vat: fee.amount, currency: "eur" });
       }
-      if (existingSession.status === "complete" && existingSession.payment_status !== "paid") {
+      if (existingSession.status === "complete" && existingSession.payment_status !== "paid" && payment.status !== "failed") {
         return jsonResponse({ error: "De betaling wordt nog door Stripe verwerkt. Wacht op de bevestiging voordat je een nieuwe betaallink maakt." }, 409);
       }
     }
