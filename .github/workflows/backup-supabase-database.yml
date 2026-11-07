@@ -60,7 +60,7 @@ jobs:
             -e DATABASE_URL="$DATABASE_URL" \
             -v "$RUNNER_TEMP:/backup" \
             postgres:17-alpine \
-            sh -ec 'pg_dump "$DATABASE_URL" --format=custom --no-owner --no-acl --compress=6 --schema=public --schema=private --schema=auth --schema=storage --file=/backup/animo-database.dump
+            sh -ec 'pg_dump "$DATABASE_URL" --format=custom --no-owner --no-acl --compress=6 --schema=public --schema=private --schema=auth --schema=storage --file=/backup/animo-database.dump'
           test -s "$dump"
           echo "Database dump created. File size: $(stat -c '%s' "$dump") bytes."
           unset DATABASE_URL
@@ -73,8 +73,8 @@ jobs:
         run: |
           set -euo pipefail
           stamp="$(date -u +'%Y%m%dT%H%M%SZ')"
-          dump="$(find "$RUNNER_TEMP" -maxdepth 1 -type f -name 'animo-database-*.dump' -printf '%T@ %p\\n' | sort -nr | head -n1 | cut -d' ' -f2-)"
-          test -n "$dump" && test -s "$dump"
+          dump="$RUNNER_TEMP/animo-database.dump"
+          test -s "$dump"
           encrypted="$RUNNER_TEMP/animo-database-$stamp.dump.gpg"
           passfile="$RUNNER_TEMP/database-backup-passphrase"
           printf '%s' "$BACKUP_PASSPHRASE" > "$passfile"
