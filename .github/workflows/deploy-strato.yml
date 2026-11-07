@@ -213,3 +213,15 @@ jobs:
           if (!reviewUsesSelect) throw new Error('UBL review must use a unit dropdown.');
           console.log('UBL unit dropdown tests passed.');
           NODE
+
+
+      - name: Validate UBL unit dropdown mobile change handling
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const handler = /document\.addEventListener\('change',e=>\{const field=e\.target\.closest\('\[data-review="unit"\]'\);if\(field\)\{const i=Number\(field\.dataset\.index\);if\(deliveryReviewRows\[i\]\)deliveryReviewRows\[i\]\.unit=field\.value\}\}\);/;
+          if (!handler.test(html)) throw new Error('Mobile UBL unit change handler is missing or no longer updates the selected row.');
+          if (!html.includes('function convertRecipeQuantity(')) throw new Error('Shared unit conversion helper is missing.');
+          console.log('UBL mobile change-handler test passed.');
+          NODE
