@@ -1,0 +1,154 @@
+name: Restore ANIMO Storage backup to recovery project
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_restore:
+        description: 'Bevestig dat je de geverifieerde back-up naar de tweede Supabase-omgeving wilt herstellen'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: animo-storage-recovery-restore
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    if: ${{ inputs.confirm_restore == true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Repository ophalen
+        uses: actions/checkout@v4
+
+      - name: Node.js instellen
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Benodigde tools installeren
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y gnupg lftp
+
+      - name: Controleer vereiste geheimen
+        env:
+          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
+          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
+          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+          SFTP_HOST_KEY_SHA256: ${{ secrets.STRATO_SFTP_HOST_KEY_SHA256 }}
+          BACKUP_PASSPHRASE: ${{ secrets.ANIMO_BACKUP_ENCRYPTION_KEY }}
+          RECOVERY_SERVICE_KEY: ${{ secrets.SUPABASE_RECOVERY_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          for value in "$SFTP_HOST" "$SFTP_USER" "$SFTP_PASS" "$SFTP_HOST_KEY_SHA256" "$BACKUP_PASSPHRASE" "$RECOVERY_SERVICE_KEY"; do
+            test -n "$value" || { echo "::error::Een vereist GitHub Actions-geheim ontbreekt. Controleer de restore-instructies."; exit 1; }
+          done
+          echo "Alle vereiste geheimen zijn aanwezig; waarden worden niet weergegeven."
+
+      - name: Download, controleer en ontsleutel de nieuwste back-up
+        env:
+          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
+          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
+          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+          SFTP_HOST_KEY_SHA256: ${{ secrets.STRATO_SFTP_HOST_KEY_SHA256 }}
+          BACKUP_PASSPHRASE: ${{ secrets.ANIMO_BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/animo-storage-restore"
+          mkdir -m 700 -p "$work"
+          known_hosts="$work/known_hosts"
+          scanned="$work/scanned_keys"
+          candidate="$work/candidate_key"
+
+          ssh-keyscan -p 22 "$SFTP_HOST" 2>/dev/null > "$scanned"
+          test -s "$scanned" || { echo "::error::STRATO SSH-hostsleutel kon niet worden opgehaald."; exit 1; }
+          : > "$known_hosts"
+          while IFS= read -r key_line; do
+            [ -n "$key_line" ] || continue
+            printf '%s\n' "$key_line" > "$candidate"
+            fingerprint="$(ssh-keygen -lf "$candidate" -E sha256 | awk '{print $2}')"
+            if [ "$fingerprint" = "$SFTP_HOST_KEY_SHA256" ]; then
+              printf '%s\n' "$key_line" >> "$known_hosts"
+            fi
+          done < "$scanned"
+          test -s "$known_hosts" || { echo "::error::Geen STRATO-hostsleutel komt overeen met de vastgelegde vingerafdruk."; exit 1; }
+          chmod 600 "$known_hosts"
+          rm -f "$scanned" "$candidate"
+
+          remote_dir="/backups/animo-haccp-storage"
+          listing="$work/remote-listing"
+          lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP > "$listing"
+          set sftp:auto-confirm no
+          set sftp:connect-program "ssh -a -x -oStrictHostKeyChecking=yes -oUserKnownHostsFile=$known_hosts"
+          set net:max-retries 3
+          set net:timeout 30
+          cls -1 "$remote_dir"
+          bye
+          LFTP
+
+          backup_name="$(grep -E '^animo-storage-[0-9]{8}T[0-9]{6}Z\.tar\.gz\.gpg$' "$listing" | sort | tail -n 1)"
+          test -n "$backup_name" || { echo "::error::Geen geldige ANIMO Storage-back-up gevonden op STRATO."; exit 1; }
+
+          encrypted="$work/$backup_name"
+          checksum="$work/$backup_name.sha256"
+          downloaded_hash="$work/downloaded.sha256"
+          expected_hash="$work/expected.sha256"
+          archive="$work/storage-backup.tar.gz"
+          extract="$work/extracted"
+
+          lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP
+          set sftp:auto-confirm no
+          set sftp:connect-program "ssh -a -x -oStrictHostKeyChecking=yes -oUserKnownHostsFile=$known_hosts"
+          set net:max-retries 3
+          set net:timeout 30
+          get "$remote_dir/$backup_name" -o "$encrypted"
+          get "$remote_dir/$backup_name.sha256" -o "$checksum"
+          bye
+          LFTP
+
+          cut -d ' ' -f 1 "$checksum" > "$expected_hash"
+          sha256sum "$encrypted" | cut -d ' ' -f 1 > "$downloaded_hash"
+          cmp -s "$expected_hash" "$downloaded_hash" || { echo "::error::SHA-256-controle van de download is mislukt."; exit 1; }
+
+          passfile="$work/passphrase"
+          printf '%s' "$BACKUP_PASSPHRASE" > "$passfile"
+          chmod 600 "$passfile"
+          gpg --batch --yes --pinentry-mode loopback --passphrase-file "$passfile" --decrypt --output "$archive" "$encrypted"
+          rm -f "$passfile"
+
+          tar -tzf "$archive" > "$work/archive-listing"
+          while IFS= read -r member; do
+            case "$member" in
+              /*|../*|*/../*|*/..)
+                echo "::error::Ongeldig archiefpad aangetroffen."
+                exit 1
+                ;;
+            esac
+          done < "$work/archive-listing"
+
+          mkdir -m 700 "$extract"
+          tar -xzf "$archive" -C "$extract" --no-same-owner --no-same-permissions
+          BACKUP_EXTRACT_DIR="$extract" node scripts/verify-storage-backup.mjs
+
+          echo "Back-up gecontroleerd en veilig uitgepakt."
+          unset SFTP_PASS BACKUP_PASSPHRASE
+
+      - name: Herstel de bestanden in de tweede Supabase-omgeving
+        env:
+          SUPABASE_URL: https://xwjcwravfeldndwlugai.supabase.co
+          SUPABASE_RECOVERY_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_RECOVERY_SERVICE_ROLE_KEY }}
+          BACKUP_EXTRACT_DIR: ${{ runner.temp }}/animo-storage-restore/extracted
+        run: |
+          set -euo pipefail
+          node --check scripts/restore-supabase-storage.mjs
+          node scripts/restore-supabase-storage.mjs
+          unset SUPABASE_RECOVERY_SERVICE_ROLE_KEY
+
+      - name: Tijdelijke herstelbestanden opruimen
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/animo-storage-restore"
