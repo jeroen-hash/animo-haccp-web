@@ -20,7 +20,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const authorization = req.headers.get("Authorization") || "";
-    const token = authorization.replace(/^Bearer\\s+/i, "");
+    const token = authorization.replace(/^Bearer\s+/i, "");
     if (!token) return jsonResponse({ error: "Je moet als platformbeheerder aangemeld zijn." }, 401);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -108,7 +108,7 @@ Deno.serve(async (req: Request) => {
 
     const suffix = Array.from(crypto.getRandomValues(new Uint8Array(8)))
       .map((n) => "abcdefghijklmnopqrstuvwxyz"[n % 26]).join("");
-    const appUrl = (Deno.env.get("APP_URL") || "https://app.animo-apps.com").replace(/\\/$/, "");
+    const appUrl = (Deno.env.get("APP_URL") || "https://app.animo-apps.com").replace(/\/$/, "");
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: String(lead.contact_email || "").trim().toLowerCase(),
