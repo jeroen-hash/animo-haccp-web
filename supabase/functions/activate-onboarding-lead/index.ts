@@ -508,7 +508,18 @@ serve(async (request) => {
      */
 
     /*
-     * Maak de nieuwe zaak aan.
+     * Start de gratis proefperiode pas wanneer de zaak effectief
+     * door ANIMO wordt geactiveerd. Gebruik één vaste starttijd
+     * zodat de volledige periode exact 14 dagen duurt.
+     */
+    const trialStartedAt = new Date();
+    const trialEndsAt = new Date(
+      trialStartedAt.getTime() + 14 * 24 * 60 * 60 * 1000,
+    );
+
+    /*
+     * Maak de nieuwe zaak aan met de proefperiode.
+     * Levenslange gratis toegang blijft uitsluitend een expliciete uitzondering.
      */
     const {
       data: business,
@@ -520,6 +531,10 @@ serve(async (request) => {
         enterprise_number:
           enterpriseNumber,
         owner_user_id: ownerUser.id,
+        trial_started_at: trialStartedAt.toISOString(),
+        trial_ends_at: trialEndsAt.toISOString(),
+        trial_used_at: trialStartedAt.toISOString(),
+        lifetime_free: false,
       })
       .select("id")
       .single();
