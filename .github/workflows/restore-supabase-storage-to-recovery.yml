@@ -115,6 +115,70 @@ jobs:
           echo "SFTP-verbinding en maptoegang geslaagd. Bestandslijst:"
           cat "$listing"
 
+          # lftp cls returns full remote paths on this STRATO server; extract only the filename.
+          backup_name="$(grep -E '/animo-storage-[0-9]{8}T[0-9]{6}Z\\.tar\\.gz\\.gpg { echo "::error::Geen geldige ANIMO Storage-back-up gevonden op STRATO."; exit 1; }
+
+          encrypted="$work/$backup_name"
+          checksum="$work/$backup_name.sha256"
+          downloaded_hash="$work/downloaded.sha256"
+          expected_hash="$work/expected.sha256"
+          archive="$work/storage-backup.tar.gz"
+          extract="$work/extracted"
+
+          lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP
+          set sftp:auto-confirm no
+          set sftp:connect-program "ssh -a -x -oStrictHostKeyChecking=yes -oUserKnownHostsFile=$known_hosts"
+          set net:max-retries 3
+          set net:timeout 30
+          get "$remote_dir/$backup_name" -o "$encrypted"
+          get "$remote_dir/$backup_name.sha256" -o "$checksum"
+          bye
+          LFTP
+
+          cut -d ' ' -f 1 "$checksum" > "$expected_hash"
+          sha256sum "$encrypted" | cut -d ' ' -f 1 > "$downloaded_hash"
+          cmp -s "$expected_hash" "$downloaded_hash" || { echo "::error::SHA-256-controle van de download is mislukt."; exit 1; }
+
+          passfile="$work/passphrase"
+          printf '%s' "$BACKUP_PASSPHRASE" > "$passfile"
+          chmod 600 "$passfile"
+          gpg --batch --yes --pinentry-mode loopback --passphrase-file "$passfile" --decrypt --output "$archive" "$encrypted"
+          rm -f "$passfile"
+
+          tar -tzf "$archive" > "$work/archive-listing"
+          while IFS= read -r member; do
+            case "$member" in
+              /*|../*|*/../*|*/..)
+                echo "::error::Ongeldig archiefpad aangetroffen."
+                exit 1
+                ;;
+            esac
+          done < "$work/archive-listing"
+
+          mkdir -m 700 "$extract"
+          tar -xzf "$archive" -C "$extract" --no-same-owner --no-same-permissions
+          BACKUP_EXTRACT_DIR="$extract" node scripts/verify-storage-backup.mjs
+
+          echo "Back-up gecontroleerd en veilig uitgepakt."
+          unset SFTP_PASS BACKUP_PASSPHRASE
+
+      - name: Herstel de bestanden in de tweede Supabase-omgeving
+        env:
+          SUPABASE_URL: https://xwjcwravfeldndwlugai.supabase.co
+          SUPABASE_RECOVERY_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_RECOVERY_SERVICE_ROLE_KEY }}
+          BACKUP_EXTRACT_DIR: ${{ runner.temp }}/animo-storage-restore/extracted
+        run: |
+          set -euo pipefail
+          node --check scripts/restore-supabase-storage.mjs
+          node scripts/restore-supabase-storage.mjs
+          unset SUPABASE_RECOVERY_SERVICE_ROLE_KEY
+
+      - name: Tijdelijke herstelbestanden opruimen
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/animo-storage-restore"
+ "$listing" | sed 's#^.*/##' | sort | tail -n 1)"
+          echo "Geselecteerde back-up: ${backup_name:-GEEN}"
+
           test -n "$backup_name" || { echo "::error::Geen geldige ANIMO Storage-back-up gevonden op STRATO."; exit 1; }
 
           encrypted="$work/$backup_name"
