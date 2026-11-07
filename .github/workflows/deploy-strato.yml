@@ -195,7 +195,7 @@ jobs:
           const start = html.indexOf('function deliveryUnitOptions(');
           const end = html.indexOf('function renderDeliveryReview()', start);
           if (start < 0 || end < 0) throw new Error('UBL unit dropdown helper is missing.');
-          const context = { esc: value => String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') };
+          const context = { html, esc: value => String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') };
           vm.runInNewContext(html.slice(start,end) + `
             const options = deliveryUnitOptions('', 'stuks');
             if (!options.includes('value="stuks"') || !options.includes('value="kg"') || !options.includes('value="liter"')) {
