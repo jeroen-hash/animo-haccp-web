@@ -76,6 +76,12 @@ test("platform onboarding dashboard exposes the payment link only after approval
   assert.match(dashboard, /latestPayload/);
   assert.match(dashboard, /pay\.status==='paid'/);
 });
+test("onboarding invitations never demote an existing business owner", () => {
+  assert.match(invite, /existingMembership/);
+  assert.match(invite, /existingMembership\?\.role === "owner" \? "owner" : role/);
+  assert.match(invite, /role: membershipRole/);
+});
+
 test("onboarding invites use latest prepared users saved on the lead", () => {
   assert.match(invite, /relatedLead/);
   assert.match(invite, /leadPreparedSetup/);
