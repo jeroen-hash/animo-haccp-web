@@ -1,0 +1,111 @@
+name: Encrypted Supabase Storage backup to STRATO
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 2 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: animo-storage-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Repository ophalen
+        uses: actions/checkout@v4
+
+      - name: Node.js instellen
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Benodigde tools installeren
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y gnupg lftp
+
+      - name: Privébestanden uit Supabase verzamelen
+        env:
+          SUPABASE_URL: https://zimzsovvtdmrthrflkgm.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: \${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BACKUP_OUTPUT_DIR: storage-backup
+        run: node scripts/backup-supabase-storage.mjs
+
+      - name: Back-up archiveren en versleutelen
+        id: archive
+        env:
+          BACKUP_PASSPHRASE: \${{ secrets.ANIMO_BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$BACKUP_PASSPHRASE" || { echo "::error::Backup encryption secret is missing."; exit 1; }
+          stamp="$(date -u +'%Y%m%dT%H%M%SZ')"
+          archive="$RUNNER_TEMP/animo-storage-$stamp.tar.gz"
+          encrypted="$RUNNER_TEMP/animo-storage-$stamp.tar.gz.gpg"
+          passfile="$RUNNER_TEMP/backup-passphrase"
+          printf '%s' "$BACKUP_PASSPHRASE" > "$passfile"
+          chmod 600 "$passfile"
+          tar -czf "$archive" -C storage-backup .
+          gpg --batch --yes --pinentry-mode loopback --passphrase-file "$passfile" \
+            --symmetric --cipher-algo AES256 --output "$encrypted" "$archive"
+          sha256sum "$encrypted" > "$encrypted.sha256"
+          echo "encrypted_file=$encrypted" >> "$GITHUB_OUTPUT"
+          echo "checksum_file=$encrypted.sha256" >> "$GITHUB_OUTPUT"
+          echo "backup_name=$(basename "$encrypted")" >> "$GITHUB_OUTPUT"
+          rm -f "$archive" "$passfile"
+          unset BACKUP_PASSPHRASE
+
+      - name: Versleutelde back-up uploaden naar STRATO en terug controleren
+        env:
+          SFTP_HOST: \${{ secrets.STRATO_SFTP_HOST }}
+          SFTP_USER: \${{ secrets.STRATO_SFTP_USER }}
+          SFTP_PASS: \${{ secrets.STRATO_SFTP_PASSWORD }}
+          ENCRYPTED_FILE: \${{ steps.archive.outputs.encrypted_file }}
+          CHECKSUM_FILE: \${{ steps.archive.outputs.checksum_file }}
+          BACKUP_NAME: \${{ steps.archive.outputs.backup_name }}
+          BACKUP_PASSPHRASE: \${{ secrets.ANIMO_BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          for value in "$SFTP_HOST" "$SFTP_USER" "$SFTP_PASS" "$BACKUP_PASSPHRASE"; do
+            test -n "$value" || { echo "::error::A required backup secret is missing."; exit 1; }
+          done
+
+          remote_dir="/backups/animo-haccp-storage"
+          lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP
+          set sftp:auto-confirm yes
+          set net:max-retries 3
+          set net:timeout 30
+          mkdir -p $remote_dir
+          put "$ENCRYPTED_FILE" -o "$remote_dir/$BACKUP_NAME"
+          put "$CHECKSUM_FILE" -o "$remote_dir/$BACKUP_NAME.sha256"
+          bye
+          LFTP
+
+          # Haal de zojuist geüploade ciphertext terug en controleer checksum én ontsleuteling.
+          downloaded="$RUNNER_TEMP/roundtrip-$BACKUP_NAME"
+          lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP
+          set sftp:auto-confirm yes
+          set net:max-retries 3
+          set net:timeout 30
+          get "$remote_dir/$BACKUP_NAME" -o "$downloaded"
+          bye
+          LFTP
+          expected="$(cut -d ' ' -f 1 "$CHECKSUM_FILE")"
+          actual="$(sha256sum "$downloaded" | cut -d ' ' -f 1)"
+          test "$expected" = "$actual" || { echo "::error::STRATO round-trip checksum mismatch."; exit 1; }
+
+          passfile="$RUNNER_TEMP/backup-passphrase"
+          restored="$RUNNER_TEMP/restored-backup.tar.gz"
+          printf '%s' "$BACKUP_PASSPHRASE" > "$passfile"
+          chmod 600 "$passfile"
+          gpg --batch --yes --pinentry-mode loopback --passphrase-file "$passfile" \
+            --decrypt --output "$restored" "$downloaded"
+          tar -tzf "$restored" >/dev/null
+          rm -f "$passfile" "$restored" "$downloaded"
+          unset BACKUP_PASSPHRASE SFTP_PASS
+          echo "Encrypted STRATO backup uploaded, downloaded, checksum-verified and decrypted successfully."
