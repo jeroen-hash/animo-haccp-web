@@ -62,6 +62,11 @@ let current=0, selectedFiles=[];
 const panels=[...document.querySelectorAll('[data-panel]')],navs=[...document.querySelectorAll('[data-stepnav]')];
 const prev=document.getElementById('prev'),next=document.getElementById('next'),submit=document.getElementById('submit'),statusEl=document.getElementById('status');
 const filesInput=document.getElementById('documents'),fileList=document.getElementById('fileList'),dropZone=document.getElementById('dropZone');
+const requestedService=new URLSearchParams(location.search).get('service');
+if(['basis','begeleid','zelfstandig'].includes(requestedService)){
+  document.getElementById('service_level').value=requestedService;
+  document.querySelector('[data-panel="5"] h2').textContent=requestedService==='basis'?'Gedeeltelijke onboarding (€75)':requestedService==='begeleid'?'Volledige onboarding (€175)':'Zelfstandig starten (gratis)';
+}
 const allowed=['application/pdf','text/csv','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','image/jpeg','image/png'];
 function show(){panels.forEach((p,i)=>p.classList.toggle('active',i===current));navs.forEach((n,i)=>n.classList.toggle('active',i===current));prev.hidden=current===0;next.hidden=current===panels.length-1;submit.hidden=current!==panels.length-1;window.scrollTo({top:0,behavior:'smooth'})}
 function validPanel(){for(const f of panels[current].querySelectorAll('[required]')){if(!f.checkValidity()){f.reportValidity();return false}}return true}
