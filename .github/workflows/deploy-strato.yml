@@ -185,3 +185,31 @@ jobs:
           if (!currencyGuard) throw new Error('UBL import must require explicit EUR currency.');
           console.log('UBL unit and currency safety tests passed.');
           NODE
+
+      - name: Validate UBL unit dropdown choices
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const start = html.indexOf('function deliveryUnitOptions(');
+          const end = html.indexOf('function renderDeliveryReview()', start);
+          if (start < 0 || end < 0) throw new Error('UBL unit dropdown helper is missing.');
+          const context = { esc: value => String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') };
+          vm.runInNewContext(html.slice(start,end) + `
+            const options = deliveryUnitOptions('', 'stuks');
+            if (!options.includes('value="stuks"') || !options.includes('value="kg"') || !options.includes('value="liter"')) {
+              throw new Error('Predefined stock units must be available.');
+            }
+            if (!options.includes('Kies eenheid') && !options.includes('value=""')) {
+              throw new Error('Missing unit must require an explicit selection.');
+            }
+            const custom = deliveryUnitOptions('bussel','');
+            if (!custom.includes('value="bussel"') || !custom.includes('bussel (factuurcode)')) {
+              throw new Error('Unknown invoice unit must remain visible for manual review.');
+            }
+          `, context);
+          const reviewUsesSelect = html.includes('<select data-review="unit" data-index="${i}" required>');
+          if (!reviewUsesSelect) throw new Error('UBL review must use a unit dropdown.');
+          console.log('UBL unit dropdown tests passed.');
+          NODE
