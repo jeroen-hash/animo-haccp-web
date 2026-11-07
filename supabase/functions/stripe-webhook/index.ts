@@ -343,6 +343,51 @@ async function saveInvoice(
     synced_at: new Date().toISOString(),
   }, { onConflict: "stripe_invoice_id" });
   if (error) throw error;
+
+  if (onboardingLeadId) {
+    const { data: lead, error: leadError } = await supabaseAdmin
+      .from("onboarding_leads")
+      .select("id, payload")
+      .eq("id", onboardingLeadId)
+      .maybeSingle();
+    if (leadError) throw leadError;
+    if (lead) {
+      const payload =
+        lead.payload &&
+        typeof lead.payload === "object" &&
+        !Array.isArray(lead.payload)
+          ? lead.payload
+          : {};
+      const payment =
+        payload.onboarding_payment &&
+        typeof payload.onboarding_payment === "object"
+          ? payload.onboarding_payment
+          : {};
+      const paymentStatus =
+        invoice.status === "paid" || eventType === "invoice.paid"
+          ? "paid"
+          : eventType === "invoice.payment_failed" && payment.status !== "paid"
+            ? "failed"
+            : payment.status || "pending";
+      const { error: leadUpdateError } = await supabaseAdmin
+        .from("onboarding_leads")
+        .update({
+          payload: {
+            ...payload,
+            onboarding_payment: {
+              ...payment,
+              status: paymentStatus,
+              invoice_id: invoice.id,
+              amount_paid: invoice.amount_paid ?? 0,
+              currency: String(invoice.currency ?? "eur").toLowerCase(),
+              paid_at: stripeDate(invoice.status_transitions?.paid_at) ?? payment.paid_at ?? null,
+            },
+          },
+        })
+        .eq("id", onboardingLeadId);
+      if (leadUpdateError) throw leadUpdateError;
+    }
+  }
 }
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
