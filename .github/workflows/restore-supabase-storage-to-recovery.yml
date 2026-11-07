@@ -68,13 +68,17 @@ jobs:
           ssh-keyscan -p 22 "$SFTP_HOST" 2>/dev/null > "$scanned"
           test -s "$scanned" || { echo "::error::STRATO SSH-hostsleutel kon niet worden opgehaald."; exit 1; }
           : > "$known_hosts"
+          expected_fingerprint="$(printf '%s' "$SFTP_HOST_KEY_SHA256" | tr -d '[:space:]')"
+          echo "STRATO host-key scan fingerprints (public data):"
           while IFS= read -r key_line; do
             [ -n "$key_line" ] || continue
             # Convert ssh-keyscan's known_hosts line to a standard public-key line.
             printf '%s\n' "$key_line" | awk '{print $2, $3}' > "$candidate"
             fingerprint="$(ssh-keygen -lf "$candidate" -E sha256 | awk '{print $2}')"
-            if [ "$fingerprint" = "$SFTP_HOST_KEY_SHA256" ]; then
+            echo "Found $fingerprint"
+            if [ "$fingerprint" = "$expected_fingerprint" ]; then
               printf '%s\n' "$key_line" >> "$known_hosts"
+              echo "Configured fingerprint matched."
             fi
           done < "$scanned"
           test -s "$known_hosts" || { echo "::error::Geen STRATO-hostsleutel komt overeen met de vastgelegde vingerafdruk."; exit 1; }
