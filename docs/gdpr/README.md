@@ -19,7 +19,7 @@ Dit werkdossier ondersteunt de AVG/GDPR-governance van ANIMO HACCP. Het is inter
 - Leveranciers zoals Supabase, STRATO, Stripe en GitHub hebben elk hun eigen contractuele rol; Stripe kan voor bepaalde doeleinden zelfstandig verwerkingsverantwoordelijke zijn.
 
 ## Status – nog te bevestigen/uit te voeren vóór brede commerciële lancering
-1. **Back-upretentie:** de bestaande technische documentatie meldt dat versleutelde STRATO-back-ups momenteel niet automatisch worden verwijderd. Stel een vaste retentie in (voorgesteld: maximaal 90 dagen, tenzij een herstelincident een tijdelijke hold vereist) en test de verwijdering.
+1. **Back-upretentie:** de dagelijkse STRATO-back-upworkflow verwijdert na geslaagde verificatie alleen ANIMO-back-upbestanden ouder dan 90 dagen. De eerste uitvoering van deze retentiestap moet nog succesvol worden getest. Voor een herstelincident kan een tijdelijke hold nodig zijn.
 2. **Leveranciersdossiers:** bewaar de toepasselijke DPA/voorwaarden, actuele subverwerkerslijsten, transferdocumentatie en contactpunten van Supabase, STRATO, Stripe en GitHub.
 3. **STRATO-regio:** bevestig schriftelijk de opslag-/verwerkingslocatie van e-mail, hosting en de back-upbestemming voor de concrete diensten.
 4. **Contractacceptatie:** de onboardingpagina vereist akkoord met algemene voorwaarden, privacyverklaring en verwerkersovereenkomst. De onboardingfunctie controleert het akkoord en bewaart de documentversie (`2026-11-07`) en server-side tijdstip in de aanvraag. Controleer bij wijzigingen dat de akkoordtekst en versies synchroon blijven.
