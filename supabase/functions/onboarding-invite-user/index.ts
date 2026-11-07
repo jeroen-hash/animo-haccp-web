@@ -67,6 +67,7 @@ export default {
         // converted_intake_id. Dit voorkomt dat uitnodigingen stilvallen door
         // een oude dashboardweergave of een nog gecachte aanvraag-ID.
         let intake = null;
+        let leadRecord = null;
         let resolvedIntakeId = intake_id;
 
         const directIntake = await admin
@@ -81,6 +82,23 @@ export default {
 
         intake = directIntake.data;
 
+        // De actuele voorbereide gebruikerslijst staat op de gekoppelde aanvraag.
+        if (intake) {
+          const { data: relatedLead, error: relatedLeadError } = await admin
+            .from("onboarding_leads")
+            .select("id, payload")
+            .eq("converted_intake_id", intake.id)
+            .order("submitted_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (relatedLeadError) {
+            throw relatedLeadError;
+          }
+
+          leadRecord = relatedLead;
+        }
+
         if (!intake) {
           const { data: lead, error: leadError } = await admin
             .from("onboarding_leads")
@@ -93,6 +111,7 @@ export default {
           }
 
           if (lead?.converted_intake_id) {
+            leadRecord = lead;
             resolvedIntakeId = lead.converted_intake_id;
             const resolved = await admin
               .from("onboarding_intakes")
@@ -127,11 +146,23 @@ export default {
           );
         }
 
-        const users: PreparedUser[] = Array.isArray(
-          intake.payload?.prepared_setup?.users
-        )
-          ? intake.payload.prepared_setup.users
-          : [];
+        const leadPreparedSetup = leadRecord?.payload?.prepared_setup;
+        const intakePreparedSetup = intake.payload?.prepared_setup;
+        const hasLeadPreparedUsers = Array.isArray(leadPreparedSetup?.users);
+
+        // De onboardingaanvraag is de meest recente werkruimte. Gebruik die
+        // ook na activatie; de intake kan een oudere momentopname bevatten.
+        const users: PreparedUser[] = hasLeadPreparedUsers
+          ? leadPreparedSetup.users
+          : Array.isArray(intakePreparedSetup?.users)
+            ? intakePreparedSetup.users
+            : [];
+
+        console.log("Onboardinggebruikers voorbereid:", {
+          resolved_intake_id: resolvedIntakeId,
+          source: hasLeadPreparedUsers ? "onboarding_lead" : "onboarding_intake",
+          user_count: users.length,
+        });
 
         if (!users.length) {
           return Response.json(
