@@ -471,34 +471,12 @@ serve(async (request) => {
     }
 
     /*
-     * Controleer of de eigenaar al aan
-     * een actieve zaak gekoppeld is.
+     * Een bestaand account mag eigenaar zijn
+     * van meerdere afzonderlijke horecazaken.
+     * De unieke ondernemingsnummercontrole hierboven
+     * voorkomt dat dezelfde zaak dubbel wordt aangemaakt.
+     * De app laat de gebruiker bij meerdere zaken kiezen.
      */
-    const {
-      data: existingMemberships,
-      error: membershipError,
-    } = await adminClient
-      .from("business_members")
-      .select("business_id")
-      .eq("user_id", ownerUser.id)
-      .eq("active", true);
-
-    if (membershipError) {
-      throw membershipError;
-    }
-
-    if (
-      Array.isArray(existingMemberships) &&
-      existingMemberships.length > 0
-    ) {
-      return jsonResponse(
-        {
-          error:
-            "Dit e-mailadres is al aan een actieve zaak gekoppeld. Gebruik voor de test een ander e-mailadres.",
-        },
-        409
-      );
-    }
 
     /*
      * Maak de nieuwe zaak aan.
