@@ -39,7 +39,7 @@
           ? ["", "Niet gelukt:", ...failed.map(x => `${x.email}: ${x.error}`)]
           : []),
       ];
-      alert(summary.join("\\n"));
+      alert(summary.join(String.fromCharCode(10)));
     } catch (error) {
       alert(error.message || String(error));
     } finally {
