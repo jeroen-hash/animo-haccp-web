@@ -703,7 +703,7 @@ async function loadMembership(options={}){
         if(!m)localStorage.removeItem(selectionKey);
       }
       if(!m&&members.length===1)m=members[0];
-      if(!m&&members.length>1)throw new Error('Je account is gekoppeld aan meerdere horecazaken. Kies eerst de juiste zaak voordat ANIMO HACCP verdergaat.');
+      if(members.length>1&&!options.businessId)throw new Error('Je account is gekoppeld aan meerdere horecazaken. Kies eerst de juiste zaak voordat ANIMO HACCP verdergaat.');
       if(m){
         const {data:b,error:be}=await cloudClient.from('businesses').select('id,name,enterprise_number').eq('id',m.business_id).single();
         if(be)lastError=be;
@@ -893,6 +893,8 @@ async function prepareCloudSession(user,options={}){
             select.appendChild(option);
           });
           if(!select.options.length)throw new Error('Geen beschikbare horecazaken gevonden.');
+          const savedBusinessId=localStorage.getItem('animo-active-business-id');
+          if(savedBusinessId&&[...select.options].some(option=>option.value===savedBusinessId))select.value=savedBusinessId;
           get('cloudBusinessChoice').classList.remove('cloud-hidden');
           get('cloudContinue').classList.add('cloud-hidden');
           showSession(authUser);
