@@ -102,7 +102,7 @@ export default {
         if (!intake) {
           const { data: lead, error: leadError } = await admin
             .from("onboarding_leads")
-            .select("id, converted_intake_id, status")
+            .select("id, converted_intake_id, status, payload")
             .eq("id", intake_id)
             .maybeSingle();
 
