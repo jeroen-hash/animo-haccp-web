@@ -11,6 +11,7 @@ const webhook = read("../supabase/functions/stripe-webhook/index.ts");
 const dashboard = read("../onboarding-dashboard.html");
 const activationUi = read("../onboarding-activation.js");
 const invite = read("../supabase/functions/onboarding-invite-user/index.ts");
+const inviteUi = read("../onboarding-invite-users.js");
 const migration = read("../supabase/migrations/20261107102332_add_onboarding_invoice_reporting.sql");
 const adminDashboard = read("../admin-dashboard.html");
 
@@ -78,9 +79,9 @@ test("platform onboarding dashboard exposes the payment link only after approval
 test("onboarding user invitations pass the converted intake ID, not the public lead ID", () => {
   assert.match(dashboard, /converted_intake_id:l\.converted_intake_id/);
   assert.match(dashboard, /data-intake-id=/);
-  assert.match(invite, /data-intake-id/);
+  assert.match(inviteUi, /data-intake-id/);
   assert.match(invite, /dataset\.intakeId/);
-  assert.match(invite, /Deze aanvraag is nog niet geactiveerd/);
+  assert.match(inviteUi, /Deze aanvraag is nog niet geactiveerd/);
   assert.match(read("../supabase/functions/onboarding-invite-user/index.ts"), /\.maybeSingle\(\)/);
 });
 
