@@ -42,6 +42,15 @@ test("one-time Checkout uses fixed amounts, exclusive tax, automatic tax and inv
   assert.match(checkout, /isPublicCustomerCheckout/);
 });
 
+test("newly activated businesses receive one 14-day trial and are not lifetime-free by default", () => {
+  assert.match(activate, /trialStartedAt = new Date\(\)/);
+  assert.match(activate, /14 \* 24 \* 60 \* 60 \* 1000/);
+  assert.match(activate, /trial_started_at: trialStartedAt\.toISOString\(\)/);
+  assert.match(activate, /trial_ends_at: trialEndsAt\.toISOString\(\)/);
+  assert.match(activate, /trial_used_at: trialStartedAt\.toISOString\(\)/);
+  assert.match(activate, /lifetime_free: false/);
+});
+
 test("new paid onboarding requests cannot activate before a confirmed payment", () => {
   assert.match(activate, /onboarding_payment_required === true/);
   assert.match(activate, /onboardingPayment\.status !== "paid"/);
