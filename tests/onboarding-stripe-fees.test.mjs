@@ -76,6 +76,14 @@ test("platform onboarding dashboard exposes the payment link only after approval
   assert.match(dashboard, /latestPayload/);
   assert.match(dashboard, /pay\.status==='paid'/);
 });
+test("onboarding invite endpoint resolves either an intake ID or a converted lead ID", () => {
+  assert.match(invite, /let resolvedIntakeId = intake_id/);
+  assert.match(invite, /\.from\("onboarding_leads"\)/);
+  assert.match(invite, /converted_intake_id/);
+  assert.match(invite, /resolvedIntakeId = lead\.converted_intake_id/);
+  assert.match(invite, /nog niet geactiveerd naar een klantonboarding/);
+});
+
 test("onboarding user invitations pass the converted intake ID, not the public lead ID", () => {
   assert.match(dashboard, /converted_intake_id:l\.converted_intake_id/);
   assert.match(dashboard, /data-intake-id=/);

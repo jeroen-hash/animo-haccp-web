@@ -62,20 +62,60 @@ export default {
           );
         }
 
-        // Onboarding en voorbereide gebruikers ophalen
-        const { data: intake, error: intakeError } = await admin
+        // Het dashboard kan een intake-ID of een publieke lead-ID doorgeven.
+        // Accepteer beide, maar koppel een lead uitsluitend via de opgeslagen
+        // converted_intake_id. Dit voorkomt dat uitnodigingen stilvallen door
+        // een oude dashboardweergave of een nog gecachte aanvraag-ID.
+        let intake = null;
+        let resolvedIntakeId = intake_id;
+
+        const directIntake = await admin
           .from("onboarding_intakes")
           .select("id, business_id, payload")
           .eq("id", intake_id)
           .maybeSingle();
 
-        if (intakeError) {
-          throw intakeError;
+        if (directIntake.error) {
+          throw directIntake.error;
+        }
+
+        intake = directIntake.data;
+
+        if (!intake) {
+          const { data: lead, error: leadError } = await admin
+            .from("onboarding_leads")
+            .select("id, converted_intake_id, status")
+            .eq("id", intake_id)
+            .maybeSingle();
+
+          if (leadError) {
+            throw leadError;
+          }
+
+          if (lead?.converted_intake_id) {
+            resolvedIntakeId = lead.converted_intake_id;
+            const resolved = await admin
+              .from("onboarding_intakes")
+              .select("id, business_id, payload")
+              .eq("id", resolvedIntakeId)
+              .maybeSingle();
+
+            if (resolved.error) {
+              throw resolved.error;
+            }
+
+            intake = resolved.data;
+          } else if (lead) {
+            return Response.json(
+              { error: "Deze aanvraag is nog niet geactiveerd naar een klantonboarding. Activeer eerst de zaak voordat je voorbereide gebruikers uitnodigt." },
+              { status: 409 }
+            );
+          }
         }
 
         if (!intake) {
           return Response.json(
-            { error: "De klantonboarding werd niet gevonden. Vernieuw het dashboard en selecteer de juiste actieve klantonboarding." },
+            { error: "De klantonboarding of bijbehorende aanvraag werd niet gevonden. Vernieuw het dashboard en probeer opnieuw." },
             { status: 404 }
           );
         }
