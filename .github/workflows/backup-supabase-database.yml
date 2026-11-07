@@ -54,7 +54,6 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$DATABASE_URL"
-          stamp="$(date -u +'%Y%m%dT%H%M%SZ')"
           dump="$RUNNER_TEMP/animo-database.dump"
           docker run --rm \
             -e DATABASE_URL="$DATABASE_URL" \
