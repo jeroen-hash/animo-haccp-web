@@ -1267,7 +1267,7 @@ function renderDeliveryReview(){
   const meta=deliveryInvoiceMeta||{};
   const money=v=>Number(v||0).toFixed(2).replace('.',',');
   const summary=meta.invoiceNumber?`<div class="allergen-help" style="margin-top:14px"><strong>UBL-factuur ${esc(meta.invoiceNumber)}</strong> · ${esc(meta.supplier||'Onbekende leverancier')} · ${esc(meta.invoiceDate||'Datum onbekend')}<br>Productregels: € ${money(rowsTotal)} · Korting: € ${money(meta.allowanceTotal)} · Excl. btw: € ${money(meta.taxExclusive)} · Btw: € ${money(meta.taxTotal)} · Incl. btw: € ${money(meta.taxInclusive)}${Math.abs((Number(meta.taxExclusive)||0)-(rowsTotal-(Number(meta.allowanceTotal)||0)))<=0.02?' · <strong>✓ Totaalcontrole klopt</strong>':' · <strong style="color:#b42318">⚠ Controleer het totaal</strong>'}</div>`:'';
-  box.innerHTML=deliveryReviewRows.length?`${summary}<h3 style="margin-top:18px">Controleer de herkende levering</h3><p class="muted">${deliveryReviewRows.length} productregels · productregels € ${money(rowsTotal)}. Controleer hoeveelheid, eenheid en aankoopprijs vóór toevoegen.</p><div style="overflow-x:auto"><table class="review-table"><thead><tr><th>Match</th><th>Code</th><th>Product</th><th>Leverancier</th><th>Aantal</th><th>Eenheid</th><th>Prijs/eenheid</th><th>Regeltotaal</th><th>Houdbaar tot</th><th></th></tr></thead><tbody>${deliveryReviewRows.map((r,i)=>{const match=findStockMatch(r);return `<tr><td><span class="pill ${match?'':'warning'}">${match?'Bestaand':'Nieuw'}</span>${match?`<div class="item-sub">${esc(match.name)}</div>`:''}</td><td><input data-review="code" data-index="${i}" value="${esc(r.code||'')}"></td><td><input data-review="name" data-index="${i}" value="${esc(r.name||'')}" required></td><td><input data-review="supplier" data-index="${i}" value="${esc(r.supplier||'')}"></td><td><input data-review="quantity" data-index="${i}" type="number" min="0" step="0.001" value="${Number(r.quantity)||0}"></td><td><input data-review="unit" data-index="${i}" value="${esc(r.unit||match?.unit||'stuks')}"></td><td><input data-review="unitPrice" data-index="${i}" type="number" min="0" step="0.0001" value="${Number(r.unitPrice||0)}"></td><td><input data-review="lineTotal" data-index="${i}" type="number" min="0" step="0.01" value="${Number(r.lineTotal||0)}"></td><td><input data-review="expiryDate" data-index="${i}" type="date" value="${esc(r.expiryDate||'')}"></td><td><button class="btn danger small" data-stock-action="remove-review" data-index="${i}">×</button></td></tr>`}).join('')}</tbody></table></div><button class="btn" type="button" data-stock-action="confirm-delivery">Levering aan stock toevoegen</button>`:'';
+  box.innerHTML=deliveryReviewRows.length?`${summary}<h3 style="margin-top:18px">Controleer de herkende levering</h3><p class="muted">${deliveryReviewRows.length} productregels · productregels € ${money(rowsTotal)}. Controleer hoeveelheid, eenheid en aankoopprijs vóór toevoegen.</p><div style="overflow-x:auto"><table class="review-table"><thead><tr><th>Match</th><th>Code</th><th>Product</th><th>Leverancier</th><th>Aantal</th><th>Eenheid</th><th>Prijs/eenheid</th><th>Regeltotaal</th><th>Houdbaar tot</th><th></th></tr></thead><tbody>${deliveryReviewRows.map((r,i)=>{const match=findStockMatch(r);return `<tr><td><span class="pill ${match?'':'warning'}">${match?'Bestaand':'Nieuw'}</span>${match?`<div class="item-sub">${esc(match.name)}</div>`:''}</td><td><input data-review="code" data-index="${i}" value="${esc(r.code||'')}"></td><td><input data-review="name" data-index="${i}" value="${esc(r.name||'')}" required></td><td><input data-review="supplier" data-index="${i}" value="${esc(r.supplier||'')}"></td><td><input data-review="quantity" data-index="${i}" type="number" min="0" step="0.001" value="${Number(r.quantity)||0}"></td><td><input data-review="unit" data-index="${i}" value="${esc(r.unit||'')}" placeholder="Kies eenheid"></td><td><input data-review="unitPrice" data-index="${i}" type="number" min="0" step="0.0001" value="${Number(r.unitPrice||0)}"></td><td><input data-review="lineTotal" data-index="${i}" type="number" min="0" step="0.01" value="${Number(r.lineTotal||0)}"></td><td><input data-review="expiryDate" data-index="${i}" type="date" value="${esc(r.expiryDate||'')}"></td><td><button class="btn danger small" data-stock-action="remove-review" data-index="${i}">×</button></td></tr>`}).join('')}</tbody></table></div><button class="btn" type="button" data-stock-action="confirm-delivery">Levering aan stock toevoegen</button>`:'';
 }
 function setOcrStatus(text,error=false){const el=$('ocrStatus');el.style.display='block';el.textContent=text;el.classList.toggle('error',error)}
 function extractFallbackDeliveryItems(text){
@@ -1285,7 +1285,7 @@ function ublChild(node,name){return ublChildren(node,name)[0]||null}
 function ublDesc(node,name){return Array.from(node?.getElementsByTagNameNS?.('*',name)||[])[0]||null}
 function ublText(node){return String(node?.textContent||'').trim()}
 function ublNumber(node){const n=Number(ublText(node).replace(',','.'));return Number.isFinite(n)?n:0}
-function ublUnit(code){const map={C62:'stuks',KGM:'kg',GRM:'g',LTR:'liter',MLT:'ml',XBX:'dozen',XPK:'pakken',XBG:'zakken',H87:'stuks'};return map[String(code||'').toUpperCase()]||String(code||'stuks').toLowerCase()}
+function ublUnit(code){const raw=String(code||'').trim();if(!raw)return '';const map={C62:'stuks',KGM:'kg',GRM:'g',LTR:'liter',MLT:'ml',XBX:'dozen',XPK:'pakken',XBG:'zakken',H87:'stuks'};return map[raw.toUpperCase()]||raw.toLowerCase()}
 function parseUblInvoice(xmlText){
   const doc=new DOMParser().parseFromString(xmlText,'application/xml');
   const parseError=doc.querySelector('parsererror');
@@ -1334,7 +1334,7 @@ async function scanUblFile(file){
   const xmlText=await file.text();
   const parsed=parseUblInvoice(xmlText);
   deliveryInvoiceMeta=parsed.meta;
-  deliveryReviewRows=parsed.items.map(x=>{const match=findStockMatch(x);if(match){x.code=x.code||match.code||'';x.name=match.name;x.unit=x.unit||match.unit||'stuks';x.supplier=x.supplier||match.supplier||''}return x});
+  deliveryReviewRows=parsed.items.map(x=>{const match=findStockMatch(x);if(match){x.code=x.code||match.code||'';x.name=match.name;x.unit=x.unit||'';x.supplier=x.supplier||match.supplier||''}return x});
   renderDeliveryReview();
   const matched=deliveryReviewRows.filter(findStockMatch).length;
   setOcrStatus(`UBL-factuur ${parsed.meta.invoiceNumber} correct gelezen: ${deliveryReviewRows.length} productregels, ${matched} gekoppeld aan bestaande stock. Geen OCR of AI gebruikt.`);
@@ -1355,7 +1355,8 @@ function prepareDeliveryRows(rows){
   const prepared=[];
   for(const line of rows){
     const product=findStockMatch(line);
-    const incomingUnit=String(line.unit||product?.unit||'stuks').trim();
+    const incomingUnit=String(line.unit||'').trim();
+    if(!incomingUnit)throw new Error(`Kies eerst een bevestigde eenheid voor ${line.name||'dit product'}. De factuur vermeldt geen herkenbare eenheid. Er is nog niets gewijzigd.`);
     const stockUnit=String(product?.unit||incomingUnit).trim();
     const quantity=Number(line.quantity);
     if(!Number.isFinite(quantity)||quantity<=0)throw new Error(`Ongeldige hoeveelheid voor ${line.name||'product'}.`);
@@ -1371,8 +1372,8 @@ function confirmDelivery(){
   if(!deliveryReviewRows.length)return;
   if(deliveryInvoiceMeta?.currency&&deliveryInvoiceMeta.currency!=='EUR'){alert(`Deze factuur is in ${deliveryInvoiceMeta.currency}. Alleen EUR-facturen kunnen momenteel veilig in de voorraad worden verwerkt.`);return}
   if(deliveryInvoiceMeta?.invoiceNumber&&state.deliveries.some(d=>d.invoiceNumber===deliveryInvoiceMeta.invoiceNumber&&d.supplier===deliveryInvoiceMeta.supplier)){alert('Deze UBL-factuur werd al aan de stock toegevoegd.');return}
-  const invalid=deliveryReviewRows.filter(x=>x.name.trim()&&!(Number(x.quantity)>0));
-  if(invalid.length){alert('Vul voor elke productregel een hoeveelheid groter dan 0 in.');return}
+  const invalid=deliveryReviewRows.filter(x=>x.name.trim()&&(!(Number(x.quantity)>0)||!String(x.unit||'').trim()));
+  if(invalid.length){alert('Vul voor elke productregel een hoeveelheid groter dan 0 én een bevestigde eenheid in. Er is nog niets gewijzigd.');return}
   const valid=deliveryReviewRows.filter(x=>x.name.trim()&&Number(x.quantity)>0);
   if(!valid.length){alert('Er zijn geen geldige leveringsregels.');return}
   let prepared;
