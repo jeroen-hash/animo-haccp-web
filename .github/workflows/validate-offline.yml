@@ -216,6 +216,9 @@ jobs:
           })().catch(error => { console.error(error); process.exitCode = 1; });
           NODE
 
+      - name: Validate legacy stock state collection defaults
+        run: node --test tests/stock-state-normalization.test.mjs
+
       - name: Validate UBL-only stock import (AI disabled)
         run: |
           node <<'NODE'
