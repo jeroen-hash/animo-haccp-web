@@ -152,6 +152,44 @@ jobs:
           unset BACKUP_PASSPHRASE SFTP_PASS
           echo "Encrypted STRATO backup uploaded, downloaded, checksum-verified, decrypted and content-verified successfully."
 
+      - name: Back-ups ouder dan 90 dagen opruimen
+        env:
+          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
+          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
+          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          remote_dir="/backups/animo-haccp-storage"
+          listing="$RUNNER_TEMP/animo-backup-listing"
+          lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP > "$listing"
+          set sftp:auto-confirm yes
+          set net:max-retries 3
+          set net:timeout 30
+          cls -1 "$remote_dir"
+          bye
+          LFTP
+
+          cutoff="$(date -u -d '90 days ago' +%s)"
+          while IFS= read -r name; do
+            [[ "$name" =~ ^animo-storage-([0-9]{8}T[0-9]{6}Z)\.tar\.gz\.gpg$ ]] || continue
+            stamp="${BASH_REMATCH[1]}"
+            backup_epoch="$(date -u -d "${stamp:0:8} ${stamp:9:2}:${stamp:11:2}:${stamp:13:2} UTC" +%s)"
+            if [ "$backup_epoch" -lt "$cutoff" ]; then
+              echo "Removing expired encrypted backup older than 90 days: $name"
+              lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP
+          set sftp:auto-confirm yes
+          set net:max-retries 3
+          set net:timeout 30
+          rm -f "$remote_dir/$name"
+          rm -f "$remote_dir/$name.sha256"
+          bye
+          LFTP
+            fi
+          done < "$listing"
+          rm -f "$listing"
+          unset SFTP_PASS
+          echo "90-day retention applied to timestamped ANIMO encrypted storage backups."
+
       - name: Melding bij mislukte back-up
         if: failure()
         uses: actions/github-script@v7
