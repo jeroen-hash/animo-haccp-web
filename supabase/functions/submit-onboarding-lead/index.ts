@@ -109,6 +109,29 @@ serve(async (request: Request) => {
       );
     }
 
+    // Lock the public onboarding service choice to the server-side fee schedule.
+    const serviceLevel = cleanText(payload.service_level, 30);
+    const onboardingFees: Record<string, number> = {
+      zelfstandig: 0,
+      basis: 7500,
+      begeleid: 17500,
+    };
+    if (!(serviceLevel in onboardingFees)) {
+      return jsonResponse(
+        { error: "Kies een geldige vorm van onboardingondersteuning." },
+        400
+      );
+    }
+
+    payload.service_level = serviceLevel;
+    payload.onboarding_payment_required = onboardingFees[serviceLevel] > 0;
+    payload.onboarding_payment = {
+      status: onboardingFees[serviceLevel] > 0 ? "unpaid" : "not_required",
+      amount_ex_vat: onboardingFees[serviceLevel],
+      currency: "eur",
+      service_level: serviceLevel,
+    };
+
     // Store an auditable server timestamp and the consent wording version.
     payload.consent = {
       accepted: true,
