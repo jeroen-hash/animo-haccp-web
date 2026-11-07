@@ -1513,7 +1513,7 @@ function renderInvoices(){
   const all=invoiceRows(),q=($('invoiceSearch')?.value||'').trim().toLowerCase(),status=$('invoiceStatusFilter')?.value||'all',supplier=$('invoiceSupplierFilter')?.value||'all';
   const suppliers=[...new Set(all.map(x=>x.supplier).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   const sf=$('invoiceSupplierFilter');if(sf){const selected=sf.value;sf.innerHTML='<option value="all">Alle leveranciers</option>'+suppliers.map(x=>`<option ${x===selected?'selected':''}>${esc(x)}</option>`).join('')}
-  const now=new Date(),month=now.toISOString().slice(0,7),soon=new Date(now.getTime()+7*86400000);
+  const now=new Date(),month=localDay().slice(0,7),soon=new Date(now.getTime()+7*86400000);
   $('invoiceOpenTotal').textContent=invoiceMoney(all.filter(x=>['open','partial'].includes(x.status)).reduce((n,x)=>n+x.outstanding,0));
   $('invoiceOverdueTotal').textContent=invoiceMoney(all.filter(x=>x.status==='overdue').reduce((n,x)=>n+x.outstanding,0));
   $('invoicePaidMonth').textContent=invoiceMoney(all.reduce((sum,x)=>sum+invoicePaidInMonth(x,month),0));
