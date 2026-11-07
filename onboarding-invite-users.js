@@ -3,12 +3,12 @@
   'use strict';
 
   function activeIntakeId() {
-    return document.querySelector('.item.active[data-id]')?.dataset.id || '';
+    return document.querySelector('.item.active[data-intake-id]')?.dataset.intakeId || '';
   }
 
   async function invitePreparedUsers(button) {
     const intakeId = activeIntakeId();
-    if (!intakeId) return alert('Selecteer eerst een onboarding.');
+    if (!intakeId) return alert('Deze aanvraag is nog niet geactiveerd naar een klantonboarding. Activeer eerst de zaak; daarna kun je de voorbereide gebruikers uitnodigen.');
     if (!confirm('Alle voorbereide gebruikers uitnodigen en aan deze zaak koppelen?')) return;
 
     const original = button.textContent;
