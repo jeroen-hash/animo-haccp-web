@@ -208,6 +208,24 @@ jobs:
           })().catch(error => { console.error(error); process.exitCode = 1; });
           NODE
 
+      - name: Validate UBL-only stock import (AI disabled)
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const upload = html.match(/<input id="deliveryFile"[^>]*>/)?.[0] || '';
+          if (!upload.includes('accept=".xml,.ubl,application/xml,text/xml,application/ubl+xml"')) throw new Error('Stock import picker must accept only UBL/XML.');
+          if (upload.includes('application/pdf') || /image\\//.test(upload)) throw new Error('PDF/image upload must remain disabled.');
+          const start = html.indexOf('async function scanDelivery(){');
+          const end = html.indexOf('function confirmDelivery()', start);
+          if (start < 0 || end < 0) throw new Error('Stock import handler could not be isolated.');
+          const handler = html.slice(start, end);
+          if (!handler.includes('if(!isXml)')) throw new Error('Non-UBL files must be rejected.');
+          if (handler.includes('window.FAVVProcessDeliveryNote(')) throw new Error('AI/PDF parser must not be invoked by stock upload.');
+          if (!handler.includes('await scanUblFile(file)')) throw new Error('UBL processing path is missing.');
+          console.log('UBL-only stock import guard passed; AI/PDF parser cannot be invoked from stock upload.');
+          NODE
+
       - name: Validate recipe unit-cost and quantity calculations
         run: |
           node <<'NODE'
