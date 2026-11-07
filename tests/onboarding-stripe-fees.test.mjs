@@ -49,12 +49,16 @@ test("verified Stripe webhook records payment and tax amounts on the lead", () =
   assert.match(webhook, /status:\s*"paid"/);
   assert.match(webhook, /amount_paid:\s*session\.amount_total/);
   assert.match(webhook, /amount_tax:\s*session\.total_details\?\.amount_tax/);
+  assert.match(webhook, /eventType === "invoice.payment_failed"/);
+  assert.match(webhook, /eventType === "invoice.paid"/);
 });
 
 test("platform onboarding dashboard exposes the payment link only after approval", () => {
   assert.match(dashboard, /create-onboarding-payment/);
   assert.match(dashboard, /x\.status==='approved'/);
   assert.match(dashboard, /Betalingsstatus/);
+  assert.match(dashboard, /mailto:/);
+  assert.match(dashboard, /latestPayload/);
 });
 test("one-time Stripe invoices are included in the real payments report", () => {
   assert.match(checkout, /payment_kind: "onboarding_fee"/);
