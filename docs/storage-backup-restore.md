@@ -14,6 +14,18 @@ De workflow bewaart versleutelde kopieën van de private buckets
 Bij iedere back-up haalt de workflow het versleutelde bestand terug van STRATO, controleert de archiefchecksum, ontsleutelt het archief en vergelijkt daarna voor ieder object de aanwezigheid, bestandsgrootte en SHA-256-hash met `manifest.json`. Deze controle schrijft niets terug naar Supabase.
 Bij een mislukte uitvoering maakt de workflow een GitHub-issue aan of plaatst een nieuwe melding in het bestaande openstaande back-upissue, met een link naar de foutieve uitvoering en een vermelding van `@jeroen-hash`. Zorg dat GitHub-meldingen voor vermeldingen/eigen issues in je accountinstellingen aanstaan.
 
+## Extra beveiliging: STRATO SSH-hostsleutel vastzetten
+
+STRATO gebruikt een persoonlijke servernaam en adviseert de host-key/fingerprint bij de eerste verbinding te controleren. De officiële STRATO-instructies beschrijven dat je de fingerprint bij de eerste SFTP-verbinding in FileZilla controleert.
+
+Na onafhankelijke controle kan de SHA-256-fingerprint als GitHub Actions-repositorysecret worden opgeslagen:
+- Naam: `STRATO_SFTP_HOST_KEY_SHA256`
+- Waarde: de volledige fingerprint in de vorm `SHA256:...` die je bij een vertrouwde eerste verbinding hebt gecontroleerd.
+
+De workflow vergelijkt dan de fingerprint die via SSH wordt aangeboden met deze vooraf opgeslagen waarde en gebruikt `StrictHostKeyChecking=yes`. Bij een mismatch stopt de back-up vóór de upload/download. Wijzig of vervang deze waarde alleen na controle via STRATO of een andere vertrouwde STRATO-ondersteuningsbron.
+
+Zolang dit extra secret nog niet is ingesteld, blijft de bestaande SFTP-verbinding tijdelijk werken zoals voorheen en geeft GitHub Actions een waarschuwing. De back-up wordt dus niet onverwacht onderbroken, maar host-key-pinning is dan nog niet actief.
+
 ## Herstelprocedure
 1. Download het gewenste `.tar.gz.gpg`-bestand en het bijbehorende `.sha256`-bestand uit `/backups/animo-haccp-storage` via SFTP.
 2. Controleer de checksum met `sha256sum -c bestandsnaam.tar.gz.gpg.sha256` (pas de bestandsnaam aan indien nodig).
