@@ -2,6 +2,12 @@ name: Encrypted Supabase Storage backup to STRATO
 
 on:
   workflow_dispatch:
+    inputs:
+      retention_dry_run:
+        description: 'Alleen tonen welke oude back-ups zouden worden verwijderd'
+        required: true
+        default: true
+        type: boolean
   schedule:
     - cron: '30 2 * * *'
 
@@ -157,6 +163,7 @@ jobs:
           SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
           SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
           SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+          RETENTION_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.retention_dry_run || 'false' }}
         run: |
           set -euo pipefail
           remote_dir="/backups/animo-haccp-storage"
@@ -175,8 +182,11 @@ jobs:
             stamp="${BASH_REMATCH[1]}"
             backup_epoch="$(date -u -d "${stamp:0:8} ${stamp:9:2}:${stamp:11:2}:${stamp:13:2} UTC" +%s)"
             if [ "$backup_epoch" -lt "$cutoff" ]; then
-              echo "Removing expired encrypted backup older than 90 days: $name"
-              lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP
+              if [ "$RETENTION_DRY_RUN" = "true" ]; then
+                echo "DRY RUN: would remove expired encrypted backup and checksum: $name"
+              else
+                echo "Removing expired encrypted backup older than 90 days: $name"
+                lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP
           set sftp:auto-confirm yes
           set net:max-retries 3
           set net:timeout 30
@@ -184,6 +194,7 @@ jobs:
           rm -f "$remote_dir/$name.sha256"
           bye
           LFTP
+              fi
             fi
           done < "$listing"
           rm -f "$listing"
