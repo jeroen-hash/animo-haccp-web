@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
-const APP_URL = (Deno.env.get("APP_URL") ?? "https://app.animo-apps.com/").replace(/\/?$/, "/");
+const APP_URL = "https://app.animo-apps.com/";
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
