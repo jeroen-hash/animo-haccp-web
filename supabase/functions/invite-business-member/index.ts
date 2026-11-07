@@ -237,31 +237,47 @@ invited_role: requestedRole,
 },
 );
  
-if (inviteError || !inviteData.user) {
-console.error("Invite error:", inviteError);
- 
-const message =
-inviteError?.message ??
-"De uitnodiging kon niet worden verstuurd.";
- 
-if (
-message.toLowerCase().includes("already") ||
-message.toLowerCase().includes("registered")
-) {
-return jsonResponse(
-{
-error:
-"Dit e-mailadres heeft al een account. Gebruik later de functie om een bestaande gebruiker te koppelen.",
-},
-409,
-);
+let invitedUser = inviteData?.user ?? null;
+let existingAccountLinked = false;
+
+if (inviteError || !invitedUser) {
+  const message = inviteError?.message ?? "De uitnodiging kon niet worden verstuurd.";
+  const alreadyRegistered = /already|registered|exists/i.test(message);
+
+  if (!alreadyRegistered) {
+    console.error("Invite error:", inviteError);
+    return jsonResponse({ error: message }, 400);
+  }
+
+  // Search existing accounts only through the server-side Auth Admin API.
+  let page = 1;
+  let matchedUser = null;
+  while (page <= 100) {
+    const { data: usersPage, error: usersError } =
+      await adminClient.auth.admin.listUsers({ page, perPage: 1000 });
+    if (usersError) throw usersError;
+    const users = usersPage?.users ?? [];
+    matchedUser = users.find((user) =>
+      String(user.email ?? "").trim().toLowerCase() === email
+    ) ?? null;
+    if (matchedUser || users.length < 1000) break;
+    page += 1;
+  }
+
+  if (!matchedUser) {
+    console.error("Existing Auth user could not be found after invite conflict:", message);
+    return jsonResponse(
+      { error: "Er bestaat al een account met dit e-mailadres, maar het account kon niet veilig worden opgehaald. Neem contact op met support." },
+      409,
+    );
+  }
+
+  invitedUser = matchedUser;
+  existingAccountLinked = true;
 }
- 
-return jsonResponse({ error: message }, 400);
-}
- 
-const invitedUserId = inviteData.user.id;
- 
+
+const invitedUserId = invitedUser.id;
+
 const {
 error: linkError,
 } = await adminClient
@@ -292,7 +308,9 @@ error:
  
 return jsonResponse({
 success: true,
-message: "De uitnodiging is verstuurd.",
+message: existingAccountLinked
+    ? "Het bestaande ANIMO HACCP-account is opnieuw aan deze zaak gekoppeld. De gebruiker kan aanmelden met het bestaande e-mailadres en wachtwoord."
+    : "De uitnodiging is verstuurd.",
 member: {
 id: invitedUserId,
 email,
