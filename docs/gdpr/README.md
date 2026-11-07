@@ -22,7 +22,7 @@ Dit werkdossier ondersteunt de AVG/GDPR-governance van ANIMO HACCP. Het is inter
 1. **Back-upretentie:** de bestaande technische documentatie meldt dat versleutelde STRATO-back-ups momenteel niet automatisch worden verwijderd. Stel een vaste retentie in (voorgesteld: maximaal 90 dagen, tenzij een herstelincident een tijdelijke hold vereist) en test de verwijdering.
 2. **Leveranciersdossiers:** bewaar de toepasselijke DPA/voorwaarden, actuele subverwerkerslijsten, transferdocumentatie en contactpunten van Supabase, STRATO, Stripe en GitHub.
 3. **STRATO-regio:** bevestig schriftelijk de opslag-/verwerkingslocatie van e-mail, hosting en de back-upbestemming voor de concrete diensten.
-4. **Contractacceptatie:** controleer dat de klant vóór eerste gebruik de algemene voorwaarden, privacyverklaring en verwerkersovereenkomst kan raadplegen en aantoonbaar aanvaardt; bewaar versie, tijdstip en klantreferentie.
+4. **Contractacceptatie:** de onboardingpagina vereist akkoord met algemene voorwaarden, privacyverklaring en verwerkersovereenkomst. De onboardingfunctie controleert het akkoord en bewaart de documentversie (`2026-11-07`) en server-side tijdstip in de aanvraag. Controleer bij wijzigingen dat de akkoordtekst en versies synchroon blijven.
 5. **Bewaar- en verwijdertest:** voer een test uit voor export, beëindiging, 90-dagenverwijdering, back-upverwijdering en lokale browserkopieën.
 6. **Beveiligingsbewijs:** documenteer periodieke toegangscontrole, MFA voor beheeraccounts waar beschikbaar, hersteltests, kwetsbaarheden en incidenten.
 7. **Juridische review:** laat de publieke documenten en aansprakelijkheidsbepalingen nakijken door een Belgische jurist of privacyprofessional vóór brede verkoop.
