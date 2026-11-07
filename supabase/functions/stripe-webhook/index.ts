@@ -477,7 +477,7 @@ Deno.serve(async (req: Request) => {
                   amount_paid: session.amount_total ?? 0,
                   amount_tax: session.total_details?.amount_tax ?? 0,
                   currency: String(session.currency ?? "eur").toLowerCase(),
-                  paid_at: stripeDate(session.created) ?? new Date().toISOString(),
+                  paid_at: new Date().toISOString(),
                 },
               },
             })
