@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: animo-database-backup
@@ -21,6 +22,7 @@ jobs:
         shell: bash
         env:
           DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          DATABASE_PASSWORD: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
           SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
           SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
           SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
@@ -28,7 +30,7 @@ jobs:
           BACKUP_PASSPHRASE: ${{ secrets.ANIMO_BACKUP_ENCRYPTION_KEY }}
         run: |
           set -euo pipefail
-          for name in DATABASE_URL SFTP_HOST SFTP_USER SFTP_PASS SFTP_HOST_KEY_SHA256 BACKUP_PASSPHRASE; do
+          for name in DATABASE_URL DATABASE_PASSWORD SFTP_HOST SFTP_USER SFTP_PASS SFTP_HOST_KEY_SHA256 BACKUP_PASSPHRASE; do
             value="${!name:-}"
             if [ -z "$value" ]; then
               echo "::error::Required repository secret is missing: $name"
@@ -51,18 +53,60 @@ jobs:
         shell: bash
         env:
           DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          DATABASE_PASSWORD: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
         run: |
           set -euo pipefail
           test -n "$DATABASE_URL"
+          test -n "$DATABASE_PASSWORD"
+
+          # Parse only non-secret connection details. The password is supplied separately
+          # through PGPASSWORD, so special characters never need URI percent-encoding.
+          python3 - <<'PY'
+          import os
+          from urllib.parse import urlsplit, unquote, parse_qs
+          from pathlib import Path
+
+          parsed = urlsplit(os.environ["DATABASE_URL"])
+          if parsed.scheme not in ("postgres", "postgresql") or not parsed.hostname:
+              raise SystemExit("PRODUCTION_DATABASE_URL is not a valid PostgreSQL URI.")
+          if parsed.password:
+              raise SystemExit("Remove the password from PRODUCTION_DATABASE_URL; store it only in PRODUCTION_DATABASE_PASSWORD.")
+          username = unquote(parsed.username or "")
+          database = unquote(parsed.path.lstrip("/"))
+          if not username or not database:
+              raise SystemExit("The PostgreSQL URI must include a username and database name.")
+          if not parsed.hostname.endswith(".pooler.supabase.com"):
+              raise SystemExit("The database host is not a Supabase pooler host.")
+          if not username.startswith("postgres."):
+              raise SystemExit("Use the full Supabase Session Pooler username, including the project reference.")
+          if "sslmode" in parse_qs(parsed.query) and parse_qs(parsed.query)["sslmode"][0] != "require":
+              raise SystemExit("The database connection must use sslmode=require.")
+          values = {
+              "PGHOST": parsed.hostname,
+              "PGPORT": str(parsed.port or 5432),
+              "PGUSER": username,
+              "PGDATABASE": database,
+              "PGSSLMODE": "require",
+          }
+          import shlex
+          with open(os.path.join(os.environ["RUNNER_TEMP"], "db-connection.env"), "w", encoding="utf-8") as envfile:
+              for key, value in values.items():
+                  envfile.write(f"{key}={shlex.quote(value)}\\n")
+          PY
+          set -a
+          source "$RUNNER_TEMP/db-connection.env"
+          set +a
+
           dump="$RUNNER_TEMP/animo-database.dump"
           docker run --rm \
-            -e DATABASE_URL="$DATABASE_URL" \
+            -e PGHOST -e PGPORT -e PGUSER -e PGDATABASE -e PGSSLMODE \
+            -e PGPASSWORD="$DATABASE_PASSWORD" \
             -v "$RUNNER_TEMP:/backup" \
             postgres:17-alpine \
-            sh -ec 'pg_dump "$DATABASE_URL" --format=custom --no-owner --no-acl --compress=6 --schema=public --schema=private --schema=auth --schema=storage --file=/backup/animo-database.dump'
+            sh -ec 'pg_dump --format=custom --no-owner --no-acl --compress=6 --schema=public --schema=private --schema=auth --schema=storage --file=/backup/animo-database.dump'
           test -s "$dump"
           echo "Database dump created. File size: $(stat -c '%s' "$dump") bytes."
-          unset DATABASE_URL
+          unset DATABASE_URL DATABASE_PASSWORD
 
       - name: Back-up versleutelen en checksum maken
         id: archive
