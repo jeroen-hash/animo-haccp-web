@@ -136,10 +136,14 @@ tbody tr:hover{background:#f4faf6}
     <article class="card"><h3>Kerngebruik afgelopen 7 dagen</h3><div id="usageMetrics" class="metrics" style="grid-template-columns:repeat(2,1fr)"></div></article>
   </div>
     <section id="tab-website-analytics" class="card full tab-panel" style="margin:18px 0">
-    <div class="topline"><div><h2>Websitebezoeken</h2><div class="muted">Bezoeken aan start.animo-apps.com · Belgische tijd</div></div><button id="websiteAnalyticsRefresh" class="btn green" type="button">Statistieken vernieuwen</button></div>
+    <div class="topline"><div><h2>Websitebezoeken</h2><div class="muted">Alle ANIMO-websites en subdomeinen · Belgische tijd</div></div><button id="websiteAnalyticsRefresh" class="btn green" type="button">Statistieken vernieuwen</button></div>
     <div id="websiteAnalyticsMetrics" class="metrics">
       <div class="metric"><small>Vandaag</small><strong>—</strong></div><div class="metric"><small>Deze week</small><strong>—</strong></div><div class="metric"><small>Deze maand</small><strong>—</strong></div>
     </div>
+    <article class="card full" style="margin-top:16px">
+      <div class="subhead"><h3>Bezoeken per domein</h3><span class="tag blue">Vandaag · 7 dagen · 30 dagen</span></div>
+      <div id="websiteAnalyticsSites" class="subscription"><div class="detail-item">Domeinstatistieken worden geladen…</div></div>
+    </article>
     <article class="card full" style="margin-top:16px">
       <div class="subhead"><h3>Dagelijkse opvolging</h3><span class="tag blue">Automatisch berekend</span></div>
       <div id="websiteDailyFollowup" class="metrics">
@@ -151,7 +155,7 @@ tbody tr:hover{background:#f4faf6}
       <p id="websiteDailyInsight" class="revenue-note" role="status">De dagelijkse analyse verschijnt zodra de statistieken geladen zijn.</p>
     </article>
     <article class="card full" style="margin-top:16px"><div class="subhead"><h3>Bezoeken per dag · laatste 30 dagen</h3><span id="websiteAnalyticsUpdated" class="muted">Nog niet geladen</span></div><div style="overflow-x:auto"><div id="websiteAnalyticsChart" class="bars" style="min-width:720px"></div></div></article>
-    <p class="muted" style="font-size:13px;margin-top:12px">Dit zijn paginaweergaven van start.animo-apps.com vanaf de activering van deze meting. Het zijn geen unieke personen: opnieuw bezoeken kan opnieuw meetellen. Oude metingen van het vorige www-adres zijn apart bewaard en worden hier niet meegeteld. Er worden geen IP-adressen, namen of e-mailadressen voor deze statistiek opgeslagen.</p>
+    <p class="muted" style="font-size:13px;margin-top:12px">Dit zijn paginaweergaven van www.animo-apps.com, start.animo-apps.com en app.animo-apps.com vanaf de activering van de meting per domein. Het zijn geen unieke personen: opnieuw bezoeken kan opnieuw meetellen. Oude metingen met label legacy worden niet meegeteld. Er worden geen IP-adressen, namen of e-mailadressen voor deze statistiek opgeslagen.</p>
     <div id="websiteAnalyticsMessage" class="muted" role="status" style="margin-top:10px"></div>
   </section>
 
