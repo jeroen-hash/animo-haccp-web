@@ -10,6 +10,7 @@ on:
       - 'tests/offline-access-window.test.mjs'
       - 'tests/stock-state-normalization.test.mjs'
       - 'tests/brussels-timezone.test.mjs'
+      - 'tests/haccp-report-printing.test.mjs'
       - 'tests/storage-backup-manifest.test.mjs'
       - 'scripts/backup-supabase-storage.mjs'
       - 'scripts/verify-storage-backup.mjs'
@@ -93,6 +94,8 @@ jobs:
           }
           console.log('Subscription billing data access and owner/manager policy checks passed.');
           NODE
+      - name: Validate standalone allergen and day-report PDF exports
+        run: node --test tests/haccp-report-printing.test.mjs
       - name: Validate subscription access entitlements
         run: node --test tests/subscription-access-entitlements.test.mjs
       - name: Validate offline access expiry
