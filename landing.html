@@ -77,7 +77,14 @@ footer{background:#061f18}
  .cta-panel{padding:32px 24px}
 }
 
-.daily-hook{display:flex;flex-direction:column;gap:2px;margin-top:20px;padding:14px 17px;border-left:3px solid #e6c58b;background:rgba(255,255,255,.09);border-radius:0 12px 12px 0;color:#fff;max-width:430px}.daily-hook strong{font-size:1.05rem;color:#f3d8a8}.daily-hook span{font-size:.82rem;color:#d1e1d7}.price-note{font-weight:650}.price-card .price-note:before{content:"☕ ";color:#0b7651}@media(max-width:620px){.daily-hook{max-width:100%}.daily-hook strong{font-size:.98rem}}\n</style>
+.daily-hook{display:flex;flex-direction:column;gap:2px;margin-top:20px;padding:14px 17px;border-left:3px solid #e6c58b;background:rgba(255,255,255,.09);border-radius:0 12px 12px 0;color:#fff;max-width:430px}.daily-hook strong{font-size:1.05rem;color:#f3d8a8}.daily-hook span{font-size:.82rem;color:#d1e1d7}.price-note{font-weight:650}.price-card .price-note:before{content:"☕ ";color:#0b7651}@media(max-width:620px){.daily-hook{max-width:100%}.daily-hook strong{font-size:.98rem}}\n
+/* Mobiel: bestaande klanten moeten rechtstreeks kunnen aanmelden. */
+@media(max-width:620px){
+  .actions .secondary{display:inline-flex!important;}
+  .actions .primary{display:none!important;}
+  .actions .secondary{min-height:42px;padding:0 16px;font-size:.88rem;}
+}
+</style>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
