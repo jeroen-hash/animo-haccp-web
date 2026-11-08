@@ -140,6 +140,16 @@ tbody tr:hover{background:#f4faf6}
     <div id="websiteAnalyticsMetrics" class="metrics">
       <div class="metric"><small>Vandaag</small><strong>—</strong></div><div class="metric"><small>Deze week</small><strong>—</strong></div><div class="metric"><small>Deze maand</small><strong>—</strong></div>
     </div>
+    <article class="card full" style="margin-top:16px">
+      <div class="subhead"><h3>Dagelijkse opvolging</h3><span class="tag blue">Automatisch berekend</span></div>
+      <div id="websiteDailyFollowup" class="metrics">
+        <div class="metric"><small>Gisteren</small><strong>—</strong></div>
+        <div class="metric"><small>Gemiddelde per dag · 7 dagen</small><strong>—</strong></div>
+        <div class="metric"><small>Vorige 7 dagen</small><strong>—</strong></div>
+        <div class="metric"><small>Verschil met vorige week</small><strong>—</strong></div>
+      </div>
+      <p id="websiteDailyInsight" class="revenue-note" role="status">De dagelijkse analyse verschijnt zodra de statistieken geladen zijn.</p>
+    </article>
     <article class="card full" style="margin-top:16px"><div class="subhead"><h3>Bezoeken per dag · laatste 30 dagen</h3><span id="websiteAnalyticsUpdated" class="muted">Nog niet geladen</span></div><div style="overflow-x:auto"><div id="websiteAnalyticsChart" class="bars" style="min-width:720px"></div></div></article>
     <p class="muted" style="font-size:13px;margin-top:12px">Dit zijn paginaweergaven van start.animo-apps.com vanaf de activering van deze meting. Het zijn geen unieke personen: opnieuw bezoeken kan opnieuw meetellen. Oude metingen van het vorige www-adres zijn apart bewaard en worden hier niet meegeteld. Er worden geen IP-adressen, namen of e-mailadressen voor deze statistiek opgeslagen.</p>
     <div id="websiteAnalyticsMessage" class="muted" role="status" style="margin-top:10px"></div>
@@ -191,6 +201,33 @@ async function loadWebsiteAnalytics(){
     ];
     $('websiteAnalyticsMetrics').innerHTML=metrics.map(([label,value])=>metric(label,value.toLocaleString('nl-BE'))).join('');
     const days=Array.isArray(stats.daily)?stats.daily:[];
+    const orderedDays=[...days].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    const last7=orderedDays.slice(-7),previous7=orderedDays.slice(-14,-7);
+    const sumVisits=list=>list.reduce((sum,item)=>sum+Number(item.visits||0),0);
+    const previousDay=orderedDays.length>1?Number(orderedDays[orderedDays.length-2].visits||0):0;
+    const last7Total=sumVisits(last7),previous7Total=sumVisits(previous7);
+    const dailyAverage=last7.length?last7Total/last7.length:0;
+    const difference=last7Total-previous7Total;
+    const percent=previous7Total?Math.round(difference/previous7Total*100):null;
+    const followup=[
+      ['Gisteren',previousDay.toLocaleString('nl-BE')],
+      ['Gemiddelde per dag · 7 dagen',dailyAverage.toLocaleString('nl-BE',{maximumFractionDigits:1})],
+      ['Vorige 7 dagen',previous7Total.toLocaleString('nl-BE')],
+      ['Verschil met vorige week',percent===null?(last7Total?'Nieuw':'—'):(percent>0?'+':'')+percent+'%']
+    ];
+    $('websiteDailyFollowup').innerHTML=followup.map(([label,value])=>metric(label,value)).join('');
+    const insight=$('websiteDailyInsight');
+    if(percent!==null&&Math.abs(percent)>=20&&Math.abs(difference)>=5){
+      insight.textContent=(percent>0?'Opvallende stijging: ':'Opvallende daling: ')+Math.abs(percent)+'% tegenover de 7 dagen ervoor ('+Math.abs(difference)+' paginaweergaven verschil). Controleer of je recente marketingacties of publicaties effect hebben.';
+      insight.style.background=percent>0?'#e8f5ef':'#fff2d8';
+      insight.style.color=percent>0?'#075f3f':'#745000';
+    }else if(previous7.length){
+      insight.textContent='Geen opvallende verandering: de laatste 7 dagen zitten binnen de ingestelde signaleringsgrens van 20% (en minstens 5 paginaweergaven verschil).';
+      insight.style.background='#eaf3fb';insight.style.color='#174f79';
+    }else{
+      insight.textContent='Er is nog onvoldoende historische data om een betrouwbare weekvergelijking te maken. De opvolging wordt nauwkeuriger zodra er minstens 14 dagen meetgegevens zijn.';
+      insight.style.background='#eaf3fb';insight.style.color='#174f79';
+    }
     const max=Math.max(1,...days.map(x=>Number(x.visits||0)));
     $('websiteAnalyticsChart').innerHTML=days.map(x=>{
       const value=Number(x.visits||0);
