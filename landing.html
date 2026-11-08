@@ -1,241 +1,91 @@
 <!doctype html>
-<html lang="nl">
+<html lang="nl-BE">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Digitale autocontrole voor horeca: temperaturen, kuisplannen, allergenen, voorraad, facturen, recepten en PDF-rapporten. Bekijk de abonnementen en eenmalige onboardingkosten.">
-  <meta name="theme-color" content="#075f3f">
-  <title>ANIMO HACCP | Digitaal HACCP-beheer voor horeca</title>
-<link rel="icon" type="image/png" href="./images/animo-icon.png.png">
-<link rel="apple-touch-icon" href="./images/animo-icon.png.png">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="ANIMO HACCP">
-<meta property="og:locale" content="nl_BE">
-<meta property="og:title" content="ANIMO HACCP | Digitaal HACCP-beheer voor horeca">
-<meta property="og:description" content="Digitale autocontrole voor horeca: temperaturen, kuisplannen, allergenen, voorraad, facturen, recepten en PDF-rapporten. Bekijk de abonnementen en eenmalige onboardingkosten.">
-<link rel="canonical" href="https://www.animo-apps.com/landing.html">
-<meta property="og:url" content="https://www.animo-apps.com/landing.html">
-<meta property="og:image" content="https://www.animo-apps.com/images/animo-logo.png.png">
-<meta property="og:image:alt" content="ANIMO HACCP logo">
-<meta name="twitter:card" content="summary">
-  <style>
-    :root{
-      --green-950:#043d2b;--green-900:#075f3f;--green-800:#08714b;--green-700:#0a8659;
-      --green-100:#dff3e9;--green-50:#f3faf6;--gold:#d8a84e;--ink:#142a22;--muted:#5f6d65;
-      --line:#dbe8e0;--white:#fff;--shadow:0 24px 70px rgba(4,61,43,.13);--radius:24px;
-    }
-    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);background:#fff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
-    a{color:inherit;text-decoration:none}button,input{font:inherit}.container{width:min(1160px,calc(100% - 40px));margin:auto}
-    .skip{position:absolute;left:-9999px}.skip:focus{left:16px;top:16px;background:#fff;padding:10px 14px;z-index:1000}
-    .nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.88);backdrop-filter:blur(15px);border-bottom:1px solid rgba(219,232,224,.8)}
-    .nav-inner{height:78px;display:flex;align-items:center;justify-content:space-between;gap:24px}.brand{display:flex;align-items:center;gap:11px;font-weight:900;letter-spacing:-.03em}.brand-mark{width:42px;height:42px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(145deg,var(--green-900),var(--green-700));color:#fff;box-shadow:0 10px 25px rgba(7,95,63,.22)}.brand em{color:var(--gold);font-style:normal}.nav-links{display:flex;gap:28px;align-items:center;color:#344b42;font-weight:650;font-size:.94rem}.nav-links a:hover{color:var(--green-900)}.brand-logo{height:70px;width:auto;display:block;border-radius:14px}
-
-.hero-logo{
-  width:420px;
-  max-width:100%;
-  height:auto;
-  display:block;
-  margin-bottom:20px;
-}
-
-.app-icon{
-  width:42px;
-  height:42px;
-  border-radius:10px;
-  display:block;
-}
-    .nav-actions{display:flex;gap:10px}.btn{min-height:46px;padding:0 20px;border:1px solid transparent;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;gap:9px;font-weight:800;cursor:pointer;transition:.2s ease}.btn:hover{transform:translateY(-2px)}.btn-primary{background:var(--green-900);color:#fff;box-shadow:0 12px 28px rgba(7,95,63,.2)}.btn-primary:hover{background:var(--green-950)}.btn-secondary{border-color:#bcd4c6;background:#fff;color:var(--green-950)}.btn-ghost{background:transparent;color:var(--green-900)}
-    .hero{overflow:hidden;position:relative;background:radial-gradient(circle at 82% 22%,rgba(16,163,109,.16),transparent 28%),linear-gradient(180deg,#f5fbf7 0%,#fff 100%);padding:105px 0 82px}.hero-grid{display:grid;grid-template-columns:1.03fr .97fr;align-items:center;gap:72px}.eyebrow{display:inline-flex;align-items:center;gap:9px;padding:7px 12px;border-radius:999px;background:var(--green-100);color:var(--green-900);font-size:.84rem;font-weight:850}.eyebrow:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--gold)}h1{font-size:clamp(2.8rem,6vw,5.25rem);line-height:.98;letter-spacing:-.03em;margin:24px 0 24px;max-width:760px}h1 span{color:var(--green-900)}.lead{font-size:1.18rem;color:#4c6359;max-width:650px;margin:0 0 32px}.hero-actions{display:flex;flex-wrap:wrap;gap:12px}.micro{display:flex;flex-wrap:wrap;gap:22px;margin-top:23px;color:#60746b;font-size:.9rem}.micro span:before{content:"✓";color:var(--green-700);font-weight:900;margin-right:7px}
-    .app-card{position:relative;background:#fff;border:1px solid #d6e5dc;border-radius:28px;padding:18px;box-shadow:var(--shadow)}.browser{border:1px solid #d8e4dd;border-radius:18px;overflow:hidden;background:#f8fbf9}.browser-top{height:44px;display:flex;align-items:center;padding:0 15px;gap:7px;border-bottom:1px solid #e2ebe6;background:#fff}.dot{width:8px;height:8px;border-radius:50%;background:#d8e3dc}.browser-title{margin-left:12px;font-size:.75rem;font-weight:750;color:#6f8178}.dash{padding:18px}.dash-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.dash-title{font-size:1.05rem;font-weight:900}.pill{font-size:.7rem;padding:6px 9px;background:#e4f6ec;color:var(--green-900);border-radius:99px;font-weight:800}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.stat{background:#fff;border:1px solid #e1ebe5;border-radius:13px;padding:12px}.stat strong{display:block;font-size:1.25rem;color:var(--green-950)}.stat small{color:#718078}.dash-main{display:grid;grid-template-columns:1.25fr .75fr;gap:11px;margin-top:11px}.panel{border:1px solid #e1ebe5;border-radius:14px;background:#fff;padding:13px}.bars{display:flex;align-items:end;gap:7px;height:92px;padding-top:12px}.bar{flex:1;border-radius:6px 6px 2px 2px;background:linear-gradient(var(--green-700),var(--green-900))}.task{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #edf2ef;font-size:.74rem}.task:last-child{border:0}.check{width:18px;height:18px;border-radius:6px;background:#e1f5e9;color:var(--green-900);display:grid;place-items:center;font-size:.68rem;font-weight:900}
-    .trust{border-block:1px solid var(--line);background:#fff}.trust-inner{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;padding:24px 0}.trust-item{display:flex;align-items:center;justify-content:center;gap:9px;color:#496057;font-weight:750;font-size:.9rem}.ico{width:34px;height:34px;border-radius:10px;background:var(--green-50);display:grid;place-items:center;color:var(--green-900)}
-    section{padding:92px 0}.section-kicker{color:var(--green-700);font-weight:850;text-transform:uppercase;letter-spacing:.13em;font-size:.78rem}.section-title{font-size:clamp(2rem,4vw,3.35rem);line-height:1.08;letter-spacing:-.02em;margin:12px 0 16px}.section-lead{max-width:700px;color:var(--muted);font-size:1.06rem}.center{text-align:center}.center .section-lead{margin-inline:auto}.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:46px}.step{position:relative;padding:28px;border:1px solid var(--line);border-radius:20px;background:#fff}.step-num{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:var(--green-900);color:#fff;font-weight:900;margin-bottom:20px}.step h3,.feature h3{margin:0 0 8px;font-size:1.06rem}.step p,.feature p{margin:0;color:var(--muted);font-size:.94rem}
-    .soft{background:var(--green-50)}.features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:42px}.feature{background:#fff;border:1px solid #dfeae4;border-radius:21px;padding:27px}.feature-icon{width:48px;height:48px;border-radius:15px;background:linear-gradient(145deg,#e2f5ea,#f4fbf7);display:grid;place-items:center;color:var(--green-900);font-size:1.3rem;margin-bottom:19px}.feature:hover{border-color:#b9d4c5;box-shadow:0 17px 45px rgba(4,61,43,.08);transform:translateY(-3px);transition:.2s ease}
-    .split{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center}.checklist{display:grid;gap:12px;margin:28px 0}.checkline{display:flex;gap:12px;align-items:flex-start}.checkline b{width:25px;height:25px;flex:0 0 25px;border-radius:8px;background:#dff3e9;color:var(--green-900);display:grid;place-items:center}.onboard-card{background:var(--green-950);color:#fff;border-radius:28px;padding:35px;box-shadow:var(--shadow)}.onboard-card h3{font-size:1.5rem;margin:0 0 20px}.flow-item{display:flex;gap:13px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.12)}.flow-item:last-child{border:0}.flow-item span{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.12);display:grid;place-items:center;font-weight:900;color:#f4d18c}.flow-item div{font-size:.94rem}.flow-item small{display:block;color:#bcd0c6}
-    .onboarding-options{display:grid;gap:12px;margin:24px 0}.onboarding-options h3{margin:0 0 2px;font-size:1.12rem}.onboarding-option{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:17px;border:1px solid var(--line);border-radius:16px;background:#fff}.onboarding-option>div{min-width:0}.onboarding-option p{margin:4px 0;color:var(--muted);font-size:.9rem}.onboarding-price{font-weight:900;color:var(--green-950)}.onboarding-price small{font-size:.78rem;font-weight:600;color:var(--muted)}.onboarding-option .btn{flex:0 0 auto;text-align:center}@media(max-width:560px){.onboarding-option{align-items:stretch;flex-direction:column}.onboarding-option .btn{width:100%}}
-    .price-wrap{display:grid;grid-template-columns:.9fr 1.1fr;gap:60px;align-items:center}.price-card{background:#fff;border:1px solid #cfe1d7;border-radius:28px;padding:38px;box-shadow:var(--shadow)}.price-label{font-weight:850;color:var(--green-900)}.price{font-size:3.7rem;line-height:1;margin:16px 0 5px;font-weight:950;letter-spacing:-.06em}.price small{font-size:1rem;color:var(--muted);font-weight:650;letter-spacing:0}.price-list{list-style:none;padding:0;margin:26px 0}.price-list li{padding:9px 0;border-bottom:1px solid #edf2ef}.price-list li:before{content:"✓";color:var(--green-700);font-weight:900;margin-right:10px}.fine{font-size:.78rem;color:#6d7c75;margin-top:14px}
-    .faq{max-width:850px;margin:40px auto 0}.faq details{background:#fff;border:1px solid var(--line);border-radius:16px;margin:11px 0;padding:0 20px}.faq summary{cursor:pointer;list-style:none;padding:19px 24px 19px 0;font-weight:850;position:relative}.faq summary:after{content:"+";position:absolute;right:0;font-size:1.4rem;color:var(--green-800)}.faq details[open] summary:after{content:"−"}.faq p{margin:0 0 20px;color:var(--muted)}
-    .cta{padding:40px 0 95px}.cta-box{background:linear-gradient(135deg,var(--green-950),var(--green-800));border-radius:30px;padding:58px;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:40px;overflow:hidden;position:relative}.cta-box h2{font-size:clamp(2rem,4vw,3.2rem);letter-spacing:-.02em;line-height:1.05;margin:0 0 12px}.cta-box p{color:#d5e5dc;margin:0;max-width:600px}.cta-box .btn{background:#fff;color:var(--green-950);position:relative;z-index:2;white-space:nowrap}
-    footer{background:#031f16;color:#c6d5cd;padding:58px 0 30px}.footer-grid{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:40px}.footer-title{color:#fff;font-weight:850;margin-bottom:12px}.footer-links{display:grid;gap:8px;font-size:.9rem}.footer-links a:hover{color:#fff}.footer-bottom{margin-top:45px;padding-top:20px;border-top:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;gap:20px;font-size:.8rem;color:#91a79c}
-    .modal{position:fixed;inset:0;background:rgba(2,24,17,.65);display:none;place-items:center;padding:20px;z-index:100}.modal.open{display:grid}.login-card{width:min(440px,100%);background:#fff;border-radius:24px;padding:30px;box-shadow:0 35px 100px rgba(0,0,0,.25);position:relative}.close{position:absolute;right:16px;top:16px;width:38px;height:38px;border:0;border-radius:50%;background:#eef5f1;font-size:1.2rem;cursor:pointer}.login-card h2{margin:5px 0 5px}.login-card>p{margin:0 0 22px;color:var(--muted)}.field{display:grid;gap:7px;margin:14px 0}.field label{font-size:.85rem;font-weight:800}.field input{height:48px;border:1px solid #cfddd5;border-radius:11px;padding:0 13px;outline:none}.field input:focus{border-color:var(--green-700);box-shadow:0 0 0 4px rgba(10,134,89,.1)}.login-card .btn{width:100%;border-radius:12px}.login-links{display:flex;justify-content:space-between;gap:10px;margin-top:15px;font-size:.82rem;color:var(--green-800);font-weight:750}
-    @media(max-width:980px){.nav-links{display:none}.hero-grid,.split,.price-wrap{grid-template-columns:1fr}.hero{padding-top:72px}.app-card{max-width:650px}.steps{grid-template-columns:repeat(2,1fr)}.features{grid-template-columns:repeat(2,1fr)}.trust-inner{grid-template-columns:repeat(2,1fr)}.footer-grid{grid-template-columns:1fr 1fr}}
-    @media(max-width:640px){.container{width:min(100% - 24px,1160px)}.nav-inner{height:68px}.nav-actions .btn-secondary{display:none}.btn{padding:0 16px}.hero{padding:58px 0}.hero-grid{gap:42px}h1{font-size:2.75rem}.lead{font-size:1.03rem}.stats{grid-template-columns:1fr}.dash-main,.steps,.features,.trust-inner,.footer-grid{grid-template-columns:1fr}.trust-item{justify-content:flex-start}.cta-box{padding:36px 25px;display:block}.cta-box .btn{margin-top:25px}.footer-bottom{flex-direction:column}.price-card{padding:26px}.login-links{flex-direction:column}.nav-actions .btn-primary{min-height:42px}.brand span:last-child{display:none}}
-
-    .shots-sec{padding-bottom:30px}.shots{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:46px;align-items:start}.shot{margin:0}.shot-frame{border:1px solid #cfe1d7;border-radius:26px;overflow:hidden;background:#fff;box-shadow:var(--shadow)}.shot-frame img{display:block;width:100%;height:auto}.shot figcaption{margin-top:16px;text-align:center;color:var(--muted);font-size:.94rem}.shot figcaption strong{display:block;color:var(--ink);font-size:1.02rem;margin-bottom:2px}
-    @media(max-width:980px){.shots{grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:72%;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 4px 18px;gap:18px;-webkit-overflow-scrolling:touch}.shot{scroll-snap-align:center}}
-  .contact-card{max-width:850px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:20px;padding:28px 32px;display:flex;justify-content:space-between;align-items:center;gap:24px;box-shadow:var(--shadow)}.contact-card h2{margin:0 0 4px;font-size:1.4rem}.contact-card p{margin:0;color:var(--muted)}.contact-card>div:first-child{flex:1 1 220px}.contact-actions{display:flex;gap:12px;flex:0 0 auto;flex-wrap:nowrap;justify-content:flex-end}@media(max-width:700px){.contact-card{flex-direction:column;align-items:flex-start}.contact-card>div:first-child{flex:0 0 auto}.contact-actions{flex-direction:column;width:100%}.contact-card .btn{width:100%;text-align:center}}
-  </style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#06452f">
+<meta name="description" content="ANIMO HACCP brengt dagelijkse voedselveiligheidsregistraties en praktisch zaakbeheer samen voor professionele horecazaken.">
+<title>ANIMO HACCP | Meer overzicht. Minder papierwerk.</title>
+<link rel="canonical" href="https://start.animo-apps.com/"><link rel="icon" type="image/png" href="./images/animo-icon.png.png"><link rel="apple-touch-icon" href="./images/animo-icon.png.png">
+<meta property="og:type" content="website"><meta property="og:site_name" content="ANIMO HACCP"><meta property="og:locale" content="nl_BE"><meta property="og:title" content="ANIMO HACCP | Meer overzicht. Minder papierwerk."><meta property="og:description" content="Digitale HACCP-registraties en praktisch zaakbeheer voor professionele horeca."><meta property="og:url" content="https://start.animo-apps.com/"><meta property="og:image" content="https://www.animo-apps.com/images/animo-logo.png.png"><meta name="twitter:card" content="summary_large_image">
+<style>
+:root{--forest:#06452f;--green:#08734d;--mint:#eaf5ee;--pale:#f5faf6;--gold:#d9ad62;--ink:#14251d;--muted:#627168;--line:#dce8df;--shadow:0 24px 70px rgba(6,69,47,.13)}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:90px}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);line-height:1.65;background:#fff}a{color:inherit;text-decoration:none}img{max-width:100%;height:auto;display:block}.wrap{width:min(1160px,calc(100% - 40px));margin:auto}
+.topline{background:var(--forest);color:#e8f4ec;text-align:center;padding:8px 16px;font-size:.82rem}.topline b{color:#f4d69e}
+header{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.95);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}.nav{height:76px;display:flex;align-items:center;justify-content:space-between;gap:22px}.logo img{width:200px;max-height:66px;object-fit:contain;object-position:left}.navlinks{display:flex;gap:24px;font-size:.9rem;font-weight:750;color:#40574a}.navlinks a:hover{color:var(--green)}.actions{display:flex;gap:9px}
+.btn{min-height:47px;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;font-weight:850;font-size:.93rem;border:1px solid transparent;transition:.18s}.btn:hover{transform:translateY(-2px)}.primary{background:var(--green);color:white;box-shadow:0 10px 24px rgba(8,115,77,.2)}.primary:hover{background:var(--forest)}.secondary{border-color:#bfd4c6;color:var(--forest);background:white}
+.hero{background:radial-gradient(ellipse at 82% 15%,rgba(217,173,98,.17),transparent 29%),linear-gradient(180deg,#f1f9f3,#fff);padding:86px 0 74px;overflow:hidden}.hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}.eyebrow{display:inline-flex;gap:9px;align-items:center;background:#e3f1e8;color:var(--forest);border-radius:99px;padding:7px 13px;font-size:.82rem;font-weight:850}.eyebrow:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--gold)}h1{font-size:clamp(2.8rem,5.7vw,5.1rem);line-height:1.01;letter-spacing:-.055em;margin:22px 0;max-width:650px}h1 span{color:var(--green)}.hero-copy{font-size:1.12rem;color:#52645a;max-width:600px;margin:0 0 27px}.hero-buttons{display:flex;gap:12px;flex-wrap:wrap}.proof{display:flex;flex-wrap:wrap;gap:10px 21px;margin-top:23px;color:#5e7066;font-size:.87rem;font-weight:650}.proof span:before{content:"✓";color:var(--green);font-weight:950;margin-right:7px}.visual{position:relative;padding:13px;background:white;border:1px solid #d6e5da;border-radius:26px;box-shadow:var(--shadow);transform:rotate(1deg)}.visual img{width:100%;border-radius:17px}.visual-note{position:absolute;left:-20px;bottom:22px;background:white;border:1px solid var(--line);border-radius:14px;padding:12px 16px;box-shadow:0 14px 35px rgba(6,69,47,.12);font-size:.82rem;color:var(--muted)}.visual-note strong{display:block;color:var(--forest);font-size:.98rem}
+.trust{border-block:1px solid var(--line)}.trust-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:21px 0}.trust-item{display:flex;align-items:center;justify-content:center;gap:9px;font-size:.88rem;font-weight:750;color:#42584c}.trust-icon{width:34px;height:34px;border-radius:11px;background:var(--pale);color:var(--green);display:grid;place-items:center}
+section{padding:82px 0}.kicker{font-size:.76rem;letter-spacing:.15em;text-transform:uppercase;color:var(--green);font-weight:900}.heading{font-size:clamp(2rem,4vw,3.3rem);line-height:1.12;letter-spacing:-.04em;margin:11px 0 15px}.intro{color:var(--muted);font-size:1.04rem;max-width:700px}.center{text-align:center}.center .intro{margin-inline:auto}.feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:17px;margin-top:36px}.feature{padding:24px;border:1px solid var(--line);border-radius:19px;background:white;transition:.2s}.feature:hover{transform:translateY(-3px);box-shadow:0 16px 40px rgba(6,69,47,.08);border-color:#b9d3c2}.feature-icon{width:45px;height:45px;border-radius:14px;background:var(--mint);color:var(--green);display:grid;place-items:center;font-weight:900;margin-bottom:15px}.feature h3{font-size:1.04rem;margin:0 0 7px}.feature p{font-size:.91rem;color:var(--muted);margin:0}
+.soft{background:var(--pale)}.screens{display:grid;grid-template-columns:repeat(3,1fr);gap:21px;margin-top:36px;align-items:start}.screen{margin:0}.screen-frame{border:1px solid #d3e3d8;border-radius:21px;overflow:hidden;background:white;box-shadow:var(--shadow)}.screen-frame img{width:100%}.screen figcaption{text-align:center;color:var(--muted);font-size:.88rem;padding:13px 8px}.screen figcaption strong{display:block;color:var(--ink);font-size:.98rem}
+.how-grid{display:grid;grid-template-columns:1fr 1fr;gap:54px;align-items:center}.steps{display:grid;gap:15px;margin-top:26px}.step{display:grid;grid-template-columns:43px 1fr;gap:14px}.step-no{width:42px;height:42px;border-radius:13px;background:var(--forest);color:white;display:grid;place-items:center;font-weight:900}.step h3{font-size:1rem;margin:0 0 3px}.step p{margin:0;color:var(--muted);font-size:.91rem}.onboard{background:var(--forest);color:white;border-radius:25px;padding:32px;box-shadow:var(--shadow)}.onboard h3{font-size:1.5rem;line-height:1.2;margin:0 0 10px}.onboard>p{color:#d1e2d7;margin:0 0 17px}.onboard-row{display:flex;gap:13px;padding:12px 0;border-top:1px solid rgba(255,255,255,.14)}.onboard-row b{width:29px;height:29px;flex:0 0 29px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.13);color:#f3d59b}.onboard-row span{font-size:.91rem}.onboard-row small{display:block;color:#c1d5c9}
+.price-layout{display:grid;grid-template-columns:.9fr 1.1fr;gap:52px;align-items:center}.price-card{border:1px solid #cfe0d4;border-radius:25px;background:white;padding:32px;box-shadow:var(--shadow)}.price-name{font-weight:900;color:var(--green)}.price{font-size:3.5rem;letter-spacing:-.06em;line-height:1.1;font-weight:950;margin:9px 0 3px}.price small{font-size:.93rem;letter-spacing:0;color:var(--muted);font-weight:650}.price-note{margin:0;color:var(--muted);font-size:.9rem}.included{list-style:none;margin:20px 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px 13px}.included li{font-size:.87rem;color:#43564b}.included li:before{content:"✓";color:var(--green);font-weight:900;margin-right:7px}.trial{background:#edf6ef;border-radius:15px;padding:16px;margin:20px 0}.trial strong{display:block;color:var(--forest)}.trial p{font-size:.84rem;color:var(--muted);margin:3px 0 12px}.onboard-prices{display:grid;gap:9px;margin-top:15px}.onboard-price{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--line);border-radius:12px;padding:12px 14px}.onboard-price strong{display:block;font-size:.9rem}.onboard-price small{display:block;color:var(--muted);font-size:.78rem}.onboard-price b{white-space:nowrap;color:var(--forest);font-size:.9rem}
+.faq{max-width:850px;margin:34px auto 0}.faq details{border:1px solid var(--line);border-radius:14px;background:white;margin:10px 0;padding:0 18px}.faq summary{cursor:pointer;list-style:none;padding:17px 30px 17px 0;font-weight:800;position:relative}.faq summary::-webkit-details-marker{display:none}.faq summary:after{content:"+";position:absolute;right:0;top:11px;color:var(--green);font-size:1.4rem}.faq details[open] summary:after{content:"−"}.faq details p{margin:0 0 17px;color:var(--muted);font-size:.91rem}
+.final-cta{padding:12px 0 80px}.cta-panel{border-radius:26px;background:linear-gradient(120deg,#043b29,#08734d);padding:46px 50px;color:white;display:flex;justify-content:space-between;align-items:center;gap:28px}.cta-panel h2{font-size:clamp(1.9rem,3.6vw,2.8rem);line-height:1.1;letter-spacing:-.04em;margin:0 0 8px}.cta-panel p{margin:0;color:#d8e9df}.cta-panel .btn{background:white;color:var(--forest);white-space:nowrap}
+footer{background:#03251a;color:#c6d8cc;padding:45px 0 24px}.footer-top{display:flex;justify-content:space-between;align-items:center;gap:28px;padding-bottom:26px;border-bottom:1px solid rgba(255,255,255,.13)}.footer-logo{width:185px;max-height:62px;object-fit:contain;object-position:left}.footer-links{display:flex;flex-wrap:wrap;gap:15px;font-size:.85rem}.footer-links a:hover{color:white}.legal{font-size:.77rem;color:#9fb5a8;margin:20px 0 0}.copyright{display:flex;justify-content:space-between;gap:18px;color:#91a99a;font-size:.75rem;margin-top:22px}
+@media(max-width:950px){.navlinks{display:none}.hero-grid,.how-grid,.price-layout{grid-template-columns:1fr;gap:36px}.visual{max-width:690px;margin:auto}.trust-row{grid-template-columns:repeat(2,1fr)}.feature-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.wrap{width:min(100% - 26px,1160px)}.topline{font-size:.73rem}.nav{height:66px}.logo img{width:158px;max-height:56px}.actions .secondary{display:none}.actions .btn{min-height:41px;padding:0 13px;font-size:.82rem}.hero{padding:55px 0 52px}.hero-grid{gap:30px}h1{font-size:2.72rem}.hero-copy{font-size:1rem}.proof{font-size:.79rem;gap:8px 14px}.visual{padding:9px;border-radius:18px}.visual img{border-radius:12px}.visual-note{left:8px;bottom:13px;padding:8px 11px}.trust-row{gap:12px 8px}.trust-item{justify-content:flex-start;font-size:.75rem}.trust-icon{width:29px;height:29px;flex:0 0 29px}section{padding:62px 0}.feature-grid{grid-template-columns:1fr}.screens{grid-template-columns:1fr;max-width:430px;margin-inline:auto;gap:14px}.price-card{padding:22px}.price{font-size:2.95rem}.included{grid-template-columns:1fr}.onboard{padding:24px}.cta-panel{display:block;padding:30px 23px}.cta-panel .btn{margin-top:20px;width:100%}.footer-top{display:block}.footer-logo{margin-bottom:19px}.footer-links{gap:10px 14px}.copyright{display:block}.copyright span{display:block;margin-top:6px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important}}
+</style>
 </head>
 <body>
-<a class="skip" href="#main">Ga naar inhoud</a>
-<header class="nav">
-  <div class="container nav-inner">
-    <a class="brand" href="#top" aria-label="ANIMO HACCP startpagina">
-      <img
-  src="./images/animo-logo.png.png"
-  alt="ANIMO HACCP"
-  class="brand-logo">
-    </a>
-    <nav class="nav-links" aria-label="Hoofdnavigatie">
-      <a href="#werking">Hoe het werkt</a><a href="#functies">Functies</a><a href="#onboarding">Onboarding</a><a href="#prijs">Prijs</a><a href="#faq">FAQ</a>
-    </nav>
-    <div class="nav-actions">
-      <a class="btn btn-secondary" href="/">Aanmelden</a>
-      <a class="btn btn-primary" href="#prijs">Bekijk prijzen</a>
-    </div>
-  </div>
-</header>
-
-<main id="main">
-<section class="hero" id="top">
-  <div class="container hero-grid">
-    <div>
-      <div class="eyebrow">Digitaal HACCP-beheer voor horeca</div>
-      <h1>Minder papierwerk. <span>Meer controle.</span></h1>
-      <p class="lead">Beheer je autocontrole digitaal: temperaturen, kuisplannen, allergenen, voorraad, facturen en recepten in één overzichtelijke omgeving. Met rapporten die je helpen je registraties te bundelen.</p>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="#prijs">Bekijk abonnementen</a>
-        <a class="btn btn-secondary" href="#werking">Bekijk hoe het werkt</a>
-      </div>
-      <div class="micro"><span>Geen installatie nodig</span><span>Veilig per horecazaak</span><span>Ook op tablet en smartphone</span></div>
-    </div>
-    <div class="app-card" aria-label="Echt dashboard van ANIMO HACCP">
-      <img src="./images/app-dashboard.jpg"
-           alt="Echt dashboard van ANIMO HACCP met dagelijkse registraties"
-           style="display:block;width:100%;height:auto;border-radius:18px"
-           fetchpriority="high">
-    </div>
-
-<div class="trust"><div class="container trust-inner">
-  <div class="trust-item"><span class="ico">✓</span> Zaakgebonden toegang</div>
-  <div class="trust-item"><span class="ico">▣</span> Auditregistratie</div>
-  <div class="trust-item"><span class="ico">⌁</span> Privé-documentopslag</div>
-  <div class="trust-item"><span class="ico">◎</span> Rollen en gebruikers</div>
-</div></div>
-
-<section id="werking"><div class="container center">
-  <div class="section-kicker">Zo werkt het</div><h2 class="section-title">Van aanvraag tot dagelijks registreren</h2>
-  <p class="section-lead">ANIMO begeleidt jouw horecazaak stap voor stap, zodat je niet met een leeg systeem hoeft te beginnen.</p>
-  <div class="steps">
-    <article class="step"><div class="step-num">1</div><h3>Kies hoe je start</h3><p>Start meteen zelf met je gratis proefperiode of vraag rechtstreeks online onboarding aan voor hulp bij de inrichting.</p></article>
-    <article class="step"><div class="step-num">2</div><h3>Vertel hoe jouw zaak werkt</h3><p>Geef info over de werking, toestellen, zones, documenten en gewenste ondersteuning.</p></article>
-    <article class="step"><div class="step-num">3</div><h3>Wij richten alles in</h3><p>Na controle van je aanvraag bereiden we kuisplannen, temperatuurpunten, gerechten, voorraad en gebruikers voor en sturen we je toegang.</p></article>
-    <article class="step"><div class="step-num">4</div><h3>Start digitaal</h3><p>Je team registreert dagelijkse controles in één centrale, duidelijke omgeving.</p></article>
-  </div>
+<div class="topline">Digitale autocontrole voor horeca <b>·</b> eenvoudig starten, stap voor stap</div>
+<header><div class="wrap nav">
+<a class="logo" href="#top" aria-label="ANIMO HACCP"><img src="./images/animo-logo.png.png" alt="ANIMO HACCP"></a>
+<nav class="navlinks" aria-label="Hoofdnavigatie"><a href="#voordelen">Voordelen</a><a href="#schermen">De app</a><a href="#starten">Hoe starten?</a><a href="#prijzen">Prijzen</a><a href="#vragen">FAQ</a></nav>
+<div class="actions"><a class="btn secondary" href="https://app.animo-apps.com/">Aanmelden</a><a class="btn primary" href="https://app.animo-apps.com/?signup=1">Probeer gratis</a></div>
+</div></header>
+<main id="top">
+<section class="hero"><div class="wrap hero-grid"><div>
+<div class="eyebrow">Voor restaurants, cafés en professionele keukens</div>
+<h1>Minder papierwerk.<br><span>Meer grip op je zaak.</span></h1>
+<p class="hero-copy">HACCP-registraties, dagelijkse controles en praktisch zaakbeheer op één plek. Met ANIMO HACCP houdt jouw team overzicht — op computer, tablet en smartphone.</p>
+<div class="hero-buttons"><a class="btn primary" href="https://app.animo-apps.com/?signup=1">Start 14 dagen gratis →</a><a class="btn secondary" href="#schermen">Bekijk de app</a></div>
+<div class="proof"><span>Geen installatie nodig</span><span>Voor je hele team</span><span>Ook mobiel te gebruiken</span></div>
+</div><div class="visual"><img src="./images/app-dashboard.jpg" alt="Echt dashboard van ANIMO HACCP met dagelijkse registraties" fetchpriority="high"><div class="visual-note"><strong>Alles overzichtelijk samen</strong>Van dagelijkse check tot rapport</div></div></div></section>
+<div class="trust"><div class="wrap trust-row"><div class="trust-item"><span class="trust-icon">✓</span> Dagelijkse HACCP-checks</div><div class="trust-item"><span class="trust-icon">°C</span> Temperatuurhistoriek</div><div class="trust-item"><span class="trust-icon">▤</span> Rapporten en documenten</div><div class="trust-item"><span class="trust-icon">♙</span> Rollen voor je team</div></div></div>
+<section id="voordelen"><div class="wrap center"><div class="kicker">Eén centrale werkplek</div><h2 class="heading">De dagelijkse werking van je keuken, duidelijk georganiseerd</h2><p class="intro">Van temperatuurmetingen tot voorraad en recepten: minder losse lijsten en meer overzicht in de dagelijkse opvolging.</p></div>
+<div class="wrap feature-grid">
+<article class="feature"><div class="feature-icon">°C</div><h3>Temperaturen registreren</h3><p>Werk met vaste meetpunten, grenswaarden, historiek en corrigerende acties bij afwijkingen.</p></article>
+<article class="feature"><div class="feature-icon">✓</div><h3>Kuisplannen opvolgen</h3><p>Plan terugkerende schoonmaaktaken, wijs verantwoordelijkheden toe en registreer de uitvoering.</p></article>
+<article class="feature"><div class="feature-icon">A</div><h3>Allergenen en gerechten</h3><p>Bewaar ingrediënten en allergeneninformatie overzichtelijk per gerecht.</p></article>
+<article class="feature"><div class="feature-icon">▦</div><h3>Voorraad en leveranciers</h3><p>Beheer producten, eenheden, leveranciers en voorraadbewegingen op één plek.</p></article>
+<article class="feature"><div class="feature-icon">€</div><h3>Facturen en leveringen</h3><p>Verwerk UBL-facturen en leveringsgegevens om aankopen en voorraad beter op te volgen.</p></article>
+<article class="feature"><div class="feature-icon">▤</div><h3>Recepten en kostprijs</h3><p>Leg recepturen en hoeveelheden vast en volg het bijhorende stockverbruik op.</p></article>
+<article class="feature"><div class="feature-icon">▧</div><h3>Dagafsluiting en rapporten</h3><p>Bundel registraties en raadpleeg rapporten om je dagelijkse werking op te volgen.</p></article>
+<article class="feature"><div class="feature-icon">⇧</div><h3>Documenten bewaren</h3><p>Bewaar relevante PDF-, Word-, Excel-, CSV- en afbeeldingsbestanden bij jouw horecazaak.</p></article>
+<article class="feature"><div class="feature-icon">♙</div><h3>Je team beheren</h3><p>Werk met eigenaars, managers en medewerkers en geef toegang volgens hun rol.</p></article>
 </div></section>
-
-<section class="soft" id="functies"><div class="container">
-  <div class="center"><div class="section-kicker">Belangrijkste functies</div><h2 class="section-title">Alles wat je nodig hebt op één plek</h2><p class="section-lead">Van dagelijkse HACCP-controles tot voorraad, facturen, recepten en rapporten.</p></div>
-  <div class="features">
-    <article class="feature"><div class="feature-icon">°C</div><h3>Temperatuurregistraties</h3><p>Werk met meetpunten, grenswaarden, historiek en corrigerende acties bij afwijkingen.</p></article>
-    <article class="feature"><div class="feature-icon">✓</div><h3>Kuisplannen</h3><p>Plan terugkerende taken, wijs verantwoordelijkheden toe en registreer uitvoeringen.</p></article>
-    <article class="feature"><div class="feature-icon">A</div><h3>Allergenen en gerechten</h3><p>Centraliseer ingrediënten, productinformatie en allergenen per gerecht.</p></article>
-    <article class="feature"><div class="feature-icon">▦</div><h3>Voorraad en leveranciers</h3><p>Beheer producten, minimumvoorraden, leveranciers en traceerbare voorraadgegevens. Lees UBL-facturen en leveringsbonnen in om je stock automatisch bij te werken.</p></article>
-    <article class="feature"><div class="feature-icon">€</div><h3>Facturen opvolgen</h3><p>Overzicht van openstaande, vervallen en betaalde facturen, met traceerbaarheid per leverancier.</p></article>
-    <article class="feature"><div class="feature-icon">▤</div><h3>Recepten en stockverbruik</h3><p>Leg recepturen, porties en gewichten vast en laat het stockverbruik automatisch meelopen.</p></article>
-    <article class="feature"><div class="feature-icon">▥</div><h3>Rapporten voor je controle</h3><p>Sluit je dag af, bewaar dagrapporten en maak een autocontrolepakket als PDF voor een periode naar keuze.</p></article>
-    <article class="feature"><div class="feature-icon">▤</div><h3>Documentbeheer</h3><p>Bewaar relevante PDF-, Word-, Excel-, CSV- en afbeeldingsbestanden bij de juiste zaak.</p></article>
-    <article class="feature"><div class="feature-icon">👥</div><h3>Gebruikers en rollen</h3><p>Geef eigenaars, managers en medewerkers passende toegang tot de juiste omgeving.</p></article>
-  </div>
-</div></section>
-
-<section class="shots-sec" id="app"><div class="container center">
-  <div class="section-kicker">Zo ziet het eruit</div><h2 class="section-title">Dagelijks registreren, in een paar tikken</h2>
-  <p class="section-lead">Echte schermen uit de app, ook handig op tablet en smartphone.</p>
-  <div class="shots">
-    <figure class="shot"><div class="shot-frame"><img src="./images/app-dashboard.jpg" width="560" height="999" loading="lazy" alt="Dashboard van ANIMO HACCP met kuislijst en dagelijkse controle"></div><figcaption><strong>Dashboard</strong>Overzicht van je dagelijkse registraties</figcaption></figure>
-    <figure class="shot"><div class="shot-frame"><img src="./images/app-temperaturen.jpg" width="560" height="999" loading="lazy" alt="Temperaturen in ANIMO HACCP met openstaande meetpunten per toestel"></div><figcaption><strong>Temperaturen</strong>Meetpunten met grenswaarden per toestel</figcaption></figure>
-    <figure class="shot"><div class="shot-frame"><img src="./images/app-rapport.jpg" width="560" height="999" loading="lazy" alt="Dagrapport autocontrole met kuisplan, temperaturen en allergenenplan"></div><figcaption><strong>Dagrapport</strong>Autocontrole-rapport, klaar om op te slaan als PDF</figcaption></figure>
-  </div>
-</div></section>
-
-<section id="onboarding"><div class="container split">
-  <div>
-    <div class="section-kicker">Persoonlijke onboarding</div><h2 class="section-title">Begin niet met een leeg systeem</h2>
-    <p class="section-lead">De onboarding verzamelt de informatie die nodig is om jouw omgeving doelgericht op te bouwen.</p>
-    <div class="checklist">
-      <div class="checkline"><b>✓</b><span><strong>Bedrijfsinformatie</strong><br>Zaakgegevens, contactinformatie en activiteiten.</span></div>
-      <div class="checkline"><b>✓</b><span><strong>Werking en inventaris</strong><br>Zones, toestellen, werkprocessen en bestaande lijsten.</span></div>
-      <div class="checkline"><b>✓</b><span><strong>Documentupload</strong><br>Voeg bestaande documenten, foto's en bestanden toe.</span></div>
-      <div class="checkline"><b>✓</b><span><strong>Gerichte inrichting</strong><br>Voorbereiding van temperatuurpunten, kuistaken, gerechten, voorraad en gebruikers.</span></div>
-    </div>
-    <a class="btn btn-primary" href="#prijs">Bekijk de onboardingopties</a>
-  </div>
-  <div class="onboard-card">
-    <h3>Jouw inrichting in 5 stappen</h3>
-    <div class="flow-item"><span>1</span><div>Bedrijfsinformatie<small>Wie ben je en waar werkt jouw team?</small></div></div>
-    <div class="flow-item"><span>2</span><div>Werking van de zaak<small>Activiteiten, openingsuren en werkprocessen.</small></div></div>
-    <div class="flow-item"><span>3</span><div>Inventaris<small>Toestellen, ruimtes en operationele punten.</small></div></div>
-    <div class="flow-item"><span>4</span><div>Documenten<small>Bestaande lijsten en ondersteunende bestanden.</small></div></div>
-    <div class="flow-item"><span>5</span><div>Servicekeuze<small>Bepaal hoeveel ondersteuning je wenst.</small></div></div>
-  </div>
-</div></section>
-
-<section class="soft" id="prijs"><div class="container price-wrap">
-  <div><div class="section-kicker">Eenvoudige prijs</div><h2 class="section-title">Professioneel starten zonder complexe pakketten</h2><p class="section-lead">Eén formule met de kernfuncties voor digitale HACCP-registratie en operationele opvolging.</p></div>
-  <div class="price-card"><div class="price-label">Professional</div><div class="price">€55 <small>/ maand, excl. btw</small></div><p>Of €550 per jaar, excl. btw. Kies de betaalfrequentie die bij jouw horecazaak past.</p>
-    <div class="onboarding-options">
-      <h3>Hoe wil je geholpen worden?</h3>
-      <article class="onboarding-option"><div><strong>Zelf instellen</strong><p>Je richt ANIMO HACCP zelf in en start meteen.</p><span class="onboarding-price">€0 · gratis</span></div><a class="btn btn-secondary" href="https://app.animo-apps.com/?signup=1">Start gratis</a></article>
-      <article class="onboarding-option"><div><strong>Gedeeltelijke onboarding</strong><p>We helpen je met een deel van de inrichting.</p><span class="onboarding-price">€75 eenmalig <small>excl. btw</small></span></div><a class="btn btn-primary" href="https://www.animo-apps.com/onboarding-form.html?service=basis">Kies gedeeltelijke hulp</a></article>
-      <article class="onboarding-option"><div><strong>Volledige onboarding</strong><p>ANIMO begeleidt de volledige opstart van jouw zaak.</p><span class="onboarding-price">€175 eenmalig <small>excl. btw</small></span></div><a class="btn btn-primary" href="https://www.animo-apps.com/onboarding-form.html?service=begeleid">Kies volledige hulp</a></article>
-      <p class="fine">Bij onboarding vul je één online formulier in. Je kiest je pakket, bezorgt de nodige zaakgegevens en betaalt veilig online. Je hoeft geen e-mail te sturen of vooraf een afspraak aan te vragen.</p>
-    </div>
-    <ul class="price-list"><li>Temperaturen en corrigerende acties</li><li>Kuisplannen en opvolging</li><li>Allergenen, gerechten en voorraad</li><li>Leveranciers, facturen en documenten</li><li>Recepten en PDF-rapporten</li><li>Gebruikers en rollen</li><li>Zelfstandig instellen of optionele onboarding op maat</li></ul>
-    <a class="btn btn-primary" style="width:100%" href="https://app.animo-apps.com/?signup=1">Start je gratis proefperiode van 14 dagen</a><p class="fine" style="text-align:center">Maak zelfstandig je account aan en start meteen. Je hoeft ons niet eerst te mailen.</p>
-    <p class="fine">Prijs per zaak, exclusief btw. Opzeggen kan op het einde van de lopende betaalperiode. Zakelijke dienst voor professionele horecaondernemingen.</p>
-  </div>
-</div></section>
-
-<section id="faq"><div class="container center"><div class="section-kicker">Veelgestelde vragen</div><h2 class="section-title">Duidelijk vóór je begint</h2></div>
-  <div class="faq">
-    <details><summary>Moet ik software installeren?</summary><p>Nee. ANIMO HACCP wordt gebruikt via een moderne webbrowser op computer, tablet of smartphone.</p></details>
-    <details><summary>Kan mijn personeel ook registreren?</summary><p>Ja. Eigenaars en managers kunnen gebruikers aan de juiste horecazaak koppelen en met rollen werken.</p></details>
-    <details><summary>Welke documenten kan ik uploaden?</summary><p>De huidige opslag ondersteunt PDF, CSV, Word, Excel, JPG en PNG, met een ingestelde limiet van 10 MB per bestand.</p></details>
-    <details><summary>Hoe kan ik starten?</summary><p>Klik op “Start je gratis proefperiode van 14 dagen”, maak zelf je account aan en begin meteen met ANIMO HACCP. Je hoeft vooraf geen aanvraag of e-mail te sturen.</p></details>
-    <details><summary>Moet ik onboarding nemen?</summary><p>Nee. Je kan alles zelf instellen voor €0. Wil je hulp, dan kies je optioneel voor gedeeltelijke onboarding aan €75 of volledige onboarding aan €175, telkens eenmalig en excl. btw.</p></details>
-    <details><summary>Kan ik een rapport maken voor een controle?</summary><p>Ja. Je kan registraties bundelen in rapporten. Controleer vóór gebruik of voorlegging altijd of de inhoud volledig, juist en passend is voor jouw zaak. Een PDF-rapport is op zichzelf geen bewijs van wettelijke conformiteit.</p></details>
-    <details><summary>Vervangt ANIMO mijn wettelijke verantwoordelijkheid?</summary><p>Nee. ANIMO HACCP is een administratief registratiehulpmiddel. De voedseloperator blijft verantwoordelijk voor correcte controles, opvolging en wettelijke naleving.</p></details>
-  </div>
-</section>
-
-<section id="contact" style="padding-top:0"><div class="container"><div class="contact-card"><div><h2>Nog vragen?</h2><p>Stuur ons gerust een bericht, we helpen je graag verder.</p></div><div class="contact-actions"><a class="btn btn-primary" href="mailto:info@animo-apps.com">Mail ons</a><a class="btn btn-secondary" href="tel:+32498415825">Bel 0498 41 58 25</a></div></div></div></section>
-
-<section class="cta"><div class="container"><div class="cta-box">
-  <div><h2>Klaar om papierwerk te verminderen?</h2><p>Start zelf je gratis proefperiode van 14 dagen. Onboarding door ANIMO is optioneel.</p></div>
-  <a class="btn" href="https://app.animo-apps.com/?signup=1">Start 14 dagen gratis</a>
+<section class="soft" id="schermen"><div class="wrap center"><div class="kicker">Bekijk de echte app</div><h2 class="heading">Ontworpen voor gebruik tijdens je werkdag</h2><p class="intro">Geen verzonnen voorbeeldschermen: hieronder zie je echte beelden uit ANIMO HACCP.</p></div>
+<div class="wrap screens"><figure class="screen"><div class="screen-frame"><img src="./images/app-dashboard.jpg" alt="Echt dashboard van ANIMO HACCP" loading="lazy"></div><figcaption><strong>Jouw dashboard</strong>De belangrijkste dagelijkse taken in één overzicht.</figcaption></figure>
+<figure class="screen"><div class="screen-frame"><img src="./images/app-temperaturen.jpg" alt="Echte temperatuurregistraties in ANIMO HACCP" loading="lazy"></div><figcaption><strong>Temperatuurregistraties</strong>Meetpunten en controles per toestel.</figcaption></figure>
+<figure class="screen"><div class="screen-frame"><img src="./images/app-rapport.jpg" alt="Echt rapportagescherm van ANIMO HACCP" loading="lazy"></div><figcaption><strong>Rapporten</strong>Je registraties overzichtelijk gebundeld.</figcaption></figure></div></section>
+<section id="starten"><div class="wrap how-grid"><div><div class="kicker">Snel op weg</div><h2 class="heading">Start op jouw manier</h2><p class="intro">Je hoeft niet eerst een afspraak te maken. Je kan zelfstandig beginnen of kiezen voor extra hulp bij de inrichting.</p>
+<div class="steps"><div class="step"><div class="step-no">1</div><div><h3>Maak je account aan</h3><p>Start je gratis proefperiode en registreer jouw horecazaak.</p></div></div><div class="step"><div class="step-no">2</div><div><h3>Richt je omgeving in</h3><p>Voeg je meetpunten, taken, producten, gerechten en teamleden toe.</p></div></div><div class="step"><div class="step-no">3</div><div><h3>Registreer dagelijks</h3><p>Laat je team controles en opvolging centraal bijhouden.</p></div></div></div>
+<p style="margin-top:24px"><a href="https://app.animo-apps.com/?signup=1" style="color:var(--green);font-weight:850">Maak meteen je account aan →</a></p></div>
+<aside class="onboard"><h3>Liever hulp bij de opstart?</h3><p>Kies optionele onboarding als je liever samen met ANIMO de basis van jouw omgeving voorbereidt.</p>
+<div class="onboard-row"><b>1</b><span>Jouw horecazaak<small>Zaakgegevens en activiteiten</small></span></div><div class="onboard-row"><b>2</b><span>Jouw werking<small>Zones, toestellen en werkprocessen</small></span></div><div class="onboard-row"><b>3</b><span>Jouw documenten<small>Bestaande lijsten en bestanden</small></span></div><div class="onboard-row"><b>4</b><span>Jouw ondersteuning<small>Kies gedeeltelijke of volledige hulp</small></span></div>
+<a class="btn secondary" style="margin-top:18px;width:100%" href="https://www.animo-apps.com/onboarding-form.html">Bekijk onboarding</a></aside></div></section>
+<section class="soft" id="prijzen"><div class="wrap price-layout"><div><div class="kicker">Transparante prijzen</div><h2 class="heading">Alle kernfuncties. Eén duidelijk abonnement.</h2><p class="intro">Kies zelf of je ANIMO HACCP zelfstandig instelt of hulp vraagt bij de opstart. Onboarding is optioneel.</p></div>
+<div class="price-card"><div class="price-name">ANIMO HACCP · Professional</div><div class="price">€55 <small>/ maand · excl. btw</small></div><p class="price-note">Of €550 per jaar, excl. btw.</p>
+<ul class="included"><li>Temperatuurregistraties</li><li>Kuisplannen</li><li>Allergenen en gerechten</li><li>Voorraad en leveranciers</li><li>UBL-facturen</li><li>Recepten en kostprijs</li><li>Rapporten en documenten</li><li>Teamrollen en gebruikers</li></ul>
+<div class="trial"><strong>Probeer ANIMO 14 dagen gratis</strong><p>Maak zelfstandig je account aan en ontdek de app. Je hoeft ons vooraf niet te contacteren.</p><a class="btn primary" style="width:100%" href="https://app.animo-apps.com/?signup=1">Start je gratis proefperiode →</a></div>
+<div class="kicker" style="letter-spacing:.08em">Optionele onboarding · eenmalig</div><div class="onboard-prices">
+<div class="onboard-price"><div><strong>Zelf instellen</strong><small>Je start zelfstandig</small></div><b>€0</b></div>
+<div class="onboard-price"><div><strong>Gedeeltelijke onboarding</strong><small>Hulp bij een deel van de inrichting</small></div><b>€75 excl. btw</b></div>
+<div class="onboard-price"><div><strong>Volledige onboarding</strong><small>Begeleide voorbereiding van je opstart</small></div><b>€175 excl. btw</b></div></div>
+<p style="font-size:.77rem;color:var(--muted);margin:14px 0 0">Prijs per horecazaak. Zakelijke dienst voor professionele horecaondernemingen. De wettelijke verantwoordelijkheid voor correcte voedselveiligheidscontroles blijft bij de voedseloperator.</p>
 </div></div></section>
+<section id="vragen"><div class="wrap center"><div class="kicker">Veelgestelde vragen</div><h2 class="heading">Goed geïnformeerd van start</h2></div><div class="wrap faq">
+<details><summary>Moet ik iets installeren?</summary><p>Nee. Je gebruikt ANIMO HACCP via een moderne webbrowser op computer, tablet of smartphone.</p></details>
+<details><summary>Kan mijn personeel ook registreren?</summary><p>Ja. Je kan medewerkers uitnodigen en werken met de rollen eigenaar, manager en medewerker.</p></details>
+<details><summary>Kan ik ANIMO op mijn smartphone gebruiken?</summary><p>Ja. De webapp is geschikt voor mobiel gebruik. Registraties kunnen ook offline worden bijgehouden en later synchroniseren zodra er opnieuw verbinding is.</p></details>
+<details><summary>Moet ik onboarding nemen?</summary><p>Nee. Je kan zelfstandig starten. Gedeeltelijke of volledige onboarding is optioneel en wordt eenmalig aangerekend.</p></details>
+<details><summary>Kan ANIMO mijn wettelijke HACCP-verantwoordelijkheid overnemen?</summary><p>Nee. ANIMO HACCP is een digitaal registratie- en opvolghulpmiddel. De voedseloperator blijft verantwoordelijk voor correcte controles, opvolging en wettelijke naleving. Een rapport op zich garandeert geen wettelijke conformiteit.</p></details>
+<details><summary>Hoe begin ik?</summary><p>Klik op “Start je gratis proefperiode”, maak je account aan en registreer jouw horecazaak.</p></details>
+</div></section>
+<section class="final-cta"><div class="wrap"><div class="cta-panel"><div><h2>Maak ruimte voor wat écht telt.</h2><p>Breng je dagelijkse registraties samen in ANIMO HACCP.</p></div><a class="btn" href="https://app.animo-apps.com/?signup=1">Start 14 dagen gratis →</a></div></div></section>
 </main>
-
-<footer><div class="container">
-  <div class="footer-grid">
-    <div><a class="brand" href="#top">
-  <img
-    src="./images/animo-logo.png.png"
-    alt="ANIMO HACCP"
-    class="brand-logo">
-</a><p style="max-width:350px;color:#9fb2a8">Digitaal registratie- en bedrijfsbeheer voor professionele horecazaken.</p></div>
-    <div><div class="footer-title">Product</div><div class="footer-links"><a href="#werking">Hoe het werkt</a><a href="#functies">Functies</a><a href="#onboarding">Onboarding</a><a href="#prijs">Prijs</a></div></div>
-    <div><div class="footer-title">Account</div><div class="footer-links"><a href="/">Aanmelden</a><a href="https://www.animo-apps.com/onboarding-form.html">Toegang aanvragen</a><a href="mailto:support@animo-apps.com">Ondersteuning</a></div></div>
-    <div><div class="footer-title">Juridisch</div><div class="footer-links"><a href="/algemene-voorwaarden.html">Algemene voorwaarden</a><a href="/privacy.html">Privacy</a><a href="/verwerkersovereenkomst.html">Verwerkersovereenkomst</a></div></div>
-  </div>
-  <p class="footer-legal"><strong>Belangrijk:</strong> ANIMO HACCP is een onafhankelijk hulpmiddel voor digitale autocontrole en registraties. Het vervangt geen officiële autocontrolegids of professioneel advies en garandeert op zichzelf geen wettelijke HACCP-conformiteit. De horecaondernemer blijft verantwoordelijk voor correcte controles en wettelijke naleving.</p>
-  <div class="footer-bottom"><span>© <span id="year"></span> Animo vof · BE1014408578</span><span>ANIMO HACCP is een onafhankelijk administratief registratiehulpmiddel.</span></div>
-</div></footer>
-
-<script>
-  // Privacyvriendelijke telling van paginaweergaven: geen cookies, IP-adressen of bezoekers-ID's.
-  if (location.pathname === '/' && !location.search.includes('no-analytics')) {
-    fetch('https://zimzsovvtdmrthrflkgm.supabase.co/functions/v1/record-website-visit', {
-      method: 'POST',
-      mode: 'cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: '/' }),
-      keepalive: true
-    }).catch(() => {});
-  }
-</script>
-<script>
-  document.getElementById('year').textContent = new Date().getFullYear();
-</script>
-</body>
-</html>
+<footer><div class="wrap"><div class="footer-top"><img class="footer-logo" src="./images/animo-logo.png.png" alt="ANIMO HACCP"><nav class="footer-links" aria-label="Footer"><a href="#voordelen">Voordelen</a><a href="#schermen">De app</a><a href="#prijzen">Prijzen</a><a href="https://www.animo-apps.com/privacy.html">Privacy</a><a href="https://www.animo-apps.com/algemene-voorwaarden.html">Algemene voorwaarden</a><a href="mailto:info@animo-apps.com">Contact</a></nav></div>
+<p class="legal">ANIMO HACCP is een onafhankelijk digitaal registratie- en opvolghulpmiddel. Het vervangt geen officiële autocontrolegids of professioneel advies en garandeert op zichzelf geen wettelijke HACCP-conformiteit. De horecaondernemer blijft verantwoordelijk voor correcte controles en wettelijke naleving.</p>
+<div class="copyright"><span>© <span id="year"></span> Animo vof · BE1014408578</span><span>Gemaakt voor de dagelijkse praktijk van de horeca.</span></div></div></footer>
+<script>document.getElementById('year').textContent=new Date().getFullYear();</script>
+</body></html>
