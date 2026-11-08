@@ -8,6 +8,7 @@ on:
       - 'supabase/functions/subscription-status/index.ts'
       - 'tests/subscription-access-entitlements.test.mjs'
       - 'tests/offline-access-window.test.mjs'
+      - 'tests/offline-outbox-race.test.mjs'
       - 'tests/stock-state-normalization.test.mjs'
       - 'tests/brussels-timezone.test.mjs'
       - 'tests/haccp-report-printing.test.mjs'
@@ -100,6 +101,9 @@ jobs:
         run: node --test tests/subscription-access-entitlements.test.mjs
       - name: Validate offline access expiry
         run: node --test tests/offline-access-window.test.mjs
+
+      - name: Validate offline outbox persistence and race safety
+        run: node --test tests/offline-outbox-race.test.mjs
       - name: Validate inline JavaScript and service worker
         run: |
           node <<'NODE'
