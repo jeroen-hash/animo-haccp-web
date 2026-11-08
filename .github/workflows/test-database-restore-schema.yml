@@ -48,8 +48,16 @@ jobs:
           scanned="$RUNNER_TEMP/scanned-keys"
           candidate="$RUNNER_TEMP/candidate-key"
           known_hosts="$RUNNER_TEMP/known-hosts"
-          ssh-keyscan -p 22 "$SFTP_HOST" 2>/dev/null > "$scanned"
-          test -s "$scanned"
+          if ! ssh-keyscan -T 10 -p 22 "$SFTP_HOST" 2>/dev/null > "$scanned"; then
+            echo "::error::Could not retrieve STRATO SSH host keys on port 22."
+            exit 1
+          fi
+          if [ ! -s "$scanned" ]; then
+            echo "::error::STRATO returned no SSH host keys. Check the configured SFTP host and port."
+            exit 1
+          fi
+          key_count="$(grep -c '^[^#]' "$scanned" || true)"
+          echo "STRATO SSH host key scan returned $key_count key entries."
           : > "$known_hosts"
           while IFS= read -r line; do
             [ -n "$line" ] || continue
@@ -59,7 +67,11 @@ jobs:
               printf '%s\n' "$line" >> "$known_hosts"
             fi
           done < "$scanned"
-          test -s "$known_hosts" || { echo "::error::STRATO host key fingerprint mismatch."; exit 1; }
+          if [ ! -s "$known_hosts" ]; then
+            echo "::error::STRATO host key fingerprint mismatch. The configured pin did not match any key returned by STRATO."
+            exit 1
+          fi
+          echo "STRATO host key pin verified."
           chmod 600 "$known_hosts"
           rm -f "$scanned" "$candidate"
 
@@ -73,8 +85,14 @@ jobs:
           cls -1 /backups/animo-haccp-database
           bye
           LFTP
-          backup_name="$(grep -E '^animo-database-[0-9]{8}T[0-9]{6}Z\.dump\.gpg$' "$listing" | sort | tail -n 1)"
-          test -n "$backup_name" || { echo "::error::No timestamped encrypted database backup found."; exit 1; }
+          backup_name="$(grep -Eo 'animo-database-[0-9]{8}T[0-9]{6}Z\.dump\.gpg' "$listing" | sort -u | tail -n 1)"
+          if [ -z "$backup_name" ]; then
+            echo "::error::No timestamped encrypted database backup found in /backups/animo-haccp-database."
+            echo "Remote directory listing (filenames only):"
+            sed -n '1,30p' "$listing"
+            exit 1
+          fi
+          echo "Found encrypted database backup: $backup_name"
 
           lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP
           $lftp_host_key_settings
@@ -154,24 +172,3 @@ jobs:
             "$RUNNER_TEMP/backup-passphrase" "$RUNNER_TEMP/known-hosts"
           echo "Temporary PostgreSQL container and decrypted dump removed."
 
-      - name: Foutmelding bij mislukte hersteltest
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const title = 'ANIMO HACCP database-hersteltest mislukt';
-            const url = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const body = `De geïsoleerde database-structuurhersteltest is mislukt. Controleer de uitvoeringsdetails: ${url}. De test gebruikt alleen een tijdelijke runner en herstelt geen klantrecords.`;
-            const { data: issues } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner, repo: context.repo.repo, state: 'open', per_page: 100
-            });
-            const existing = issues.find(issue => !issue.pull_request && issue.title === title);
-            if (existing) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner, repo: context.repo.repo, issue_number: existing.number, body
-              });
-            } else {
-              await github.rest.issues.create({
-                owner: context.repo.owner, repo: context.repo.repo, title, body
-              });
-            }
