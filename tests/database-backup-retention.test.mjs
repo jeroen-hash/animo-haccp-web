@@ -24,9 +24,8 @@ test("selects only valid encrypted database archives older than the cutoff", () 
 
 test("does not expire an archive exactly at the cutoff", () => {
   const exact = new Date(cutoff * 1000).toISOString()
-    .replace(/[-:]/g, "").replace(/\.\\d{3}Z$/, "Z");
-  const stamp = exact;
-  const listing = `animo-database-${stamp}.dump.gpg`;
+    .replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+  const listing = \`animo-database-\${exact}.dump.gpg\`;
   assert.deepEqual(selectExpiredDatabaseBackups(listing, cutoff), []);
 });
 
