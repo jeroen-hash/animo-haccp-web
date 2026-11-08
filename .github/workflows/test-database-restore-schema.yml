@@ -2,6 +2,9 @@ name: Cost-free isolated full database restore test
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - 'security/full-database-restore-test'
   pull_request:
     paths:
       - '.github/workflows/test-database-restore-schema.yml'
