@@ -44,8 +44,8 @@ Als het databasewachtwoord onbekend is, moet de eigenaar eerst beslissen of hij 
 - De workflow heeft het bestand opnieuw gedownload; SHA-256 kwam overeen.
 - Ontsleuteling en `pg_restore --list` zijn geslaagd.
 - Dit bewijst dat deze back-up intact en leesbaar is. Het is nog géén volledige database-herstelproef.
-- De Storage-back-up is een aparte workflow. De Storage-bestanden zijn in een afzonderlijke Supabase-omgeving hersteld; dat mag niet worden verward met een herstel van de Postgres-database.
+- De Storage-back-up is een aparte workflow. De versleutelde Storage-archiefkopie is teruggedownload, ontsleuteld en inhoudelijk gevalideerd op de tijdelijke GitHub-runner. Er is daarmee nog geen volledige terugplaatsing van de Storage-objecten naar een afzonderlijke Supabase-omgeving bewezen; dat mag niet worden verward met een herstel van de Postgres-database.
 
-Een volledige database-herstelproef moet nog in een afzonderlijke, goedgekeurde Supabase-testomgeving gebeuren. De workflow voert nooit een restore uit en wijzigt de live database niet.
+Een volledige database-herstelproef met klantrecords moet nog in een afzonderlijke, goedgekeurde Supabase-testomgeving gebeuren. De bestaande schema-only workflow herstelt alleen de structuur in een tijdelijke PostgreSQL-container en is geen bewijs van een volledige dataherstelproef. De workflow voert nooit een restore uit en wijzigt de live database niet.
 
 De workflow staat in de standaardbranch en de eerste handmatige uitvoering is gecontroleerd en geslaagd. De dagelijkse planning staat ingesteld op 03:00 UTC. Controleer de volgende geplande uitvoering om te bevestigen dat ook de automatische trigger blijft werken.
