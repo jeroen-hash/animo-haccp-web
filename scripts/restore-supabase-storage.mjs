@@ -4,10 +4,18 @@ import crypto from 'node:crypto';
 
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/+$/, '');
 const serviceKey = process.env.SUPABASE_RECOVERY_SERVICE_ROLE_KEY;
+const recoveryProjectRef = process.env.SUPABASE_RECOVERY_PROJECT_REF;
 const root = path.resolve(process.env.BACKUP_EXTRACT_DIR || 'storage-backup-restore');
 
-if (!supabaseUrl || !serviceKey) {
-  throw new Error('Recovery Supabase URL or recovery service key is missing.');
+if (!supabaseUrl || !serviceKey || !recoveryProjectRef) {
+  throw new Error('Recovery Supabase URL, project reference or recovery service key is missing.');
+}
+
+if (!/^[a-z0-9]{20}$/.test(recoveryProjectRef) ||
+    recoveryProjectRef === 'zimzsovvtdmrthrflkgm' ||
+    recoveryProjectRef === 'xwjcwravfeldndwlugai' ||
+    supabaseUrl !== 'https://' + recoveryProjectRef + '.supabase.co') {
+  throw new Error('Refusing restore: target must be a separately configured recovery project, never production or the historical project.');
 }
 
 const allowedBuckets = new Set(['onboarding-documents', 'onboarding-lead-documents']);
@@ -97,7 +105,7 @@ for (const item of manifest.objects) {
     headers: {
       ...headers,
       'Content-Type': contentType,
-      'x-upsert': 'true',
+      'x-upsert': 'false',
     },
     body: bytes,
   });
