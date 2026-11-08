@@ -20,7 +20,7 @@ Dit werkdossier ondersteunt de AVG/GDPR-governance van ANIMO HACCP. Het is inter
 
 ## Status – nog te bevestigen/uit te voeren vóór brede commerciële lancering
 
-### Back-updekking en herstelbewijs – gedeeltelijk gevalideerd
+### Back-upretentie en herstelbewijs – gedeeltelijk gevalideerd
 De volgende GitHub Actions-uitvoeringen zijn op 8 november 2026 als geslaagd geregistreerd:
 
 1. **Versleutelde databaseback-up naar STRATO:** run [42429105062](https://github.com/jeroen-hash/animo-haccp-web/actions/runs/42429105062) slaagde. De back-up werd versleuteld, geüpload, teruggedownload, op SHA-256 gecontroleerd, ontsleuteld en als PostgreSQL-archief gevalideerd.
