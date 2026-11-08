@@ -161,8 +161,7 @@ jobs:
           docker exec animo-restore-test createdb --username=postgres animo_restore_target
           # PostgreSQL creates a default public schema in every new database;
           # the Supabase dump contains its own public schema definition.
-          docker exec animo-restore-test psql --username=postgres --dbname=animo_restore_target \\
-            --set=ON_ERROR_STOP=1 --command="DROP SCHEMA public CASCADE;"
+          docker exec animo-restore-test psql --username=postgres --dbname=animo_restore_target --set=ON_ERROR_STOP=1 --command="DROP SCHEMA public CASCADE;"
           docker cp "$RUNNER_TEMP/animo-database.dump" animo-restore-test:/tmp/animo-database.dump
           docker exec animo-restore-test pg_restore --version
           docker exec animo-restore-test pg_restore --verbose --exit-on-error --no-owner --no-acl --schema-only \
