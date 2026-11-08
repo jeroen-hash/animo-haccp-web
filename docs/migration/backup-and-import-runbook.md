@@ -79,3 +79,17 @@ Import mag pas na expliciete gebruikersgoedkeuring van een concrete preview plaa
 - Supabase Storage read-only gecontroleerd: `storage.buckets` bevat 0 rijen en `storage.objects` bevat 0 rijen; op dit moment geen Storage-buckets of objecten aangetroffen.
 - Doeltestzaak: 0 leden, 1 starter-`app_data`-rij.
 - Geen import, schemawijziging, live wijziging, PR-merge of deployment uitgevoerd.
+
+
+## Aanvulling na archiefcontrole (2026-11-08)
+
+- De oorspronkelijke legacy-tabellen staan niet langer in `public`, maar in schema `legacy_animo_20261107`. De oude exportquery die naar `public.*` verwees was daardoor verouderd.
+- De exportquery is bijgewerkt op branch `feature/legacy-export-archive-schema` en verwijst nu expliciet naar het archiefschema.
+- De nieuwe broninventarisquery is read-only uitgevoerd op het archiefschema en bevestigde:
+  - organisations 1; branches 1; profiles 2; branch_memberships 1.
+  - temperature_records 10; temperature_templates 7; corrective_actions 6.
+  - cleaning_templates 15; cleaning_checks 6; cleaning_tasks 0.
+  - allergen_plan_items 2; day_closings 1; business_settings 1; audit_log 5.
+- De tien operationele tabellen blijven samen 53 rijen. De extra identiteits-/structuurgegevens zijn apart geteld en worden alleen gebruikt voor gecontroleerde mapping.
+- De exportquery is nog niet als JSON-bestand uitgevoerd of extern opgeslagen. Er is geen import uitgevoerd en geen data gewijzigd.
+- De projectrollen zijn expliciet: `xwjcwravfeldndwlugai` = oude HACCP-bron; `zimzsovvtdmrthrflkgm` = huidige SaaS-app en geïsoleerde migratietestdoelzaak.
