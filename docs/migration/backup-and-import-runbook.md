@@ -86,6 +86,11 @@ Import mag pas na expliciete gebruikersgoedkeuring van een concrete preview plaa
 - `zimzsovvtdmrthrflkgm` is de actieve SaaS-database met klantdata (15 auth-gebruikers, 7 businesses, 11 business_members, 7 app_data-rijen, 2 subscriptions, 5 billing_invoices, 9 onboarding_leads en 5 onboarding_intakes). De geslaagde databaseback-up-run `42429105062` betreft dit project.
 - `xwjcwravfeldndwlugai` is de oude HACCP-bron. De oude operationele tabellen staan in `legacy_animo_20261107`; de gecontroleerde telling is 53 operationele rijen, plus 1 organisatie, 1 vestiging, 2 profielen en 1 lidmaatschap. De Storage-restore-run `42423966948` heeft ook twee private buckets teruggezet in dit project.
 - Het oude bronproject is geen afzonderlijke lege testomgeving. De huidige SaaS-database bevat echte klantgegevens en mag niet als hersteltestdoel worden gebruikt.
+
+- De databaseback-upworkflow vereist `STRATO_SFTP_HOST_KEY_SHA256` en de geslaagde run `42429105062` bevatte dit secret; de workflow kan alleen verder als de gepinde SSH-hostsleutel overeenkomt. Strict host-key checking is in de workflowcode verplicht.
+- De Storage-backupworkflow staat gepland op 02:30 UTC. Een succesvolle dagelijkse BACKUP-run is nog niet met een run-ID en logs bevestigd; run `42423966948` was de afzonderlijke RESTORE-run.
+- PR #131 is gemerged: geplande Storage-backups voeren voortaan alleen een retentie-dry-run uit. Geen automatische verwijdering van oude STRATO-bestanden. Een handmatige run met `retention_dry_run=false` is nodig om iets te verwijderen.
+
 - Een volledige Postgres-hersteltest en HACCP-import zijn nog niet uitgevoerd. Daarvoor is eerst een werkelijk geïsoleerde testomgeving nodig; maak geen nieuw Supabase-project of databasebranch aan voordat de kosten en bestemming expliciet zijn goedgekeurd.
 - Hoofdaccount `jeroenmarin@gmail.com` en de Riku Ramen lifetime-free-regeling blijven onaangeroerd.
 
