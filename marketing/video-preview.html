@@ -67,6 +67,64 @@ h1{font-size:clamp(38px,7.7vh,66px);line-height:.97;letter-spacing:-.065em;font-
 }
 @media(max-height:620px){.device img{max-height:28vh}.s4 .device img{max-height:25vh}}
 @media(prefers-reduced-motion:reduce){.scene,.progress i:after,.device{animation:none}.s1{opacity:1}}
+
+/* Definitieve viewport- en scènecorrecties: geen minimumhoogte die buiten het scherm duwt. */
+.stage{width:min(100vw,56.25vh);height:min(100svh,177.78vw);min-height:0;max-height:100svh;aspect-ratio:9/16}
+.scene{padding:12% 7% 7%;min-height:0;overflow:hidden}
+.kicker{margin-bottom:clamp(8px,1.5vh,15px)}
+h1{font-size:clamp(30px,6.4vh,56px);line-height:.99;margin-bottom:clamp(9px,1.5vh,16px)}
+.device-wrap{margin:clamp(8px,1.5vh,16px) 0}
+.device{max-width:82%}
+.device img{max-height:30vh;object-fit:contain}
+.note{bottom:4%;right:1%;width:39%;padding:9px}
+.s4 .device img{max-height:26vh}
+.s4 .device{width:66%}
+.caption{font-size:clamp(16px,2.6vh,22px)}
+.caption small{font-size:11px;margin-top:6px}
+.chips{gap:5px;margin-top:10px}
+.chips span{padding:6px 8px;font-size:9px}
+.disclaimer{display:none}
+.s1 .logo{margin-bottom:7%;max-height:11%}
+.s5{padding:12% 7% 7%;justify-content:center;overflow:hidden}
+.s5 .logo{width:48%;max-height:9%;margin-bottom:5%}
+.s5 h1{font-size:clamp(25px,4.7vh,40px);line-height:1.02}
+.s5 .cta{padding:clamp(10px,1.8vh,15px)}
+.s5 .url{margin-top:9px}
+@media(max-height:700px){
+ .scene{padding-top:11%;padding-bottom:6%}
+ h1{font-size:clamp(27px,5.8vh,42px)}
+ .device img{max-height:25vh}
+ .s4 .device img{max-height:22vh}
+ .s5{padding-top:10%;padding-bottom:5%}
+ .s5 .logo{max-height:7%;margin-bottom:3%}
+ .s5 h1{font-size:clamp(23px,4.3vh,32px);margin-bottom:8px}
+}
+@media(max-height:580px){
+ .scene{padding-top:10%;padding-bottom:5%}
+ .kicker{font-size:8px;margin-bottom:6px}
+ h1{font-size:clamp(23px,5vh,30px);margin-bottom:7px}
+ .device-wrap{margin:6px 0}
+ .device img{max-height:21vh}
+ .s4 .device img{max-height:19vh}
+ .caption{font-size:15px}
+ .caption small{font-size:9px}
+ .s5{padding-top:9%;padding-bottom:4%}
+ .s5 .logo{width:36%;margin-bottom:2%}
+ .s5 h1{font-size:23px}
+ .s5 .cta{padding:8px}
+ .s5 .price{font-size:32px}
+ .s5 .button{padding:7px;margin-top:5px}
+ .s5 .url{font-size:11px;margin-top:5px}
+ .s5 .fine{font-size:7px;margin-top:3px}
+}
+@media(max-width:380px){
+ .note{width:37%;padding:7px}
+ .note span{font-size:9px}
+ .device{max-width:84%}
+ .s5{padding-left:6%;padding-right:6%}
+ .s5 .url{font-size:12px}
+}
+
 </style></head><body><main class="stage" aria-label="ANIMO HACCP campagnefilmconcept van 45 seconden">
 <div class="top"><span>ANIMO HACCP</span><b>GEMAAKT VOOR HORECA</b></div><div class="progress"><i></i><i></i><i></i><i></i><i></i></div>
 <section class="scene s1"><img class="logo" src="../images/animo-logo.png.png" alt="ANIMO HACCP"><div class="kicker">Elke service telt</div><h1>Je keuken draait op <em>tempo.</em><br>Je administratie?</h1><p class="lead">Tussen leveringen, mise-en-place en service wil je niet zoeken naar losse HACCP-lijsten.</p><div class="mark">Jij zorgt voor je gasten.<br>ANIMO helpt met het overzicht.</div></section>
