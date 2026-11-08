@@ -65,7 +65,7 @@ jobs:
           EOF
           node render.cjs
           for f in scenes/scene-*.png; do
-            magick "$f" -resize 1080x1920! "$f"
+            convert "$f" -resize 1080x1920! "$f"
             file "$f"
           done
           test "$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 scenes/scene-1.png)" = "1080x1920"
