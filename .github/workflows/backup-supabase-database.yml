@@ -2,6 +2,12 @@ name: Encrypted Supabase database backup to STRATO
 
 on:
   workflow_dispatch:
+    inputs:
+      retention_dry_run:
+        description: 'Alleen tonen welke oude databaseback-ups zouden worden verwijderd'
+        required: true
+        default: true
+        type: boolean
   schedule:
     - cron: '0 3 * * *'
 
@@ -200,6 +206,76 @@ jobs:
           rm -f "$passfile" "$restored" "$downloaded" "$downloaded.sha256" "$known_hosts"
           unset SFTP_PASS BACKUP_PASSPHRASE
           echo "Encrypted database backup uploaded, downloaded, checksum-verified, decrypted and archive-verified successfully."
+
+      - name: Databaseback-ups ouder dan 90 dagen opruimen
+        env:
+          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
+          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
+          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+          SFTP_HOST_KEY_SHA256: ${{ secrets.STRATO_SFTP_HOST_KEY_SHA256 }}
+          RETENTION_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.retention_dry_run == false && 'false' || 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for value in "$SFTP_HOST" "$SFTP_USER" "$SFTP_PASS" "$SFTP_HOST_KEY_SHA256"; do
+            test -n "$value" || { echo "::error::A required pinned SFTP retention secret is missing."; exit 1; }
+          done
+
+          known_hosts="$RUNNER_TEMP/strato_database_retention_known_hosts"
+          scanned="$RUNNER_TEMP/strato_database_retention_scanned_keys"
+          candidate="$RUNNER_TEMP/strato_database_retention_candidate_key"
+          ssh-keyscan -p 22 "$SFTP_HOST" 2>/dev/null > "$scanned"
+          test -s "$scanned" || { echo "::error::Could not retrieve STRATO SSH host keys."; exit 1; }
+          : > "$known_hosts"
+          while IFS= read -r key_line; do
+            [ -n "$key_line" ] || continue
+            printf '%s\n' "$key_line" > "$candidate"
+            fingerprint="$(ssh-keygen -lf "$candidate" -E sha256 | awk '{print $2}')"
+            if [ "$fingerprint" = "$SFTP_HOST_KEY_SHA256" ]; then
+              printf '%s\n' "$key_line" >> "$known_hosts"
+            fi
+          done < "$scanned"
+          test -s "$known_hosts" || { echo "::error::No STRATO SSH host key matches the pinned fingerprint."; exit 1; }
+          chmod 600 "$known_hosts"
+          rm -f "$scanned" "$candidate"
+          lftp_host_key_settings="set sftp:auto-confirm no
+          set sftp:connect-program \"ssh -a -x -oStrictHostKeyChecking=yes -oUserKnownHostsFile=$known_hosts\""
+
+          remote_dir="/backups/animo-haccp-database"
+          listing="$RUNNER_TEMP/animo-database-backup-listing"
+          lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP > "$listing"
+          $lftp_host_key_settings
+          set net:max-retries 3
+          set net:timeout 30
+          cls -1 "$remote_dir"
+          bye
+          LFTP
+
+          cutoff="$(date -u -d '90 days ago' +%s)"
+          while IFS= read -r name; do
+            [[ "$name" =~ ^animo-database-([0-9]{8}T[0-9]{6}Z)\.dump\.gpg(\.sha256)?$ ]] || continue
+            [[ "$name" == *.sha256 ]] && continue
+            stamp="${BASH_REMATCH[1]}"
+            backup_epoch="$(date -u -d "${stamp:0:8} ${stamp:9:2}:${stamp:11:2}:${stamp:13:2} UTC" +%s)"
+            if [ "$backup_epoch" -lt "$cutoff" ]; then
+              if [ "$RETENTION_DRY_RUN" = "true" ]; then
+                echo "DRY RUN: would remove expired encrypted database backup and checksum: $name"
+              else
+                echo "Removing expired encrypted database backup older than 90 days: $name"
+                lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP
+          $lftp_host_key_settings
+          set net:max-retries 3
+          set net:timeout 30
+          rm -f "$remote_dir/$name"
+          rm -f "$remote_dir/$name.sha256"
+          bye
+          LFTP
+              fi
+            fi
+          done < "$listing"
+          rm -f "$listing" "$known_hosts"
+          unset SFTP_PASS
+          echo "90-day retention check completed for timestamped ANIMO encrypted database backups. Dry run: $RETENTION_DRY_RUN."
 
       - name: Foutmelding bij mislukte back-up
         if: failure()
