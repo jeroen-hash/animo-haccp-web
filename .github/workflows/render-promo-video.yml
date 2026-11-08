@@ -73,11 +73,11 @@ jobs:
       - name: Assemble smooth vertical MP4
         run: |
           ffmpeg -y \
-            -loop 1 -t 9 -i scenes/scene-1.png \
-            -loop 1 -t 9 -i scenes/scene-2.png \
-            -loop 1 -t 9 -i scenes/scene-3.png \
-            -loop 1 -t 9 -i scenes/scene-4.png \
-            -loop 1 -t 9 -i scenes/scene-5.png \
+            -i scenes/scene-1.png \
+            -i scenes/scene-2.png \
+            -i scenes/scene-3.png \
+            -i scenes/scene-4.png \
+            -i scenes/scene-5.png \
             -filter_complex "
               [0:v]zoompan=z='min(zoom+0.00035,1.035)':d=180:s=1080x1920:fps=20,setsar=1,format=yuv420p[v0];
               [1:v]zoompan=z='min(zoom+0.00035,1.035)':d=180:s=1080x1920:fps=20,setsar=1,format=yuv420p[v1];
@@ -90,6 +90,7 @@ jobs:
               [x3][v4]xfade=transition=fade:duration=0.6:offset=33.6,format=yuv420p[outv]
             " -map "[outv]" -an -c:v libx264 -preset medium -crf 18 -movflags +faststart animo-haccp-promotievideo.mp4
           test -s animo-haccp-promotievideo.mp4
+          ffprobe -v error -show_entries format=duration,size -of default=noprint_wrappers=1 animo-haccp-promotievideo.mp4
 
       - name: Publish downloadable MP4
         uses: softprops/action-gh-release@v2
