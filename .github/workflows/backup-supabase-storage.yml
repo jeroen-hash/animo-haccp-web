@@ -164,7 +164,7 @@ jobs:
           SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
           SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
           SFTP_HOST_KEY_SHA256: ${{ secrets.STRATO_SFTP_HOST_KEY_SHA256 }}
-          RETENTION_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.retention_dry_run || 'false' }}
+          RETENTION_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.retention_dry_run == false && 'false' || 'true' }}
         run: |
           set -euo pipefail
           for value in "$SFTP_HOST" "$SFTP_USER" "$SFTP_PASS"; do
