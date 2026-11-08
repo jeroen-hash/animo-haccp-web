@@ -113,7 +113,8 @@ jobs:
           docker run -d --name animo-restore-test \
             -e POSTGRES_PASSWORD=temporary-test-only-password \
             -p 127.0.0.1:5432:5432 \
-            supabase/postgres:17.11.0.018
+            supabase/postgres:17.11.0.018 \
+            postgres -c config_file=/etc/postgresql/postgresql.conf
           for attempt in $(seq 1 60); do
             if pg_isready -h 127.0.0.1 -p 5432 -U postgres; then
               break
