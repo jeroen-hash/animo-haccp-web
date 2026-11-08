@@ -18,6 +18,8 @@ on:
       - 'scripts/verify-storage-backup.mjs'
       - '.github/workflows/backup-supabase-storage.yml'
       - '.github/workflows/backup-supabase-database.yml'
+      - 'scripts/select-expired-database-backups.mjs'
+      - 'tests/database-backup-retention.test.mjs'
       - 'supabase/functions/stripe-webhook/index.ts'
       - 'supabase/functions/process-delivery-note/index.ts'
       - 'sw.js'
@@ -34,6 +36,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Validate database backup retention selection (no remote deletion)
+        run: node --test tests/database-backup-retention.test.mjs
       - name: Validate Stripe webhook subscription ordering guard
         run: |
           node <<'NODE'
