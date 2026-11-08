@@ -4,13 +4,20 @@ import crypto from 'node:crypto';
 
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/+$/, '');
 const serviceKey = process.env.SUPABASE_RECOVERY_SERVICE_ROLE_KEY;
+const recoveryProjectRef = process.env.SUPABASE_RECOVERY_PROJECT_REF;
 const root = path.resolve(process.env.BACKUP_EXTRACT_DIR || 'storage-backup-restore');
 
-if (!supabaseUrl || !serviceKey) {
-  throw new Error('Recovery Supabase URL or recovery service key is missing.');
+if (!supabaseUrl || !serviceKey || !recoveryProjectRef) {
+  throw new Error('Recovery Supabase URL, project reference or recovery service key is missing.');
 }
 
-const allowedBuckets = new Set(['onboarding-documents', 'onboarding-lead-documents']);
+if (!/^[a-z0-9]{20}$/.test(recoveryProjectRef) ||
+    recoveryProjectRef === 'zimzsovvtdmrthrflkgm' ||
+    recoveryProjectRef === 'xwjcwravfeldndwlugai' ||
+    supabaseUrl !== 'https://' + recoveryProjectRef + '.supabase.co') {
+  throw new Error('Refusing restore: target must be a separately configured recovery project, never production or the historical project.');
+}
+
 const mimeByExtension = new Map([
   ['.pdf', 'application/pdf'],
   ['.csv', 'text/csv'],
@@ -35,13 +42,16 @@ if (manifest.format !== 1 || manifest.project !== 'zimzsovvtdmrthrflkgm') {
   throw new Error('Backup manifest is not from the expected ANIMO production project.');
 }
 if (!Array.isArray(manifest.buckets) ||
-    manifest.buckets.length !== allowedBuckets.size ||
-    manifest.buckets.some(name => !allowedBuckets.has(name)) ||
+    manifest.buckets.length < 1 ||
+    manifest.buckets.some(name => typeof name !== 'string' || !/^[a-z0-9][a-z0-9_-]{0,99}$/.test(name)) ||
     new Set(manifest.buckets).size !== manifest.buckets.length ||
+    manifest.bucketCount !== manifest.buckets.length ||
     !Array.isArray(manifest.objects) ||
+    !Number.isInteger(manifest.objectCount) ||
     manifest.objectCount !== manifest.objects.length) {
-  throw new Error('Backup manifest bucket or object inventory is not the expected ANIMO set.');
+  throw new Error('Backup manifest bucket or object inventory is invalid.');
 }
+const allowedBuckets = new Set(manifest.buckets);
 
 for (const bucketName of manifest.buckets) {
   const response = await fetch(
@@ -64,6 +74,8 @@ for (const item of manifest.objects) {
       item.path.startsWith('/') || item.path.includes('\\') ||
       item.path.split('/').some(part => !part || part === '.' || part === '..') ||
       !Number.isInteger(item.size) || item.size < 0 ||
+      !allowedBuckets.has(item.bucket) ||
+      !Number.isInteger(item.size) || item.size < 0 ||
       !/^[a-f0-9]{64}$/.test(item.sha256)) {
     throw new Error('Backup manifest contains an invalid object entry.');
   }
@@ -83,10 +95,7 @@ for (const item of manifest.objects) {
   }
 
   const extension = path.extname(item.path).toLowerCase();
-  const contentType = mimeByExtension.get(extension);
-  if (!contentType) {
-    throw new Error('Unsupported file type in backup: ' + item.path);
-  }
+  const contentType = mimeByExtension.get(extension) || 'application/octet-stream';
 
   const objectUrl = supabaseUrl + '/storage/v1/object/' +
     encodeURIComponent(item.bucket) + '/' +
@@ -97,7 +106,7 @@ for (const item of manifest.objects) {
     headers: {
       ...headers,
       'Content-Type': contentType,
-      'x-upsert': 'true',
+      'x-upsert': 'false',
     },
     body: bytes,
   });

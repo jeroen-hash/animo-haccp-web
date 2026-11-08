@@ -43,11 +43,19 @@ jobs:
           SFTP_HOST_KEY_SHA256: ${{ secrets.STRATO_SFTP_HOST_KEY_SHA256 }}
           BACKUP_PASSPHRASE: ${{ secrets.ANIMO_BACKUP_ENCRYPTION_KEY }}
           RECOVERY_SERVICE_KEY: ${{ secrets.SUPABASE_RECOVERY_SERVICE_ROLE_KEY }}
+          RECOVERY_PROJECT_REF: ${{ secrets.SUPABASE_RECOVERY_PROJECT_REF }}
         run: |
           set -euo pipefail
-          for value in "$SFTP_HOST" "$SFTP_USER" "$SFTP_PASS" "$SFTP_HOST_KEY_SHA256" "$BACKUP_PASSPHRASE" "$RECOVERY_SERVICE_KEY"; do
+          for value in "$SFTP_HOST" "$SFTP_USER" "$SFTP_PASS" "$SFTP_HOST_KEY_SHA256" "$BACKUP_PASSPHRASE" "$RECOVERY_SERVICE_KEY" "$RECOVERY_PROJECT_REF"; do
             test -n "$value" || { echo "::error::Een vereist GitHub Actions-geheim ontbreekt. Controleer de restore-instructies."; exit 1; }
           done
+          case "$RECOVERY_PROJECT_REF" in
+            zimzsovvtdmrthrflkgm|xwjcwravfeldndwlugai)
+              echo "::error::De productie- of historische omgeving mag niet als hersteldoel worden gebruikt."
+              exit 1
+              ;;
+          esac
+          [[ "$RECOVERY_PROJECT_REF" =~ ^[a-z0-9]{20}$ ]] || { echo "::error::SUPABASE_RECOVERY_PROJECT_REF is geen geldige projectreferentie."; exit 1; }
           echo "Alle vereiste geheimen zijn aanwezig; waarden worden niet weergegeven."
 
       - name: Download, controleer en ontsleutel de nieuwste back-up
@@ -161,7 +169,8 @@ jobs:
 
       - name: Herstel de bestanden in de tweede Supabase-omgeving
         env:
-          SUPABASE_URL: https://xwjcwravfeldndwlugai.supabase.co
+          SUPABASE_URL: https://${{ secrets.SUPABASE_RECOVERY_PROJECT_REF }}.supabase.co
+          SUPABASE_RECOVERY_PROJECT_REF: ${{ secrets.SUPABASE_RECOVERY_PROJECT_REF }}
           SUPABASE_RECOVERY_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_RECOVERY_SERVICE_ROLE_KEY }}
           BACKUP_EXTRACT_DIR: ${{ runner.temp }}/animo-storage-restore/extracted
         run: |
