@@ -17,20 +17,18 @@ Deno.serve(async (req: Request) => {
     if (!allowedOrigin) return new Response("Forbidden", { status: 403 });
     return new Response(null, { status: 204, headers: corsHeaders });
   }
-  if (!allowedOrigin) {
-    return new Response("Forbidden", { status: 403 });
-  }
+  if (!allowedOrigin) return new Response("Forbidden", { status: 403 });
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405, headers: corsHeaders });
   }
 
   try {
     const body = await req.json().catch(() => ({}));
-    // Alleen de publieke startpagina tellen; geen querystrings of persoonsgegevens bewaren.
     if (body?.path !== "/") {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
 
+    const siteHost = new URL(origin).hostname;
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!supabaseUrl || !serviceRoleKey) {
@@ -47,10 +45,9 @@ Deno.serve(async (req: Request) => {
           "Content-Type": "application/json",
           "Prefer": "return=minimal",
         },
-        body: JSON.stringify({ page_path: "/" }),
+        body: JSON.stringify({ page_path: "/", site_host: siteHost }),
       },
     );
-
     if (!response.ok) {
       return new Response("Could not record visit", { status: 502, headers: corsHeaders });
     }
