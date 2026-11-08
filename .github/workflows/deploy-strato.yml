@@ -132,7 +132,7 @@ jobs:
           set net:max-retries 3
           set net:timeout 30
           mirror -R --verbose out/landing /landing
-          mirror -R --verbose out/app /app
+          # De bestaande app blijft onaangeroerd; alleen de publieke landingspagina wordt bijgewerkt.
           bye
           LFTP
 
