@@ -2,39 +2,92 @@
 <html lang="nl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ANIMO HACCP — promotievideo preview</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#06271f">
+<title>ANIMO HACCP — reclamepreview</title>
 <style>
-:root{--forest:#06452f;--green:#08734d;--mint:#eaf5ee;--gold:#d9ad62;--ink:#14251d}
+:root{--deep:#06271f;--forest:#073d2e;--green:#08734d;--mint:#eaf5ee;--gold:#d9ad62;--white:#fff}
 *{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;background:#071d15;color:#fff;font-family:Inter,Arial,sans-serif}
-body{display:grid;place-items:center}
-.stage{position:relative;width:min(100vw,56.25vh);height:min(100vh,177.78vw);aspect-ratio:9/16;overflow:hidden;background:linear-gradient(145deg,#052e21,#08734d);isolation:isolate}
-.scene{position:absolute;inset:0;padding:8% 8% 17%;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;opacity:0;animation-duration:30s;animation-timing-function:linear;animation-iteration-count:infinite}
-.scene:nth-child(1){animation-name:scene1}
-.scene:nth-child(2){animation-name:scene2}
-.scene:nth-child(3){animation-name:scene3}
-.scene:nth-child(4){animation-name:scene4}
-@keyframes scene1{0%,2%{opacity:0;transform:translateY(20px)}4%,20%{opacity:1;transform:translateY(0)}23%,100%{opacity:0;transform:translateY(-12px)}}
-@keyframes scene2{0%,22%{opacity:0;transform:translateY(20px)}25%,47%{opacity:1;transform:translateY(0)}50%,100%{opacity:0;transform:translateY(-12px)}}
-@keyframes scene3{0%,49%{opacity:0;transform:translateY(20px)}52%,74%{opacity:1;transform:translateY(0)}77%,100%{opacity:0;transform:translateY(-12px)}}
-@keyframes scene4{0%,76%{opacity:0;transform:translateY(20px)}79%,97%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-12px)}}
-.kicker{font-size:clamp(11px,2.4vh,18px);letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:800;margin-bottom:1.2em}
-h1{font-size:clamp(32px,6.5vh,58px);line-height:1.02;margin:0 0 .35em;font-weight:850;letter-spacing:-.04em}
-p{font-size:clamp(16px,2.8vh,24px);line-height:1.35;color:var(--mint);margin:.3em 0}
-.logo{width:62%;max-height:24%;object-fit:contain;background:#fff;border-radius:18px;padding:12px;margin-bottom:7%}
-.screen{width:100%;max-height:53%;object-fit:contain;border-radius:18px;box-shadow:0 22px 55px #00170f99;background:#fff}
-.pill{margin-top:1.2em;padding:.65em 1.15em;border-radius:999px;background:var(--gold);color:var(--ink);font-size:clamp(14px,2.5vh,21px);font-weight:800}
-.price{font-size:clamp(38px,7.5vh,68px);font-weight:900;color:#fff;letter-spacing:-.05em}
-.sub{font-size:clamp(13px,2.2vh,18px);color:var(--mint)}
-.caption{position:absolute;bottom:5.5%;left:7%;right:7%;padding:.65em .8em;border-radius:10px;background:#031c14dd;color:#fff;font-size:clamp(13px,2.3vh,19px);font-weight:700;line-height:1.25;min-height:2.5em}
-.note{position:absolute;bottom:1.5%;left:0;right:0;text-align:center;font-size:9px;color:#ffffff99;z-index:5}
-@media(prefers-reduced-motion:reduce){.scene{animation:none}.scene:first-child{opacity:1}}
-</style></head>
-<body><main class="stage" aria-label="ANIMO HACCP promotievideo preview, 30 seconden">
-<section class="scene"><img class="logo" src="../images/animo-logo.png.png" alt="ANIMO HACCP"><div class="kicker">Voor de horeca</div><h1>Jouw keuken.<br>Alles onder controle.</h1><p>Minder losse lijstjes.<br>Meer overzicht in je dagelijkse werking.</p><div class="pill">14 dagen gratis proberen</div><div class="caption">Maak tijd voor je keuken. Niet voor papierwerk.</div></section>
-<section class="scene"><div class="kicker">Dagelijks overzicht</div><h1>Alles begint<br>met overzicht.</h1><img class="screen" src="../images/app-dashboard.jpg" alt="Echt dashboard van ANIMO HACCP"><p>Je dagelijkse controles op één plek.</p><div class="caption">Je team ziet meteen wat vandaag aandacht vraagt.</div></section>
-<section class="scene"><div class="kicker">Temperaturen opvolgen</div><h1>Registreren.<br>Opvolgen.</h1><img class="screen" src="../images/app-temperaturen.jpg" alt="Echt temperatuurscherm van ANIMO HACCP"><p>Hou meetpunten en registraties bij.</p><div class="caption">Temperaturen eenvoudig registreren en opvolgen.</div></section>
-<section class="scene"><div class="kicker">Rapportage</div><h1>Van registratie<br>tot rapport.</h1><img class="screen" src="../images/app-rapport.jpg" alt="Echt dagrapport uit ANIMO HACCP"><p>Een duidelijk overzicht van je registraties.</p><div class="price">€55<span style="font-size:.42em"> / maand</span></div><div class="sub">excl. btw · ongeveer €1,81 per dag</div><div class="pill">Start je gratis proefperiode</div><div class="caption">ANIMO HACCP. Altijd klaar voor FAVV.</div></section>
-<div class="note">Conceptpreview met bestaande projectafbeeldingen — controleer prijs en app-beelden vóór publicatie.</div>
-</main></body></html>
+html,body{margin:0;min-height:100%;background:#03140f;color:var(--white);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+body{min-height:100svh;display:grid;place-items:center;padding:0}
+.stage{position:relative;width:min(100vw,56.25vh);height:min(100svh,177.78vw);min-height:540px;aspect-ratio:9/16;overflow:hidden;isolation:isolate;background:radial-gradient(ellipse at 50% 22%,#14744f 0%,#0b4c37 34%,#06271f 76%);box-shadow:0 24px 90px #0009}
+.stage:before,.stage:after{content:"";position:absolute;pointer-events:none;border:1px solid #ffffff12;border-radius:50%;width:120%;aspect-ratio:1;left:-10%;top:18%;z-index:-1}
+.stage:after{width:150%;left:-25%;top:8%;border-color:#d9ad6220}
+.scene{position:absolute;inset:0;padding:8% 7% 16%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0;animation-duration:36s;animation-timing-function:linear;animation-iteration-count:infinite}
+.s1{animation-name:s1}.s2{animation-name:s2}.s3{animation-name:s3}.s4{animation-name:s4}.s5{animation-name:s5}
+@keyframes s1{0%,2%{opacity:0;transform:translateY(24px) scale(.985)}4%,17%{opacity:1;transform:none}20%,100%{opacity:0;transform:translateY(-15px) scale(1.01)}}
+@keyframes s2{0%,18%{opacity:0;transform:translateY(24px)}21%,36%{opacity:1;transform:none}39%,100%{opacity:0;transform:translateY(-15px)}}
+@keyframes s3{0%,37%{opacity:0;transform:translateY(24px)}40%,55%{opacity:1;transform:none}58%,100%{opacity:0;transform:translateY(-15px)}}
+@keyframes s4{0%,56%{opacity:0;transform:translateY(24px)}59%,74%{opacity:1;transform:none}77%,100%{opacity:0;transform:translateY(-15px)}}
+@keyframes s5{0%,75%{opacity:0;transform:translateY(24px)}78%,98%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-15px)}}
+.brand{width:66%;max-height:18%;object-fit:contain;background:#fff;border-radius:20px;padding:12px 15px;margin-bottom:8%;box-shadow:0 16px 40px #00170f55}
+.eyebrow{font-size:clamp(10px,2.1vh,15px);font-weight:850;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin:0 0 15px}
+h1{font-size:clamp(32px,6.5vh,57px);line-height:.99;letter-spacing:-.055em;font-weight:900;margin:0 0 17px;text-wrap:balance}
+h1 em{font-style:normal;color:#f1d49b}
+.lead{font-size:clamp(15px,2.6vh,21px);line-height:1.36;color:#e5f3e9;max-width:90%;margin:0}
+.micro{font-size:clamp(11px,1.8vh,14px);line-height:1.4;color:#c4dfd0;margin-top:12px}
+.tag{display:inline-flex;align-items:center;gap:8px;border:1px solid #ffffff35;background:#ffffff12;border-radius:999px;padding:9px 14px;font-size:clamp(11px,1.9vh,14px);font-weight:750;color:#fff;margin-top:22px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold)}
+.device{position:relative;width:88%;padding:9px;border:1px solid #ffffff6b;border-radius:27px;background:linear-gradient(145deg,#fafffb,#b9c9bf);box-shadow:0 25px 65px #00160f99;margin:19px 0 17px}
+.device:before{content:"";position:absolute;top:7px;left:50%;transform:translateX(-50%);width:24%;height:5px;border-radius:9px;background:#8a9a90;z-index:2}
+.device img{display:block;width:100%;height:auto;max-height:36vh;object-fit:contain;object-position:top;border-radius:18px;background:#fff}
+.copyline{font-size:clamp(13px,2.2vh,17px);font-weight:800;color:#fff;margin:0}
+.features{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:15px}
+.features span{font-size:clamp(10px,1.8vh,13px);font-weight:750;border:1px solid #ffffff40;background:#ffffff12;border-radius:99px;padding:7px 10px;color:#eff9f1}
+.price{font-size:clamp(48px,9vh,76px);font-weight:950;letter-spacing:-.07em;line-height:1;margin:6px 0}
+.price small{font-size:.29em;letter-spacing:-.02em;font-weight:750}
+.trial{margin-top:17px;display:inline-block;padding:14px 22px;border-radius:14px;background:linear-gradient(135deg,#f1d49b,#d9ad62);color:#13251c;font-size:clamp(14px,2.4vh,19px);font-weight:900;box-shadow:0 10px 28px #00180f66}
+.url{font-size:clamp(13px,2.2vh,17px);font-weight:800;letter-spacing:.04em;margin-top:14px;color:#fff}
+.fine{font-size:10px;color:#d0e4d8;margin-top:7px}
+.progress{position:absolute;z-index:10;top:3.5%;left:7%;right:7%;display:flex;gap:5px}
+.progress i{height:3px;border-radius:5px;flex:1;background:#ffffff38;overflow:hidden}
+.progress i:after{content:"";display:block;height:100%;width:0;background:#f1d49b;animation:fill 36s linear infinite}
+.progress i:nth-child(1):after{animation-delay:0s}.progress i:nth-child(2):after{animation-delay:7.2s}.progress i:nth-child(3):after{animation-delay:14.4s}.progress i:nth-child(4):after{animation-delay:21.6s}.progress i:nth-child(5):after{animation-delay:28.8s}
+@keyframes fill{0%{width:0}100%{width:100%}}
+.disclaimer{position:absolute;bottom:1.6%;left:5%;right:5%;text-align:center;color:#ffffff80;font-size:9px;z-index:12}
+@media(prefers-reduced-motion:reduce){.scene,.progress i:after{animation:none}.s1{opacity:1}}
+</style>
+</head>
+<body>
+<main class="stage" aria-label="ANIMO HACCP reclameconcept, 36 seconden">
+<div class="progress" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+<section class="scene s1">
+<img class="brand" src="../images/animo-logo.png.png" alt="ANIMO HACCP">
+<p class="eyebrow">Voor horecaondernemers</p>
+<h1>Je bent er voor je gasten.<br>Niet voor <em>papierwerk.</em></h1>
+<p class="lead">Breng je dagelijkse HACCP-opvolging samen op één overzichtelijke plek.</p>
+<div class="tag"><b class="dot"></b> Minder losse lijstjes. Meer grip.</div>
+</section>
+<section class="scene s2">
+<p class="eyebrow">Eén duidelijk startpunt</p>
+<h1>Start je dag<br>met <em>overzicht.</em></h1>
+<div class="device"><img src="../images/app-dashboard.jpg" alt="Echt dashboard van ANIMO HACCP"></div>
+<p class="copyline">Zie in één oogopslag wat aandacht vraagt.</p>
+<div class="features"><span>Dagelijkse controles</span><span>Teamoverzicht</span></div>
+</section>
+<section class="scene s3">
+<p class="eyebrow">Temperaturen opvolgen</p>
+<h1>Registreren.<br><em>Opvolgen.</em><br>Geen gedoe.</h1>
+<div class="device"><img src="../images/app-temperaturen.jpg" alt="Echt temperatuurscherm van ANIMO HACCP"></div>
+<p class="copyline">Hou je meetpunten en registraties bij.</p>
+</section>
+<section class="scene s4">
+<p class="eyebrow">Duidelijke rapportage</p>
+<h1>Je registraties<br>netjes <em>gebundeld.</em></h1>
+<div class="device"><img src="../images/app-rapport.jpg" alt="Echt dagrapport uit ANIMO HACCP"></div>
+<p class="copyline">Meer inzicht in je dagelijkse werking.</p>
+</section>
+<section class="scene s5">
+<img class="brand" src="../images/animo-logo.png.png" alt="ANIMO HACCP">
+<p class="eyebrow">Maak het jezelf makkelijker</p>
+<h1>Meer tijd voor<br><em>wat écht telt.</em></h1>
+<div class="price">€55<small> / maand</small></div>
+<p class="micro">excl. btw · ongeveer €1,81 per dag</p>
+<div class="trial">14 DAGEN GRATIS PROBEREN</div>
+<p class="url">start.animo-apps.com</p>
+<p class="fine">ANIMO HACCP · Altijd klaar voor FAVV</p>
+</section>
+<div class="disclaimer">Conceptpreview · echte app-afbeeldingen · controleer prijs en voorbeeldgegevens vóór publicatie</div>
+</main>
+</body>
+</html>
