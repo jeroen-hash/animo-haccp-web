@@ -1,6 +1,6 @@
 # Bewaar- en verwijderplan – ANIMO HACCP
 
-**Versie:** 1.0 – 7 november 2026
+**Versie:** 1.1 – 8 november 2026
 
 ## 1. Uitgangspunten
 Persoonsgegevens worden niet langer bewaard dan nodig voor het doel. Een contractuele bewaartermijn is geen vervanging voor wettelijke bewaarplichten, noch een belofte dat alle kopieën gelijktijdig verdwijnen.
@@ -11,8 +11,8 @@ Persoonsgegevens worden niet langer bewaard dan nodig voor het doel. Een contrac
 |---|---|---|
 | Actieve cloudregistraties van horecazaak | Contractduur + 90 dagen exportperiode | Na exportperiode verwijderen via gecontroleerde account-/zaakverwijderprocedure; technische uitvoering moet periodiek getest worden |
 | Offline browserkopieën en synchronisatiewachtrij | Tot gebruiker browserdata wist; kan langer blijven staan | Klant moet eerst synchronisatie controleren en daarna browseropslag van de app wissen; app biedt geen remote wipe |
-| Private onboarding- en documentbestanden | Contract-/aanvraagdoel plus noodzakelijke bewaartermijn | Supabase Storage; de back-upcode inventariseert dynamisch alle buckets. Bij de laatste read-only controle waren er twee private buckets: `onboarding-lead-documents` en `onboarding-documents`. De daadwerkelijke back-uprun moet nog worden bewezen. |
-| STRATO back-upbestanden | Maximaal 90 dagen vanaf de datum in de bestandsnaam | De dagelijkse back-upworkflow verwijdert na succesvolle upload-, checksum- en decryptiecontrole de versleutelde back-ups en bijbehorende checksums ouder dan 90 dagen. Alleen bestanden met het verwachte ANIMO-back-upnaamformaat worden verwijderd. |
+| Private onboarding- en documentbestanden | Contract-/aanvraagdoel plus noodzakelijke bewaartermijn | Supabase Storage; de back-upworkflow inventariseert dynamisch alle buckets. De Storage-back-up naar STRATO is op 8 november 2026 succesvol uitgevoerd en de teruggedownloade, ontsleutelde inhoud is gevalideerd. Dit bewijst nog geen verwijdering van de bronbestanden of herstel in Supabase. |
+| STRATO database- en Storage-back-ups | Beoogd maximaal 90 dagen vanaf de datum in de bestandsnaam | Database- en Storage-back-ups worden afzonderlijk versleuteld opgeslagen. Upload, terugdownload, checksum en archief-/inhoudscontrole zijn succesvol uitgevoerd. De 90-dagenretentiestap is in de bevestigde Storage-run als dry-run uitgevoerd; oude bestanden zijn niet verwijderd. De daadwerkelijke verwijdering is daarom nog niet operationeel bewezen en blijft uitgeschakeld totdat die stap afzonderlijk is beoordeeld en goedgekeurd. |
 | Facturen en boekhoudstukken | Belgische wettelijke bewaartermijn | Beperkte boekhoudtoegang; niet verwijderen vóór wettelijke termijn |
 | Account- en beveiligingslogs | Stel korte, aantoonbare termijn in (voorstel 6–12 maanden afhankelijk van logtype) | **OPEN ACTIE:** inventariseer Supabase, STRATO, GitHub logs en stel per leverancier werkelijke termijn vast |
 | Prospectaanvragen die niet klant worden | Voorstel 12 maanden na laatste betekenisvolle contact | **OPEN ACTIE:** implementeer verwijder-/reviewmoment en documenteer uitzonderingen |
@@ -28,7 +28,9 @@ Persoonsgegevens worden niet langer bewaard dan nodig voor het doel. Een contrac
 7. Informeer de klant over wat verwijderd is en welke kopieën nog tijdelijk in back-ups kunnen zitten.
 
 ## 4. Back-upretentie – technische uitvoering
-De dagelijkse GitHub Actions-back-upworkflow inventariseert alle Supabase Storage-buckets en bewaart de objecten in versleutelde GPG-kopieën op STRATO. De laatst gecontroleerde projectinventaris bevatte twee private buckets: onboarding-lead-documents en onboarding-documents. Na een geslaagde upload, terug-download, checksumcontrole, decryptie en inhoudscontrole verwijdert de workflow uitsluitend bestanden met het patroon `animo-storage-YYYYMMDDTHHMMSSZ.tar.gz.gpg` die ouder zijn dan 90 dagen, plus hun `.sha256`-bestand. De eerste uitvoering van de retentiestap moet nog succesvol worden getest. De hostkey-pin voor deze stap is optioneel totdat de onafhankelijk bevestigde STRATO-fingerprint als GitHub-secret is ingesteld. Dit is een termijn voor technische back-upkopieën en staat los van de exportperiode van 90 dagen voor actieve cloudgegevens. Bij een mislukte retentiestap faalt de workflow en wordt de bestaande incidentmelding geactiveerd.
+De dagelijkse GitHub Actions-workflow maakt afzonderlijke versleutelde database- en Supabase Storage-back-ups op STRATO. De Storage-workflow inventariseert alle Supabase Storage-buckets en valideert objecten via bestandsgrootte en SHA-256. Op 8 november 2026 slaagde de Storage-run [42431409352](https://github.com/jeroen-hash/animo-haccp-web/actions/runs/42431409352): de back-up werd teruggedownload, checksum-gecontroleerd, ontsleuteld en inhoudelijk gevalideerd. De databaseback-up-run [42429105062](https://github.com/jeroen-hash/animo-haccp-web/actions/runs/42429105062) slaagde eveneens met checksum- en archiefcontrole.
+
+De workflow bevat een 90-dagenretentieregel voor uitsluitend bestanden met het verwachte ANIMO-back-upnaamformaat. De bevestigde Storage-run gebruikte echter de veilige dry-run-instelling; er zijn geen oude bestanden verwijderd. De daadwerkelijke retentieverwijdering is dus nog niet getest of goedgekeurd. De retentie mag niet als operationeel bewezen worden voorgesteld. De schema-only hersteltest [42430946472](https://github.com/jeroen-hash/animo-haccp-web/actions/runs/42430946472) slaagde in een tijdelijke PostgreSQL-omgeving, maar bewijst geen herstel van alle klantrecords. Dit is een termijn voor technische back-upkopieën en staat los van de exportperiode van 90 dagen voor actieve cloudgegevens.
 
 ## 5. Offline opslag – klantinformatie
 ANIMO HACCP bewaart voor offline gebruik appgegevens in browseropslag, waaronder localStorage en IndexedDB. Een gebruiker kan uitloggen zonder dat alle lokale bedrijfsgegevens automatisch worden verwijderd. Klanten moeten daarom:
