@@ -1,0 +1,70 @@
+name: Render ANIMO HACCP promo video
+
+on:
+  push:
+    paths:
+      - "marketing/video-preview.html"
+      - "images/animo-logo.png.png"
+      - "images/app-dashboard.jpg"
+      - "images/app-temperaturen.jpg"
+      - "images/app-rapport.jpg"
+      - ".github/workflows/render-promo-video.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install browser and video tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          npm install playwright
+          npx playwright install --with-deps chromium
+
+      - name: Render 45-second vertical video
+        run: |
+          cat > render.cjs <<'EOF'
+          const { chromium } = require('playwright');
+          const path = require('path');
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const context = await browser.newContext({
+              viewport: { width: 1080, height: 1920 },
+              deviceScaleFactor: 1,
+              recordVideo: { dir: 'recording', size: { width: 1080, height: 1920 } }
+            });
+            const page = await context.newPage();
+            await page.goto('file://' + path.resolve('marketing/video-preview.html'), { waitUntil: 'networkidle' });
+            await page.evaluate(() => document.fonts.ready);
+            await page.waitForTimeout(47000);
+            await context.close();
+            await browser.close();
+          })().catch(e => { console.error(e); process.exit(1); });
+          EOF
+          node render.cjs
+          WEBM=$(find recording -name '*.webm' -type f | head -n 1)
+          test -n "$WEBM"
+          ffmpeg -y -i "$WEBM" -an -c:v libx264 -preset medium -crf 19 -pix_fmt yuv420p -movflags +faststart animo-haccp-promotievideo.mp4
+          test -s animo-haccp-promotievideo.mp4
+
+      - name: Publish downloadable MP4
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: animo-haccp-promotievideo
+          name: ANIMO HACCP promotievideo
+          body: "Verticale MP4-promotievideo van ANIMO HACCP. Deze versie bevat nog geen voice-over of muziek."
+          files: animo-haccp-promotievideo.mp4
+          make_latest: true
