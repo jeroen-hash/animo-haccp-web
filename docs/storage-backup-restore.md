@@ -1,7 +1,6 @@
 # ANIMO HACCP – Storage-back-up herstellen
 
-De workflow bewaart versleutelde kopieën van de private buckets
-`onboarding-lead-documents` en `onboarding-documents` op STRATO.
+De workflow inventariseert dynamisch alle Storage-buckets in het geconfigureerde Supabase-project en bewaart de objecten versleuteld op STRATO. Een eerdere read-only inventarisatie vond onder meer de private buckets `onboarding-lead-documents` en `onboarding-documents`; deze namen vormen geen vaste of volledige lijst.
 
 ## Belangrijk
 - Bewaar de waarde van GitHub-secret `ANIMO_BACKUP_ENCRYPTION_KEY` ook in een wachtwoordmanager.
@@ -24,7 +23,7 @@ Na onafhankelijke controle kan de SHA-256-fingerprint als GitHub Actions-reposit
 
 De workflow vergelijkt dan de fingerprint die via SSH wordt aangeboden met deze vooraf opgeslagen waarde en gebruikt `StrictHostKeyChecking=yes`. Bij een mismatch stopt de back-up vóór de upload/download. Wijzig of vervang deze waarde alleen na controle via STRATO of een andere vertrouwde STRATO-ondersteuningsbron.
 
-Zolang dit extra secret nog niet is ingesteld, blijft de bestaande SFTP-verbinding tijdelijk werken zoals voorheen en geeft GitHub Actions een waarschuwing. De back-up wordt dus niet onverwacht onderbroken, maar host-key-pinning is dan nog niet actief.
+De huidige database- en Storage-back-upworkflows vereisen `STRATO_SFTP_HOST_KEY_SHA256` en stoppen vóór SFTP-overdracht wanneer het secret ontbreekt of niet overeenkomt. Zonder vooraf onafhankelijk gecontroleerde fingerprint kan de back-up dus mislukken; schakel host-key-controle niet uit om dit te omzeilen.
 
 ## Herstelprocedure
 1. Download het gewenste `.tar.gz.gpg`-bestand en het bijbehorende `.sha256`-bestand uit `/backups/animo-haccp-storage` via SFTP.
