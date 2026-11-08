@@ -107,3 +107,15 @@ Import mag pas na expliciete gebruikersgoedkeuring van een concrete preview plaa
 - De tien operationele tabellen blijven samen 53 rijen. De extra identiteits-/structuurgegevens zijn apart geteld en worden alleen gebruikt voor gecontroleerde mapping.
 - De exportquery is nog niet als JSON-bestand uitgevoerd of extern opgeslagen. Er is geen import uitgevoerd en geen data gewijzigd.
 - De projectrollen zijn expliciet: `xwjcwravfeldndwlugai` = oude HACCP-bron; `zimzsovvtdmrthrflkgm` = huidige SaaS-app en geïsoleerde migratietestdoelzaak.
+
+
+## Kosteloze geïsoleerde database-structuurhersteltest (2026-11-08)
+
+- Workflow: `.github/workflows/test-database-restore-schema.yml` (GitHub Actions, uitsluitend handmatig via `workflow_dispatch`).
+- PR #132 is gemerged naar main (merge commit `b935df6d080cc4c71faa99cf182fa859ef4acb7b`).
+- De workflow haalt de nieuwste timestamped databaseback-up op van STRATO, controleert de vastgepinde SSH-hostsleutel en SHA-256-checksum, ontsleutelt op de tijdelijke GitHub-runner en voert `pg_restore --schema-only` uit in een tijdelijke Supabase-compatibele PostgreSQL-container.
+- De workflow herstelt bewust geen rijen/klantgegevens. Dit is een schema-/DDL-hersteltest, geen volledige datahersteltest en geen bewijs dat alle Auth-, Storage-objecten of runtime-integraties volledig herstellen.
+- Container en tijdelijke dump worden na afloop verwijderd. Geen Supabase-branch of wijziging aan productieprojecten.
+- De Storage-backupworkflow weigert nu SFTP als `STRATO_SFTP_HOST_KEY_SHA256` ontbreekt of niet overeenkomt; onveilige automatische host-key acceptatie is verwijderd.
+- Kosten: geen Supabase-kosten. GitHub Actions gebruikt eventuele inbegrepen minuten; boven de accountlimiet kunnen GitHub-kosten ontstaan. De workflow wordt niet automatisch gestart.
+- Status: workflow is toegevoegd en gemerged, maar nog NIET uitgevoerd. Noteer pas na handmatige uitvoering het run-ID en resultaat. Geen hersteltest als geslaagd markeren vóór groene run.
