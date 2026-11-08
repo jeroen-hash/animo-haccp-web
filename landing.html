@@ -24,6 +24,59 @@ footer{background:#03251a;color:#c6d8cc;padding:45px 0 24px}.footer-top{display:
 @media(max-width:950px){.navlinks{display:none}.hero-grid,.how-grid,.price-layout{grid-template-columns:1fr;gap:36px}.visual{max-width:690px;margin:auto}.trust-row{grid-template-columns:repeat(2,1fr)}.feature-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:620px){.wrap{width:min(100% - 26px,1160px)}.topline{font-size:.73rem}.nav{height:66px}.logo img{width:158px;max-height:56px}.actions .secondary{display:none}.actions .btn{min-height:41px;padding:0 13px;font-size:.82rem}.hero{padding:55px 0 52px}.hero-grid{gap:30px}h1{font-size:2.72rem}.hero-copy{font-size:1rem}.proof{font-size:.79rem;gap:8px 14px}.visual{padding:9px;border-radius:18px}.visual img{border-radius:12px}.visual-note{left:8px;bottom:13px;padding:8px 11px}.trust-row{gap:12px 8px}.trust-item{justify-content:flex-start;font-size:.75rem}.trust-icon{width:29px;height:29px;flex:0 0 29px}section{padding:62px 0}.feature-grid{grid-template-columns:1fr}.screens{grid-template-columns:1fr;max-width:430px;margin-inline:auto;gap:14px}.price-card{padding:22px}.price{font-size:2.95rem}.included{grid-template-columns:1fr}.onboard{padding:24px}.cta-panel{display:block;padding:30px 23px}.cta-panel .btn{margin-top:20px;width:100%}.footer-top{display:block}.footer-logo{margin-bottom:19px}.footer-links{gap:10px 14px}.copyright{display:block}.copyright span{display:block;margin-top:6px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important}}
+
+/* V2 visual direction: premium editorial horeca technology */
+:root{--forest:#082f25;--green:#0b7651;--mint:#e8f3eb;--pale:#f4f7f3;--ink:#10231b;--muted:#5d6d64;--line:#d9e3dc;--shadow:0 28px 80px rgba(4,39,27,.16)}
+body{font-family:Inter, "Avenir Next", ui-sans-serif,system-ui,sans-serif;letter-spacing:-.012em}
+.topline{background:#082f25;padding:10px 16px;letter-spacing:.035em}
+header{background:rgba(255,255,255,.96)}
+.nav{height:82px}.logo img{width:214px}
+.btn{min-height:51px;padding:0 23px;font-size:.94rem;letter-spacing:-.01em}
+.primary{background:#087650;box-shadow:0 12px 28px rgba(8,118,80,.25)}
+.hero{position:relative;background:#082f25;color:#fff;padding:92px 0 90px;isolation:isolate}
+.hero:before{content:"";position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse at 82% 22%,rgba(194,159,94,.22),transparent 28%),radial-gradient(ellipse at 6% 100%,rgba(22,131,88,.3),transparent 42%),linear-gradient(110deg,#082f25 0%,#0b4331 65%,#0b5038 100%)}
+.hero .eyebrow{background:rgba(255,255,255,.1);color:#f2dfb9;border:1px solid rgba(255,255,255,.15)}
+.hero h1{font-size:clamp(3.1rem,6.2vw,5.65rem);font-weight:850;max-width:680px;margin:25px 0 23px;letter-spacing:-.065em}
+.hero h1 span{color:#c7e4d0}
+.hero-copy{color:#d2e2d8;font-size:1.16rem;line-height:1.75;max-width:570px}
+.hero .secondary{background:transparent;color:white;border-color:rgba(255,255,255,.38)}
+.hero .primary{background:#e6c58b;color:#183c2c;box-shadow:0 12px 32px rgba(0,0,0,.18)}
+.hero .primary:hover{background:#f2d9aa}
+.proof{color:#d1e1d7}
+.proof span:before{color:#e6c58b}
+.visual{padding:11px;background:#f8faf8;border:1px solid rgba(255,255,255,.3);border-radius:22px;box-shadow:0 35px 90px rgba(0,0,0,.32);transform:rotate(0);position:relative}
+.visual:after{content:"";position:absolute;inset:22px;border:1px solid rgba(8,47,37,.1);border-radius:14px;pointer-events:none}
+.visual img{border-radius:13px}
+.visual-note{left:-28px;bottom:25px;padding:15px 19px;border-radius:13px}
+.trust{background:#fff}.trust-row{padding:25px 0}.trust-item{font-size:.9rem}
+section{padding:94px 0}
+.heading{font-weight:850;letter-spacing:-.055em}
+.kicker{letter-spacing:.18em}
+.feature-grid{gap:18px;margin-top:44px}
+.feature{padding:27px 26px;border-radius:17px;box-shadow:0 5px 22px rgba(5,50,33,.035);min-height:190px}
+.feature:hover{transform:translateY(-5px);box-shadow:0 20px 44px rgba(5,50,33,.09)}
+.feature-icon{border-radius:12px;background:#e8f2e9;color:#086c49}
+.feature h3{font-size:1.08rem;letter-spacing:-.025em}
+.feature p{line-height:1.7}
+.soft{background:#f2f6f2}
+.screen-frame{border-radius:16px;box-shadow:0 22px 55px rgba(5,50,33,.13)}
+.screen figcaption{padding:16px 8px;line-height:1.6}
+.screen figcaption strong{margin-bottom:3px}
+.how-grid{gap:70px}
+.onboard{background:linear-gradient(145deg,#082f25,#0d5a3e);border:1px solid rgba(255,255,255,.12);padding:38px}
+.price-card{border-radius:18px;border:1px solid #d5e1d8;box-shadow:0 25px 65px rgba(5,50,33,.11)}
+.price{font-size:4rem;color:#082f25}
+.trial{background:#edf5ee;border:1px solid #d9e9dd}
+.cta-panel{background:radial-gradient(circle at 90% 10%,rgba(214,183,124,.2),transparent 32%),linear-gradient(120deg,#082f25,#0b6948);border-radius:18px;padding:55px 58px}
+footer{background:#061f18}
+@media(max-width:620px){
+ .nav{height:68px}.logo img{width:166px}
+ .hero{padding:62px 0 58px}.hero h1{font-size:3.05rem;line-height:1.02}
+ .hero-copy{font-size:1.02rem}.visual{margin-top:5px}.visual-note{left:8px;bottom:12px}
+ section{padding:68px 0}.feature{min-height:0;padding:23px}
+ .cta-panel{padding:32px 24px}
+}
+
 </style>
 </head>
 <body>
@@ -36,35 +89,35 @@ footer{background:#03251a;color:#c6d8cc;padding:45px 0 24px}.footer-top{display:
 <main id="top">
 <section class="hero"><div class="wrap hero-grid"><div>
 <div class="eyebrow">Voor restaurants, cafés en professionele keukens</div>
-<h1>Minder papierwerk.<br><span>Meer grip op je zaak.</span></h1>
-<p class="hero-copy">HACCP-registraties, dagelijkse controles en praktisch zaakbeheer op één plek. Met ANIMO HACCP houdt jouw team overzicht — op computer, tablet en smartphone.</p>
+<h1>De controle over<br><span>je keuken. In één plek.</span></h1>
+<p class="hero-copy">Van temperatuurcontrole en kuisplanning tot allergenen, voorraad, facturen en receptkost: ANIMO HACCP brengt je dagelijkse keukenwerking samen in één helder platform. Minder losse lijsten. Meer overzicht voor jou en je team.</p>
 <div class="hero-buttons"><a class="btn primary" href="https://app.animo-apps.com/?signup=1">Start 14 dagen gratis →</a><a class="btn secondary" href="#schermen">Bekijk de app</a></div>
 <div class="proof"><span>Geen installatie nodig</span><span>Voor je hele team</span><span>Ook mobiel te gebruiken</span></div>
-</div><div class="visual"><img src="./images/app-dashboard.jpg" alt="Echt dashboard van ANIMO HACCP met dagelijkse registraties" fetchpriority="high"><div class="visual-note"><strong>Alles overzichtelijk samen</strong>Van dagelijkse check tot rapport</div></div></div></section>
-<div class="trust"><div class="wrap trust-row"><div class="trust-item"><span class="trust-icon">✓</span> Dagelijkse HACCP-checks</div><div class="trust-item"><span class="trust-icon">°C</span> Temperatuurhistoriek</div><div class="trust-item"><span class="trust-icon">▤</span> Rapporten en documenten</div><div class="trust-item"><span class="trust-icon">♙</span> Rollen voor je team</div></div></div>
-<section id="voordelen"><div class="wrap center"><div class="kicker">Eén centrale werkplek</div><h2 class="heading">De dagelijkse werking van je keuken, duidelijk georganiseerd</h2><p class="intro">Van temperatuurmetingen tot voorraad en recepten: minder losse lijsten en meer overzicht in de dagelijkse opvolging.</p></div>
+</div><div class="visual"><img src="./images/app-dashboard.jpg" alt="Echt dashboard van ANIMO HACCP met dagelijkse registraties" fetchpriority="high"><div class="visual-note"><strong>Alles overzichtelijk samen</strong>Van dagelijkse controle tot zaakoverzicht</div></div></div></section>
+<div class="trust"><div class="wrap trust-row"><div class="trust-item"><span class="trust-icon">✓</span> Dagelijkse HACCP-checks</div><div class="trust-item"><span class="trust-icon">°C</span> Temperatuurhistoriek</div><div class="trust-item"><span class="trust-icon">▤</span> Rapporten en autocontrole</div><div class="trust-item"><span class="trust-icon">♙</span> Rollen voor je team</div></div></div>
+<section id="voordelen"><div class="wrap center"><div class="kicker">Eén centrale werkplek</div><h2 class="heading">Niet alleen registreren. Je volledige keukenwerking opvolgen.</h2><p class="intro">ANIMO HACCP verbindt voedselveiligheid met praktisch zaakbeheer. Zo hoef je niet te schakelen tussen losse documenten, lijstjes en spreadsheets.</p></div>
 <div class="wrap feature-grid">
-<article class="feature"><div class="feature-icon">°C</div><h3>Temperaturen registreren</h3><p>Werk met vaste meetpunten, grenswaarden, historiek en corrigerende acties bij afwijkingen.</p></article>
-<article class="feature"><div class="feature-icon">✓</div><h3>Kuisplannen opvolgen</h3><p>Plan terugkerende schoonmaaktaken, wijs verantwoordelijkheden toe en registreer de uitvoering.</p></article>
-<article class="feature"><div class="feature-icon">A</div><h3>Allergenen en gerechten</h3><p>Bewaar ingrediënten en allergeneninformatie overzichtelijk per gerecht.</p></article>
+<article class="feature"><div class="feature-icon">°C</div><h3>Temperatuurcontrole met opvolging</h3><p>Stel meetpunten en grenswaarden in, registreer metingen en volg te hoge of te lage temperaturen op via een aparte actielijst.</p></article>
+<article class="feature"><div class="feature-icon">✓</div><h3>Dagelijkse kuisplanning</h3><p>Maak terugkerende taken aan, wijs werk toe en vink uitgevoerde schoonmaakcontroles af. Bekijk ook de voortgang.</p></article>
+<article class="feature"><div class="feature-icon">A</div><h3>Allergenen per gerecht</h3><p>Beheer je gerechten en duid de aanwezige allergenen duidelijk aan. Maak een allergenenoverzicht dat je als PDF kan bewaren.</p></article>
 <article class="feature"><div class="feature-icon">▦</div><h3>Voorraad en leveranciers</h3><p>Beheer producten, eenheden, leveranciers en voorraadbewegingen op één plek.</p></article>
 <article class="feature"><div class="feature-icon">€</div><h3>Facturen en leveringen</h3><p>Verwerk UBL-facturen en leveringsgegevens om aankopen en voorraad beter op te volgen.</p></article>
-<article class="feature"><div class="feature-icon">▤</div><h3>Recepten en kostprijs</h3><p>Leg recepturen en hoeveelheden vast en volg het bijhorende stockverbruik op.</p></article>
+<article class="feature"><div class="feature-icon">▤</div><h3>Recepten en foodcost</h3><p>Leg recepturen en hoeveelheden vast en volg het bijhorende stockverbruik op.</p></article>
 <article class="feature"><div class="feature-icon">▧</div><h3>Dagafsluiting en rapporten</h3><p>Bundel registraties en raadpleeg rapporten om je dagelijkse werking op te volgen.</p></article>
 <article class="feature"><div class="feature-icon">⇧</div><h3>Documenten bewaren</h3><p>Bewaar relevante PDF-, Word-, Excel-, CSV- en afbeeldingsbestanden bij jouw horecazaak.</p></article>
 <article class="feature"><div class="feature-icon">♙</div><h3>Je team beheren</h3><p>Werk met eigenaars, managers en medewerkers en geef toegang volgens hun rol.</p></article>
 </div></section>
-<section class="soft" id="schermen"><div class="wrap center"><div class="kicker">Bekijk de echte app</div><h2 class="heading">Ontworpen voor gebruik tijdens je werkdag</h2><p class="intro">Geen verzonnen voorbeeldschermen: hieronder zie je echte beelden uit ANIMO HACCP.</p></div>
+<section class="soft" id="schermen"><div class="wrap center"><div class="kicker">Bekijk de echte app</div><h2 class="heading">Zo ziet werken met ANIMO HACCP eruit</h2><p class="intro">Geen stockfoto's van een fictieve app. Dit zijn echte schermbeelden van ANIMO HACCP.</p></div>
 <div class="wrap screens"><figure class="screen"><div class="screen-frame"><img src="./images/app-dashboard.jpg" alt="Echt dashboard van ANIMO HACCP" loading="lazy"></div><figcaption><strong>Jouw dashboard</strong>De belangrijkste dagelijkse taken in één overzicht.</figcaption></figure>
 <figure class="screen"><div class="screen-frame"><img src="./images/app-temperaturen.jpg" alt="Echte temperatuurregistraties in ANIMO HACCP" loading="lazy"></div><figcaption><strong>Temperatuurregistraties</strong>Meetpunten en controles per toestel.</figcaption></figure>
-<figure class="screen"><div class="screen-frame"><img src="./images/app-rapport.jpg" alt="Echt rapportagescherm van ANIMO HACCP" loading="lazy"></div><figcaption><strong>Rapporten</strong>Je registraties overzichtelijk gebundeld.</figcaption></figure></div></section>
+<figure class="screen"><div class="screen-frame"><img src="./images/app-rapport.jpg" alt="Echt rapportagescherm van ANIMO HACCP" loading="lazy"></div><figcaption><strong>Rapporten</strong>Dagafsluiting, historiek en rapporten om te bewaren als PDF.</figcaption></figure></div></section>
 <section id="starten"><div class="wrap how-grid"><div><div class="kicker">Snel op weg</div><h2 class="heading">Start op jouw manier</h2><p class="intro">Je hoeft niet eerst een afspraak te maken. Je kan zelfstandig beginnen of kiezen voor extra hulp bij de inrichting.</p>
 <div class="steps"><div class="step"><div class="step-no">1</div><div><h3>Maak je account aan</h3><p>Start je gratis proefperiode en registreer jouw horecazaak.</p></div></div><div class="step"><div class="step-no">2</div><div><h3>Richt je omgeving in</h3><p>Voeg je meetpunten, taken, producten, gerechten en teamleden toe.</p></div></div><div class="step"><div class="step-no">3</div><div><h3>Registreer dagelijks</h3><p>Laat je team controles en opvolging centraal bijhouden.</p></div></div></div>
 <p style="margin-top:24px"><a href="https://app.animo-apps.com/?signup=1" style="color:var(--green);font-weight:850">Maak meteen je account aan →</a></p></div>
 <aside class="onboard"><h3>Liever hulp bij de opstart?</h3><p>Kies optionele onboarding als je liever samen met ANIMO de basis van jouw omgeving voorbereidt.</p>
 <div class="onboard-row"><b>1</b><span>Jouw horecazaak<small>Zaakgegevens en activiteiten</small></span></div><div class="onboard-row"><b>2</b><span>Jouw werking<small>Zones, toestellen en werkprocessen</small></span></div><div class="onboard-row"><b>3</b><span>Jouw documenten<small>Bestaande lijsten en bestanden</small></span></div><div class="onboard-row"><b>4</b><span>Jouw ondersteuning<small>Kies gedeeltelijke of volledige hulp</small></span></div>
 <a class="btn secondary" style="margin-top:18px;width:100%" href="https://www.animo-apps.com/onboarding-form.html">Bekijk onboarding</a></aside></div></section>
-<section class="soft" id="prijzen"><div class="wrap price-layout"><div><div class="kicker">Transparante prijzen</div><h2 class="heading">Alle kernfuncties. Eén duidelijk abonnement.</h2><p class="intro">Kies zelf of je ANIMO HACCP zelfstandig instelt of hulp vraagt bij de opstart. Onboarding is optioneel.</p></div>
+<section class="soft" id="prijzen"><div class="wrap price-layout"><div><div class="kicker">Transparante prijzen</div><h2 class="heading">Een vaste prijs. Je hele team aan boord.</h2><p class="intro">Start zelfstandig in je eigen tempo of laat je helpen bij de inrichting. Je betaalt één transparant abonnement per horecazaak.</p></div>
 <div class="price-card"><div class="price-name">ANIMO HACCP · Professional</div><div class="price">€55 <small>/ maand · excl. btw</small></div><p class="price-note">Of €550 per jaar, excl. btw.</p>
 <ul class="included"><li>Temperatuurregistraties</li><li>Kuisplannen</li><li>Allergenen en gerechten</li><li>Voorraad en leveranciers</li><li>UBL-facturen</li><li>Recepten en kostprijs</li><li>Rapporten en documenten</li><li>Teamrollen en gebruikers</li></ul>
 <div class="trial"><strong>Probeer ANIMO 14 dagen gratis</strong><p>Maak zelfstandig je account aan en ontdek de app. Je hoeft ons vooraf niet te contacteren.</p><a class="btn primary" style="width:100%" href="https://app.animo-apps.com/?signup=1">Start je gratis proefperiode →</a></div>
@@ -76,13 +129,13 @@ footer{background:#03251a;color:#c6d8cc;padding:45px 0 24px}.footer-top{display:
 </div></div></section>
 <section id="vragen"><div class="wrap center"><div class="kicker">Veelgestelde vragen</div><h2 class="heading">Goed geïnformeerd van start</h2></div><div class="wrap faq">
 <details><summary>Moet ik iets installeren?</summary><p>Nee. Je gebruikt ANIMO HACCP via een moderne webbrowser op computer, tablet of smartphone.</p></details>
-<details><summary>Kan mijn personeel ook registreren?</summary><p>Ja. Je kan medewerkers uitnodigen en werken met de rollen eigenaar, manager en medewerker.</p></details>
-<details><summary>Kan ik ANIMO op mijn smartphone gebruiken?</summary><p>Ja. De webapp is geschikt voor mobiel gebruik. Registraties kunnen ook offline worden bijgehouden en later synchroniseren zodra er opnieuw verbinding is.</p></details>
+<details><summary>Kan ik mijn medewerkers toegang geven?</summary><p>Ja. Je kan medewerkers uitnodigen en werken met de rollen eigenaar, manager en medewerker.</p></details>
+<details><summary>Werkt ANIMO HACCP ook zonder internet?</summary><p>Ja. De webapp is geschikt voor mobiel gebruik. Registraties kunnen ook offline worden bijgehouden en later synchroniseren zodra er opnieuw verbinding is.</p></details>
 <details><summary>Moet ik onboarding nemen?</summary><p>Nee. Je kan zelfstandig starten. Gedeeltelijke of volledige onboarding is optioneel en wordt eenmalig aangerekend.</p></details>
 <details><summary>Kan ANIMO mijn wettelijke HACCP-verantwoordelijkheid overnemen?</summary><p>Nee. ANIMO HACCP is een digitaal registratie- en opvolghulpmiddel. De voedseloperator blijft verantwoordelijk voor correcte controles, opvolging en wettelijke naleving. Een rapport op zich garandeert geen wettelijke conformiteit.</p></details>
 <details><summary>Hoe begin ik?</summary><p>Klik op “Start je gratis proefperiode”, maak je account aan en registreer jouw horecazaak.</p></details>
 </div></section>
-<section class="final-cta"><div class="wrap"><div class="cta-panel"><div><h2>Maak ruimte voor wat écht telt.</h2><p>Breng je dagelijkse registraties samen in ANIMO HACCP.</p></div><a class="btn" href="https://app.animo-apps.com/?signup=1">Start 14 dagen gratis →</a></div></div></section>
+<section class="final-cta"><div class="wrap"><div class="cta-panel"><div><h2>Je keuken draait door. Je administratie ook — zonder stapels papier.</h2><p>Start vandaag en ontdek hoe je controles, voorraad en opvolging samenbrengt.</p></div><a class="btn" href="https://app.animo-apps.com/?signup=1">Start 14 dagen gratis →</a></div></div></section>
 </main>
 <footer><div class="wrap"><div class="footer-top"><img class="footer-logo" src="./images/animo-logo.png.png" alt="ANIMO HACCP"><nav class="footer-links" aria-label="Footer"><a href="#voordelen">Voordelen</a><a href="#schermen">De app</a><a href="#prijzen">Prijzen</a><a href="https://www.animo-apps.com/privacy.html">Privacy</a><a href="https://www.animo-apps.com/algemene-voorwaarden.html">Algemene voorwaarden</a><a href="mailto:info@animo-apps.com">Contact</a></nav></div>
 <p class="legal">ANIMO HACCP is een onafhankelijk digitaal registratie- en opvolghulpmiddel. Het vervangt geen officiële autocontrolegids of professioneel advies en garandeert op zichzelf geen wettelijke HACCP-conformiteit. De horecaondernemer blijft verantwoordelijk voor correcte controles en wettelijke naleving.</p>
