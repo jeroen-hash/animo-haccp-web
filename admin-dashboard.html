@@ -204,6 +204,13 @@ async function loadWebsiteAnalytics(){
       ['Deze maand',Number(stats.month||0)]
     ];
     $('websiteAnalyticsMetrics').innerHTML=metrics.map(([label,value])=>metric(label,value.toLocaleString('nl-BE'))).join('');
+    const siteNames={'www.animo-apps.com':'Hoofdwebsite','start.animo-apps.com':'Landingspagina','app.animo-apps.com':'HACCP-app'};
+    const sites=Array.isArray(stats.sites)?stats.sites:[];
+    $('websiteAnalyticsSites').innerHTML=sites.map(site=>{
+      const host=String(site.site_host||'');
+      const label=siteNames[host]||'ANIMO-subdomein';
+      return '<div class="detail-item"><small>'+esc(label)+' · '+esc(host)+'</small><strong>'+Number(site.today||0).toLocaleString('nl-BE')+' vandaag</strong><div class="muted" style="font-size:12px;margin-top:5px">'+Number(site.week||0).toLocaleString('nl-BE')+' deze week · '+Number(site.month||0).toLocaleString('nl-BE')+' deze maand</div></div>';
+    }).join('')||'<div class="detail-item">Nog geen bezoeken geregistreerd op de ANIMO-domeinen.</div>';
     const days=Array.isArray(stats.daily)?stats.daily:[];
     const orderedDays=[...days].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
     const last7=orderedDays.slice(-7),previous7=orderedDays.slice(-14,-7);
