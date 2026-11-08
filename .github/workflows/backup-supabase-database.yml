@@ -88,10 +88,14 @@ jobs:
               "PGDATABASE": database,
               "PGSSLMODE": "require",
           }
-          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as envfile:
+          import shlex
+          with open(os.path.join(os.environ["RUNNER_TEMP"], "db-connection.env"), "w", encoding="utf-8") as envfile:
               for key, value in values.items():
-                  envfile.write(f"{key}={value}\\n")
+                  envfile.write(f"{key}={shlex.quote(value)}\\n")
           PY
+          set -a
+          source "$RUNNER_TEMP/db-connection.env"
+          set +a
 
           dump="$RUNNER_TEMP/animo-database.dump"
           docker run --rm \
