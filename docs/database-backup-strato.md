@@ -19,9 +19,9 @@ De workflow verwacht deze repository secrets:
 - `STRATO_SFTP_USER`
 - `STRATO_SFTP_PASSWORD`
 - `STRATO_SFTP_HOST_KEY_SHA256`: vooraf gecontroleerde STRATO SSH-fingerprint.
-- `ANIMO_BACKUP_ENCRYPTION_KEY`: dezelfde back-up-passphrase als de Storage-back-up.
+- `ANIMO_BACKUP_ENCRYPTION_KEY`: de GPG-passphrase die deze databaseworkflow gebruikt. De workflow leest deze GitHub-secret onder de interne omgevingsnaam `BACKUP_PASSPHRASE`; dat is dus niet de naam van de GitHub-secret.
 
-**De connection URI, het databasewachtwoord en de encryptiesleutel mogen nooit in chat, e-mail, issues of broncode worden geplakt.** Voeg ze alleen rechtstreeks toe via GitHub > repository Settings > Secrets and variables > Actions > New repository secret.
+**De connection URI, het databasewachtwoord en de encryptiesleutel mogen nooit in chat, e-mail, issues of broncode worden geplakt. GitHub toont de bestaande secretwaarde niet opnieuw. Verwijder of overschrijf `ANIMO_BACKUP_ENCRYPTION_KEY` niet zomaar: oudere back-ups zijn met de toen geldende passphrase versleuteld.** Voeg ze alleen rechtstreeks toe via GitHub > repository Settings > Secrets and variables > Actions > New repository secret.
 
 Als het databasewachtwoord onbekend is, moet de eigenaar eerst beslissen of hij het in Supabase wil resetten. Een reset verandert de Supabase API-keys en bestaande gebruikerswachtwoorden niet, maar externe rechtstreekse databaseverbindingen met het oude wachtwoord moeten worden bijgewerkt. Reset niets automatisch vanuit deze workflow.
 
@@ -37,6 +37,15 @@ Als het databasewachtwoord onbekend is, moet de eigenaar eerst beslissen of hij 
 
 ## Beperkingen
 
-Een geslaagde checksum- en archiefcontrole bewijst dat het bestand intact en leesbaar is; het is nog geen volledige herstelproef. Een herstelproef moet later in een aparte Supabase-testomgeving gebeuren. De workflow voert nooit een restore uit en wijzigt de live database niet.
+## Huidige status (8 november 2026)
 
-De workflow is voorbereid op branch `feature/encrypted-supabase-database-backup`. Ze kan pas echt draaien nadat de workflow veilig in de standaardbranch staat en alle vereiste secrets zijn ingesteld. De eerste uitvoering moet handmatig worden gestart en gecontroleerd voordat we vertrouwen op de dagelijkse planning.
+- De handmatige uitvoering `42429105062` is volledig geslaagd.
+- De database-export (`387359 bytes`) is met GPG AES-256 versleuteld en naar STRATO geüpload.
+- De workflow heeft het bestand opnieuw gedownload; SHA-256 kwam overeen.
+- Ontsleuteling en `pg_restore --list` zijn geslaagd.
+- Dit bewijst dat deze back-up intact en leesbaar is. Het is nog géén volledige database-herstelproef.
+- De Storage-back-up is een aparte workflow. De Storage-bestanden zijn in een afzonderlijke Supabase-omgeving hersteld; dat mag niet worden verward met een herstel van de Postgres-database.
+
+Een volledige database-herstelproef moet nog in een afzonderlijke, goedgekeurde Supabase-testomgeving gebeuren. De workflow voert nooit een restore uit en wijzigt de live database niet.
+
+De workflow staat in de standaardbranch en de eerste handmatige uitvoering is gecontroleerd en geslaagd. De dagelijkse planning staat ingesteld op 03:00 UTC. Controleer de volgende geplande uitvoering om te bevestigen dat ook de automatische trigger blijft werken.
