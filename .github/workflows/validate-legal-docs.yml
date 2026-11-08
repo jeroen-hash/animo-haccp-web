@@ -33,3 +33,5 @@ jobs:
           node-version: 20
       - name: Controleer juridische en GDPR-documenten
         run: node scripts/validate-legal-docs.mjs
+      - name: Controleer publieke verkooppagina en links
+        run: node --test tests/landing-page-launch-checks.test.mjs
