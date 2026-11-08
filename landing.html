@@ -141,4 +141,26 @@ footer{background:#061f18}
 <p class="legal">ANIMO HACCP is een onafhankelijk digitaal registratie- en opvolghulpmiddel. Het vervangt geen officiële autocontrolegids of professioneel advies en garandeert op zichzelf geen wettelijke HACCP-conformiteit. De horecaondernemer blijft verantwoordelijk voor correcte controles en wettelijke naleving.</p>
 <div class="copyright"><span>© <span id="year"></span> Animo vof · BE1014408578</span><span>Gemaakt voor de dagelijkse praktijk van de horeca.</span></div></div></footer>
 <script>document.getElementById('year').textContent=new Date().getFullYear();</script>
+
+<!-- Privacyvriendelijke bezoekmeting voor start.animo-apps.com -->
+<script>
+(function () {
+  'use strict';
+  if (location.hostname !== 'start.animo-apps.com') return;
+  var endpoint = 'https://zimzsovvtdmrthrflkgm.supabase.co/functions/v1/record-website-visit';
+  var publishableKey = 'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k';
+  fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': publishableKey
+    },
+    body: JSON.stringify({ path: '/' }),
+    keepalive: true,
+    credentials: 'omit'
+  }).catch(function () {
+    // Bezoekmeting mag de werking of laadsnelheid van de website nooit blokkeren.
+  });
+})();
+</script>
 </body></html>
