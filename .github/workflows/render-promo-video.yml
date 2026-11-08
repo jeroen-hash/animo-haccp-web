@@ -30,7 +30,7 @@ jobs:
       - name: Install rendering tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y ffmpeg imagemagick
           npm install playwright
           npx playwright install --with-deps chromium
 
