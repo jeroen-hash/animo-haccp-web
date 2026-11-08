@@ -17,7 +17,7 @@ permissions:
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -34,16 +34,14 @@ jobs:
           npm install playwright
           npx playwright install --with-deps chromium
 
-      - name: Render mobile-layout frames at full HD
+      - name: Capture five crisp mobile scenes
         run: |
-          mkdir -p frames
+          mkdir -p scenes
           cat > render.cjs <<'EOF'
           const { chromium } = require('playwright');
           const path = require('path');
           (async () => {
             const browser = await chromium.launch({ headless: true });
-            // Render at the CSS dimensions the mobile design was authored for,
-            // then use device scale factor to produce a 1080x1920 master.
             const page = await browser.newPage({
               viewport: { width: 390, height: 693 },
               deviceScaleFactor: 1080 / 390
@@ -52,31 +50,42 @@ jobs:
             await page.evaluate(async () => {
               await document.fonts.ready;
               await Promise.all([...document.images].map(img => img.decode().catch(() => {})));
-              document.getAnimations().forEach(animation => {
-                animation.pause();
-                animation.currentTime = 0;
-              });
+              document.getAnimations().forEach(a => { a.pause(); a.currentTime = 0; });
             });
-            const fps = 20;
-            const duration = 45;
-            for (let frame = 0; frame < fps * duration; frame++) {
-              const time = frame * 1000 / fps;
+            const moments = [5, 13, 22, 31, 40];
+            for (let i = 0; i < moments.length; i++) {
               await page.evaluate(ms => {
-                document.getAnimations().forEach(animation => {
-                  animation.currentTime = ms;
-                });
-              }, time);
-              await page.screenshot({
-                path: 'frames/frame-' + String(frame).padStart(5, '0') + '.png',
-                animations: 'allow'
-              });
+                document.getAnimations().forEach(a => { a.pause(); a.currentTime = ms * 1000; });
+              }, moments[i]);
+              await page.waitForTimeout(100);
+              await page.screenshot({ path: 'scenes/scene-' + (i + 1) + '.png' });
             }
             await browser.close();
-          })().catch(error => { console.error(error); process.exit(1); });
+          })().catch(e => { console.error(e); process.exit(1); });
           EOF
           node render.cjs
-          identify frames/frame-00000.png
-          ffmpeg -y -framerate 20 -i frames/frame-%05d.png -c:v libx264 -preset slow -crf 17 -pix_fmt yuv420p -movflags +faststart animo-haccp-promotievideo.mp4
+          for f in scenes/scene-*.png; do identify "$f"; done
+          test "$(identify -format '%wx%h' scenes/scene-1.png)" = "1080x1920"
+
+      - name: Assemble smooth vertical MP4
+        run: |
+          ffmpeg -y \
+            -loop 1 -t 9 -i scenes/scene-1.png \
+            -loop 1 -t 9 -i scenes/scene-2.png \
+            -loop 1 -t 9 -i scenes/scene-3.png \
+            -loop 1 -t 9 -i scenes/scene-4.png \
+            -loop 1 -t 9 -i scenes/scene-5.png \
+            -filter_complex "
+              [0:v]zoompan=z='min(zoom+0.00035,1.035)':d=180:s=1080x1920:fps=20,setsar=1,format=yuv420p[v0];
+              [1:v]zoompan=z='min(zoom+0.00035,1.035)':d=180:s=1080x1920:fps=20,setsar=1,format=yuv420p[v1];
+              [2:v]zoompan=z='min(zoom+0.00035,1.035)':d=180:s=1080x1920:fps=20,setsar=1,format=yuv420p[v2];
+              [3:v]zoompan=z='min(zoom+0.00035,1.035)':d=180:s=1080x1920:fps=20,setsar=1,format=yuv420p[v3];
+              [4:v]zoompan=z='min(zoom+0.00035,1.035)':d=180:s=1080x1920:fps=20,setsar=1,format=yuv420p[v4];
+              [v0][v1]xfade=transition=fade:duration=0.6:offset=8.4[x1];
+              [x1][v2]xfade=transition=fade:duration=0.6:offset=16.8[x2];
+              [x2][v3]xfade=transition=fade:duration=0.6:offset=25.2[x3];
+              [x3][v4]xfade=transition=fade:duration=0.6:offset=33.6,format=yuv420p[outv]
+            " -map "[outv]" -an -c:v libx264 -preset medium -crf 18 -movflags +faststart animo-haccp-promotievideo.mp4
           test -s animo-haccp-promotievideo.mp4
 
       - name: Publish downloadable MP4
@@ -84,7 +93,7 @@ jobs:
         with:
           tag_name: animo-haccp-promotievideo
           name: ANIMO HACCP promotievideo
-          body: "Verticale MP4-promotievideo van ANIMO HACCP. Render met correcte mobiele CSS-schaal op 1080x1920. Nog zonder voice-over of muziek."
+          body: "Verticale MP4 met vijf afzonderlijk gerenderde, scherpe mobiele scènes en vloeiende overgangen. Nog zonder voice-over of muziek."
           files: animo-haccp-promotievideo.mp4
           overwrite_files: true
           make_latest: true
