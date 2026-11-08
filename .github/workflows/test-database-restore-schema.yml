@@ -154,10 +154,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # --schema-only deliberately excludes all customer/business rows.
-          pg_restore --verbose --exit-on-error --no-owner --no-acl --schema-only \
-            --host=127.0.0.1 --port=5432 --username=postgres --dbname=postgres \
-            "$RUNNER_TEMP/animo-database.dump" 2>&1 | tee "$RUNNER_TEMP/restore.log"
+          # Use pg_restore from the same PostgreSQL 17 image as the temporary server.
+          # This avoids older runner-installed clients rejecting newer dump formats.
+          docker cp "$RUNNER_TEMP/animo-database.dump" animo-restore-test:/tmp/animo-database.dump
+          docker exec animo-restore-test pg_restore --version
+          docker exec animo-restore-test pg_restore --verbose --exit-on-error --no-owner --no-acl --schema-only \
+            --username=postgres --dbname=postgres \
+            /tmp/animo-database.dump 2>&1 | tee "$RUNNER_TEMP/restore.log"
+          docker exec animo-restore-test rm -f /tmp/animo-database.dump
 
       - name: Herstel controleren en tijdelijke omgeving opruimen
         if: always()
