@@ -74,11 +74,20 @@ Import mag pas na expliciete gebruikersgoedkeuring van een concrete preview plaa
 
 - Read-only broninspectie en JSON-query uitgevoerd.
 - Exportquery staat in GitHub-branch `feature/self-service-14-day-trial`.
-- Volledige onafhankelijke database-dump: nog niet gemaakt.
+- Volledige onafhankelijke database-dump van de huidige SaaS-database (`zimzsovvtdmrthrflkgm`): op 8 november 2026 wel gemaakt en end-to-end geverifieerd via STRATO-workflowrun `42429105062`. Dit is niet de database van het oude bronproject (`xwjcwravfeldndwlugai`).
 - Supabase Dashboard: gebruiker bevestigt dat een recente geslaagde databaseback-up zichtbaar is; exacte datum/tijd nog niet genoteerd.
-- Supabase Storage read-only gecontroleerd: `storage.buckets` bevat 0 rijen en `storage.objects` bevat 0 rijen; op dit moment geen Storage-buckets of objecten aangetroffen.
+- De Storage-herstelworkflowrun `42423966948` heeft een bestaande versleutelde Storage-back-up teruggezet in het oude bronproject `xwjcwravfeldndwlugai`. Na die restore zijn daar twee private buckets aanwezig (`onboarding-documents` en `onboarding-lead-documents`). Deze run is een RESTORE, geen bewijs dat de dagelijkse Storage-BACKUP-workflow zelf succesvol heeft gedraaid.
 - Doeltestzaak: 0 leden, 1 starter-`app_data`-rij.
-- Geen import, schemawijziging, live wijziging, PR-merge of deployment uitgevoerd.
+- De read-only legacy-exportquery is op 8 november 2026 technisch gevalideerd met dezelfde JSON-aggregaties en sorteringen; alleen aantallen zijn teruggegeven (geen persoons-/bedrijfsgegevens). De 14 onderdelen komen overeen met de broninventaris. PR #127 is gemerged; dit bevat alleen documentatie en een SELECT-only exportquery.
+- Geen HACCP-import, schemawijziging of klantdatawijziging uitgevoerd.
+
+## Statusverschil tussen projecten (8 november 2026)
+
+- `zimzsovvtdmrthrflkgm` is de actieve SaaS-database met klantdata (15 auth-gebruikers, 7 businesses, 11 business_members, 7 app_data-rijen, 2 subscriptions, 5 billing_invoices, 9 onboarding_leads en 5 onboarding_intakes). De geslaagde databaseback-up-run `42429105062` betreft dit project.
+- `xwjcwravfeldndwlugai` is de oude HACCP-bron. De oude operationele tabellen staan in `legacy_animo_20261107`; de gecontroleerde telling is 53 operationele rijen, plus 1 organisatie, 1 vestiging, 2 profielen en 1 lidmaatschap. De Storage-restore-run `42423966948` heeft ook twee private buckets teruggezet in dit project.
+- Het oude bronproject is geen afzonderlijke lege testomgeving. De huidige SaaS-database bevat echte klantgegevens en mag niet als hersteltestdoel worden gebruikt.
+- Een volledige Postgres-hersteltest en HACCP-import zijn nog niet uitgevoerd. Daarvoor is eerst een werkelijk geïsoleerde testomgeving nodig; maak geen nieuw Supabase-project of databasebranch aan voordat de kosten en bestemming expliciet zijn goedgekeurd.
+- Hoofdaccount `jeroenmarin@gmail.com` en de Riku Ramen lifetime-free-regeling blijven onaangeroerd.
 
 
 ## Aanvulling na archiefcontrole (2026-11-08)
