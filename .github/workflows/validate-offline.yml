@@ -17,6 +17,7 @@ on:
       - 'scripts/backup-supabase-storage.mjs'
       - 'scripts/verify-storage-backup.mjs'
       - '.github/workflows/backup-supabase-storage.yml'
+      - '.github/workflows/backup-supabase-database.yml'
       - 'supabase/functions/stripe-webhook/index.ts'
       - 'supabase/functions/process-delivery-note/index.ts'
       - 'sw.js'
