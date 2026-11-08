@@ -91,7 +91,7 @@ jobs:
           import shlex
           with open(os.path.join(os.environ["RUNNER_TEMP"], "db-connection.env"), "w", encoding="utf-8") as envfile:
               for key, value in values.items():
-                  envfile.write(f"{key}={shlex.quote(value)}\\n")
+                  envfile.write(f"{key}={shlex.quote(value)}\n")
           PY
           set -a
           source "$RUNNER_TEMP/db-connection.env"
