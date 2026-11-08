@@ -156,10 +156,13 @@ jobs:
           set -euo pipefail
           # Use pg_restore from the same PostgreSQL 17 image as the temporary server.
           # This avoids older runner-installed clients rejecting newer dump formats.
+          # Supabase pre-creates auth/storage schemas in its default database.
+          # Restore into a fresh database to avoid collisions with those bootstrap schemas.
+          docker exec animo-restore-test createdb --username=postgres animo_restore_target
           docker cp "$RUNNER_TEMP/animo-database.dump" animo-restore-test:/tmp/animo-database.dump
           docker exec animo-restore-test pg_restore --version
           docker exec animo-restore-test pg_restore --verbose --exit-on-error --no-owner --no-acl --schema-only \
-            --username=postgres --dbname=postgres \
+            --username=postgres --dbname=animo_restore_target \
             /tmp/animo-database.dump 2>&1 | tee "$RUNNER_TEMP/restore.log"
           docker exec animo-restore-test rm -f /tmp/animo-database.dump
 
