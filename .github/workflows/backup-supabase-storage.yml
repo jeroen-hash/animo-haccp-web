@@ -100,7 +100,7 @@ jobs:
             printf '%s\n' "$key_line" | awk '{print $2, $3}' > "$candidate_key"
             fingerprint="$(ssh-keygen -lf "$candidate_key" -E sha256 | awk '{print $2}')"
             if [ "$fingerprint" = "$SFTP_HOST_KEY_SHA256" ]; then
-              printf '%s\\n' "$key_line" >> "$known_hosts"
+              printf '%s\n' "$key_line" >> "$known_hosts"
             fi
           done < "$scanned_keys"
           test -s "$known_hosts" || { echo "::error::No STRATO SSH host key matches the pinned fingerprint."; exit 1; }
@@ -172,7 +172,7 @@ jobs:
             printf '%s\n' "$key_line" | awk '{print $2, $3}' > "$candidate_key"
             fingerprint="$(ssh-keygen -lf "$candidate_key" -E sha256 | awk '{print $2}')"
             if [ "$fingerprint" = "$SFTP_HOST_KEY_SHA256" ]; then
-              printf '%s\\n' "$key_line" >> "$known_hosts"
+              printf '%s\n' "$key_line" >> "$known_hosts"
             fi
           done < "$scanned_keys"
           test -s "$known_hosts" || { echo "::error::No STRATO SSH host key matches the pinned fingerprint for retention."; exit 1; }
