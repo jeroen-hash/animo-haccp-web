@@ -14,6 +14,9 @@ on:
       - 'tests/brussels-timezone.test.mjs'
       - 'tests/haccp-report-printing.test.mjs'
       - 'tests/storage-backup-manifest.test.mjs'
+      - 'tests/storage-restore-target-guard.test.mjs'
+      - 'scripts/restore-supabase-storage.mjs'
+      - '.github/workflows/restore-supabase-storage-to-recovery.yml'
       - 'scripts/backup-supabase-storage.mjs'
       - 'scripts/verify-storage-backup.mjs'
       - '.github/workflows/backup-supabase-storage.yml'
@@ -360,6 +363,8 @@ jobs:
 
       - name: Validate encrypted Storage backup manifest
         run: node --test tests/storage-backup-manifest.test.mjs
+      - name: Validate isolated Storage recovery target guard
+        run: node --test tests/storage-restore-target-guard.test.mjs
 
       - name: Validate legacy stock batches and safe recipe consumption
         run: |
