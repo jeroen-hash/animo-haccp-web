@@ -254,7 +254,6 @@ jobs:
           cutoff="$(date -u -d '90 days ago' +%s)"
           while IFS= read -r name; do
             [[ "$name" =~ ^animo-database-([0-9]{8}T[0-9]{6}Z)\.dump\.gpg(\.sha256)?$ ]] || continue
-            [[ "$name" == *.sha256 ]] && continue
             stamp="${BASH_REMATCH[1]}"
             backup_epoch="$(date -u -d "${stamp:0:8} ${stamp:9:2}:${stamp:11:2}:${stamp:13:2} UTC" +%s)"
             if [ "$backup_epoch" -lt "$cutoff" ]; then
