@@ -121,7 +121,7 @@ tbody tr:hover{background:#f4faf6}
 <section id="dashboard" class="hidden">
   <div class="topline"><div><h2>Platformoverzicht</h2><div id="generatedAt" class="muted"></div></div><div class="muted">Actief = minstens één auditactiviteit in de afgelopen 7 dagen</div></div>
   <div class="tabs" role="tablist">
-    <button class="btn tab active" data-tab="overview" type="button">Overzicht</button><button class="btn tab" data-tab="timeline" type="button">Tijdlijn</button><button class="btn tab" data-tab="audit" type="button">Auditlog</button><button class="btn tab" data-tab="errors" type="button">Fouten</button><button class="btn tab" data-tab="billing" type="button">Abonnement & omzet</button>
+    <button class="btn tab active" data-tab="overview" type="button">Overzicht</button><button class="btn tab" data-tab="timeline" type="button">Tijdlijn</button><button class="btn tab" data-tab="audit" type="button">Auditlog</button><button class="btn tab" data-tab="errors" type="button">Fouten</button><button class="btn tab" data-tab="billing" type="button">Abonnement & omzet</button><button class="btn tab" data-tab="website-analytics" type="button">Website & Marketing</button>
   </div>
   <section class="toolbar" aria-label="Zaakselectie en filters"><div class="toolbar-grid">
     <label>Geselecteerde zaak<select id="businessSelector" class="control"><option value="all">Alle zaken</option></select></label>
@@ -135,8 +135,8 @@ tbody tr:hover{background:#f4faf6}
     <article class="card"><h3>Registraties per dag</h3><div id="activityChart" class="bars"></div></article>
     <article class="card"><h3>Kerngebruik afgelopen 7 dagen</h3><div id="usageMetrics" class="metrics" style="grid-template-columns:repeat(2,1fr)"></div></article>
   </div>
-    <section id="tab-website-analytics" class="card full" style="margin:18px 0">
-    <div class="topline"><div><h2>Websitebezoeken</h2><div class="muted">Bezoeken aan www.animo-apps.com · Belgische tijd</div></div><button id="websiteAnalyticsRefresh" class="btn green" type="button">Statistieken vernieuwen</button></div>
+    <section id="tab-website-analytics" class="card full tab-panel" style="margin:18px 0">
+    <div class="topline"><div><h2>Websitebezoeken</h2><div class="muted">Bezoeken aan start.animo-apps.com · Belgische tijd</div></div><button id="websiteAnalyticsRefresh" class="btn green" type="button">Statistieken vernieuwen</button></div>
     <div id="websiteAnalyticsMetrics" class="metrics">
       <div class="metric"><small>Vandaag</small><strong>—</strong></div><div class="metric"><small>Deze week</small><strong>—</strong></div><div class="metric"><small>Deze maand</small><strong>—</strong></div>
     </div>
