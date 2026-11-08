@@ -14,7 +14,8 @@ Storage-objectmetadata zit in de database-export. De feitelijke geüploade besta
 ## GitHub Actions-secrets
 
 De workflow verwacht deze repository secrets:
-- `PRODUCTION_DATABASE_URL`: PostgreSQL-connection URI van de SaaS-database `zimzsovvtdmrthrflkgm`. Gebruik bij voorkeur de Supabase Session Pooler URI (IPv4-compatibel) en voeg het actuele databasewachtwoord toe.
+- `PRODUCTION_DATABASE_URL`: PostgreSQL-connection URI van de SaaS-database `zimzsovvtdmrthrflkgm`. Gebruik de Supabase Session Pooler URI (IPv4-compatibel), met gebruikersnaam en databasenaam maar **zonder wachtwoord**. De workflow weigert een URI waarin al een wachtwoord staat.
+- `PRODUCTION_DATABASE_PASSWORD`: het actuele databasewachtwoord, als afzonderlijke GitHub Actions-secret.
 - `STRATO_SFTP_HOST`
 - `STRATO_SFTP_USER`
 - `STRATO_SFTP_PASSWORD`
@@ -32,7 +33,7 @@ Als het databasewachtwoord onbekend is, moet de eigenaar eerst beslissen of hij 
 - De dump wordt GPG AES-256 versleuteld.
 - De versleutelde back-up en SHA-256-checksum worden geüpload naar `/backups/animo-haccp-database`.
 - De workflow downloadt de back-up opnieuw, vergelijkt de checksum, ontsleutelt tijdelijk en voert `pg_restore --list` uit om de archiefstructuur te controleren.
-- Er is bewust geen automatische retentie/verwijdering ingesteld.
+- In main is bewust nog geen automatische retentie/verwijdering actief. PR #147 voegt een 90-dagencontrole toe die standaard dry-run is; die PR is nog niet gemerged.
 - Mislukte uitvoeringen maken of actualiseren een GitHub-issue.
 
 ## Beperkingen
