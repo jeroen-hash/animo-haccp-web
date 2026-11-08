@@ -16,7 +16,7 @@ test("standalone allergen PDF exports the current allergen register", () => {
   const calls = [];
   const state = { dishes: [{ id: "dish-1", name: "Testgerecht", allergens: ["Gluten"] }] };
   const source = extract("function printAllergens(){", "function dayReportBody(");
-  vm.runInNewContext(source, {
+  vm.runInNewContext(source + "; printAllergens()", {
     state,
     allergensBody: dishes => ({ dishes }),
     openPrint: (title, body) => calls.push({ title, body })
