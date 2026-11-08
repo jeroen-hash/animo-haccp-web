@@ -106,8 +106,7 @@ jobs:
           test -s "$known_hosts" || { echo "::error::No STRATO SSH host key matches the pinned fingerprint."; exit 1; }
           chmod 600 "$known_hosts"
           rm -f "$scanned_keys" "$candidate_key"
-          lftp_host_key_settings="set sftp:auto-confirm no
-          set sftp:connect-program \\"ssh -a -x -oStrictHostKeyChecking=yes -oUserKnownHostsFile=$known_hosts\\""
+          lftp_host_key_settings="$(printf '%s\n' 'set sftp:auto-confirm no' "set sftp:connect-program \"ssh -a -x -oStrictHostKeyChecking=yes -oUserKnownHostsFile=$known_hosts\"")"
           echo "Verified STRATO SSH host key fingerprint; strict host-key checking enabled."
           remote_dir="/backups/animo-haccp-storage"
           lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP
@@ -179,8 +178,7 @@ jobs:
           test -s "$known_hosts" || { echo "::error::No STRATO SSH host key matches the pinned fingerprint for retention."; exit 1; }
           chmod 600 "$known_hosts"
           rm -f "$scanned_keys" "$candidate_key"
-          lftp_host_key_settings="set sftp:auto-confirm no
-          set sftp:connect-program \\"ssh -a -x -oStrictHostKeyChecking=yes -oUserKnownHostsFile=$known_hosts\\""
+          lftp_host_key_settings="$(printf '%s\n' 'set sftp:auto-confirm no' "set sftp:connect-program \"ssh -a -x -oStrictHostKeyChecking=yes -oUserKnownHostsFile=$known_hosts\"")"
           echo "Verified STRATO SSH host key fingerprint; strict checking enabled for retention."
 
           remote_dir="/backups/animo-haccp-storage"
