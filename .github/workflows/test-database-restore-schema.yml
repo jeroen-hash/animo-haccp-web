@@ -1,0 +1,177 @@
+name: Cost-free isolated database restore schema test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: animo-database-restore-schema-test
+  cancel-in-progress: false
+
+jobs:
+  restore-schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Required secrets controleren
+        shell: bash
+        env:
+          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
+          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
+          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+          SFTP_HOST_KEY_SHA256: ${{ secrets.STRATO_SFTP_HOST_KEY_SHA256 }}
+          BACKUP_PASSPHRASE: ${{ secrets.ANIMO_BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          for name in SFTP_HOST SFTP_USER SFTP_PASS SFTP_HOST_KEY_SHA256 BACKUP_PASSPHRASE; do
+            test -n "${!name:-}" || { echo "::error::Required secret missing: $name"; exit 1; }
+          done
+          echo "All required secret names are present; values are not displayed."
+
+      - name: Benodigde tools installeren
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y gnupg lftp openssh-client postgresql-client
+          docker --version
+
+      - name: Laatste versleutelde databaseback-up veilig ophalen
+        shell: bash
+        env:
+          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
+          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
+          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+          SFTP_HOST_KEY_SHA256: ${{ secrets.STRATO_SFTP_HOST_KEY_SHA256 }}
+        run: |
+          set -euo pipefail
+          scanned="$RUNNER_TEMP/scanned-keys"
+          candidate="$RUNNER_TEMP/candidate-key"
+          known_hosts="$RUNNER_TEMP/known-hosts"
+          ssh-keyscan -p 22 "$SFTP_HOST" 2>/dev/null > "$scanned"
+          test -s "$scanned"
+          : > "$known_hosts"
+          while IFS= read -r line; do
+            [ -n "$line" ] || continue
+            printf '%s\n' "$line" > "$candidate"
+            fp="$(ssh-keygen -lf "$candidate" -E sha256 | awk '{print $2}')"
+            if [ "$fp" = "$SFTP_HOST_KEY_SHA256" ]; then
+              printf '%s\n' "$line" >> "$known_hosts"
+            fi
+          done < "$scanned"
+          test -s "$known_hosts" || { echo "::error::STRATO host key fingerprint mismatch."; exit 1; }
+          chmod 600 "$known_hosts"
+          rm -f "$scanned" "$candidate"
+
+          lftp_host_key_settings="set sftp:auto-confirm no
+          set sftp:connect-program \"ssh -a -x -oStrictHostKeyChecking=yes -oUserKnownHostsFile=$known_hosts\""
+          listing="$RUNNER_TEMP/backup-listing"
+          lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP > "$listing"
+          $lftp_host_key_settings
+          set net:max-retries 3
+          set net:timeout 45
+          cls -1 /backups/animo-haccp-database
+          bye
+          LFTP
+          backup_name="$(grep -E '^animo-database-[0-9]{8}T[0-9]{6}Z\.dump\.gpg$' "$listing" | sort | tail -n 1)"
+          test -n "$backup_name" || { echo "::error::No timestamped encrypted database backup found."; exit 1; }
+
+          lftp -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<LFTP
+          $lftp_host_key_settings
+          set net:max-retries 3
+          set net:timeout 45
+          get "/backups/animo-haccp-database/$backup_name" -o "$RUNNER_TEMP/$backup_name"
+          get "/backups/animo-haccp-database/$backup_name.sha256" -o "$RUNNER_TEMP/$backup_name.sha256"
+          bye
+          LFTP
+          cd "$RUNNER_TEMP"
+          sha256sum -c "$backup_name.sha256"
+          echo "Downloaded and checksum-verified encrypted backup: $backup_name"
+          echo "BACKUP_NAME=$backup_name" >> "$GITHUB_ENV"
+          rm -f "$listing" "$known_hosts"
+          unset SFTP_PASS
+
+      - name: Back-up ontsleutelen in tijdelijke runner
+        shell: bash
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.ANIMO_BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          passfile="$RUNNER_TEMP/backup-passphrase"
+          printf '%s' "$BACKUP_PASSPHRASE" > "$passfile"
+          chmod 600 "$passfile"
+          gpg --batch --yes --pinentry-mode loopback --passphrase-file "$passfile" \
+            --decrypt --output "$RUNNER_TEMP/animo-database.dump" "$RUNNER_TEMP/$BACKUP_NAME"
+          test -s "$RUNNER_TEMP/animo-database.dump"
+          rm -f "$passfile"
+          unset BACKUP_PASSPHRASE
+
+      - name: Tijdelijke Supabase-compatibele PostgreSQL starten
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name animo-restore-test \
+            -e POSTGRES_PASSWORD=temporary-test-only-password \
+            -p 127.0.0.1:5432:5432 \
+            supabase/postgres:17.11.0.018 \
+            postgres -c config_file=/etc/postgresql/postgresql.conf
+          for attempt in $(seq 1 60); do
+            if pg_isready -h 127.0.0.1 -p 5432 -U postgres; then
+              break
+            fi
+            sleep 2
+          done
+          pg_isready -h 127.0.0.1 -p 5432 -U postgres
+          docker exec animo-restore-test psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c \
+            "DO \$\$ BEGIN
+              IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='anon') THEN CREATE ROLE anon NOLOGIN; END IF;
+              IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='authenticated') THEN CREATE ROLE authenticated NOLOGIN; END IF;
+              IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='service_role') THEN CREATE ROLE service_role NOLOGIN BYPASSRLS; END IF;
+              IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='authenticator') THEN CREATE ROLE authenticator NOINHERIT LOGIN; END IF;
+              IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='supabase_auth_admin') THEN CREATE ROLE supabase_auth_admin NOINHERIT CREATEROLE LOGIN; END IF;
+              IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='supabase_storage_admin') THEN CREATE ROLE supabase_storage_admin NOINHERIT CREATEROLE LOGIN; END IF;
+            END \$\$;"
+
+      - name: Alleen databasestructuur herstellen (geen klantrecords)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # --schema-only deliberately excludes all customer/business rows.
+          pg_restore --verbose --exit-on-error --no-owner --no-acl --schema-only \
+            --host=127.0.0.1 --port=5432 --username=postgres --dbname=postgres \
+            "$RUNNER_TEMP/animo-database.dump" 2>&1 | tee "$RUNNER_TEMP/restore.log"
+
+      - name: Herstel controleren en tijdelijke omgeving opruimen
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if docker inspect animo-restore-test >/dev/null 2>&1; then
+            docker rm -f animo-restore-test
+          fi
+          rm -f "$RUNNER_TEMP/animo-database.dump" "$RUNNER_TEMP/"*.dump.gpg \
+            "$RUNNER_TEMP/"*.sha256 "$RUNNER_TEMP/restore.log" \
+            "$RUNNER_TEMP/backup-passphrase" "$RUNNER_TEMP/known-hosts"
+          echo "Temporary PostgreSQL container and decrypted dump removed."
+
+      - name: Foutmelding bij mislukte hersteltest
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = 'ANIMO HACCP database-hersteltest mislukt';
+            const url = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = `De geïsoleerde database-structuurhersteltest is mislukt. Controleer de uitvoeringsdetails: ${url}. De test gebruikt alleen een tijdelijke runner en herstelt geen klantrecords.`;
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo, state: 'open', per_page: 100
+            });
+            const existing = issues.find(issue => !issue.pull_request && issue.title === title);
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo, issue_number: existing.number, body
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo, title, body
+              });
+            }
