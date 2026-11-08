@@ -1,0 +1,24 @@
+ANIMO HACCP — voice-over hoofdreclame
+Taal: Nederlands (Vlaamse stem)
+Duur: ongeveer 30 seconden
+Stijl: warm, professioneel, helder en rustig. Geen overdreven reclame-stem.
+
+00:00–00:07 | Intro
+“ In de horeca heb je al genoeg aan je hoofd. Laat je HACCP-overzicht niet nog meer tijd vragen. ”
+
+00:07–00:15 | Dashboard
+“ Met ANIMO HACCP breng je je dagelijkse controles samen op één overzichtelijk dashboard. ”
+
+00:15–00:23 | Temperaturen
+“ Registreer temperaturen eenvoudig en volg je meetpunten op, samen met je team. ”
+
+00:23–00:30 | Rapport en oproep
+“ Bekijk je registraties in een duidelijk rapport. Start vandaag met veertien dagen gratis proberen. ANIMO HACCP. Altijd klaar voor FAVV. ”
+
+Productienotities
+- Spreek “ANIMO” uit als “A-ni-mo”.
+- Spreek HACCP uit als “H-A-C-C-P” of natuurlijk als “haccp”; kies één uitspraak en hou die consequent aan.
+- Hou korte pauzes tussen de zinnen; de laatste merknaam mag iets meer nadruk krijgen.
+- De prijs van €55 per maand exclusief btw staat in beeld, maar wordt niet ingesproken. Bevestig de actuele prijs en proefperiode vóór publicatie.
+- De preview gebruikt bestaande app-screenshots uit de repository. Controleer vóór publicatie of voorbeelddata en gebruikersinitialen geen echte klantgegevens tonen.
+- Dit bestand is de opnamescripttekst; er is nog geen stemopname of MP4 gerenderd.
