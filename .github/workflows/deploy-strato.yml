@@ -71,6 +71,11 @@ jobs:
             if [ -f "$f" ]; then cp "$f" "out/landing/$f"; fi
           done
 
+          # Technische SEO-bestanden voor de publieke landingssite.
+          test -f robots.txt
+          test -f sitemap.xml
+          cp robots.txt sitemap.xml out/landing/
+
           # Publiceer het onboardingformulier ook op het publieke websitedomein.
           cp onboarding-form.html out/landing/onboarding-form.html
           python3 - <<'PY'
