@@ -244,6 +244,138 @@ main{max-width:1600px;padding:clamp(14px,2.4vw,30px)}
  *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
 
+
+/* ANIMO Control Center — volledige Signal-geïnspireerde dashboardindeling.
+   Uitsluitend presentatie: bestaande IDs, data, functies en toegangsregels blijven behouden. */
+:root{
+ --cc-sidebar:#07140f;--cc-sidebar-2:#0d2118;--cc-green:#07965f;--cc-green-soft:#e6f5ee;
+ --cc-bg:#f2f6f4;--cc-card:#ffffff;--cc-ink:#15271f;--cc-muted:#74827b;
+ --cc-border:#dfe8e3;--cc-shadow:0 2px 5px rgba(13,37,25,.045),0 12px 28px rgba(13,37,25,.045);
+}
+body{background:var(--cc-bg);color:var(--cc-ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:0}
+body>header{
+ min-height:70px;padding:12px 28px 12px 270px;background:#fff;color:var(--cc-ink);
+ border-bottom:1px solid var(--cc-border);box-shadow:0 2px 12px rgba(10,35,23,.035)
+}
+body>header>div:first-child:before{content:none}
+body>header h1{font-size:17px;font-weight:850;letter-spacing:-.035em;color:#10291e}
+body>header p{color:var(--cc-muted);font-size:11px}
+body>header .status{color:#52675c;background:#f2f7f4;border:1px solid var(--cc-border);border-radius:999px;padding:8px 12px}
+body>header .btn.primary{background:#edf6f1;color:#08734b}
+body>header .btn.secondary{background:#10291e;color:#fff}
+main{max-width:none;margin:0;padding:26px 30px 44px 270px}
+#dashboard:not(.hidden){
+ display:grid;grid-template-columns:220px minmax(0,1fr);
+ grid-template-areas:"heading heading" "navigation filters" "navigation metrics" "navigation overview" "navigation panel";
+ grid-template-rows:auto auto auto auto minmax(300px,1fr);
+ column-gap:26px;row-gap:18px;align-items:start
+}
+#dashboard>.topline{grid-area:heading;margin:0;padding:4px 0 2px;border:0;border-radius:0;background:transparent;box-shadow:none;align-items:center}
+#dashboard>.topline h2{font-size:30px;font-weight:800;letter-spacing:-.055em;color:#13291f}
+#dashboard>.topline h2:before{content:"ANIMO HACCP  /  PLATFORMBEHEER";display:block;margin-bottom:9px;color:#0b9360;font-size:10px;font-weight:850;letter-spacing:.17em}
+#dashboard>.topline>.muted:last-child{background:#fff;border:1px solid var(--cc-border);border-radius:10px;padding:9px 12px;color:#66786e;font-size:11px}
+#dashboard>.tabs{
+ grid-area:navigation;align-self:stretch;min-width:0;min-height:calc(100vh - 150px);
+ margin:0;padding:18px 12px;display:flex;flex-direction:column;align-items:stretch;gap:5px;
+ overflow:visible;border:0;border-radius:17px;background:var(--cc-sidebar);box-shadow:0 12px 28px rgba(5,20,13,.16)
+}
+#dashboard>.tabs:before{
+ content:"ANIMO\A PLATFORM CONTROL";white-space:pre;display:block;padding:3px 11px 18px;margin:0 0 9px;
+ color:#d9e8df;font-size:12px;font-weight:850;line-height:1.65;letter-spacing:.08em;border-bottom:1px solid rgba(255,255,255,.1)
+}
+#dashboard>.tabs .tab{
+ flex:0 0 auto;width:100%;display:flex;align-items:center;gap:11px;text-align:left;
+ min-height:44px;padding:10px 12px;border:1px solid transparent;border-radius:10px;
+ background:transparent;color:#a8b9af;font-size:12px;font-weight:650;white-space:normal;
+ box-shadow:none;transition:background .16s,color .16s,border-color .16s
+}
+#dashboard>.tabs .tab:before{width:19px;flex:0 0 19px;text-align:center;font-size:15px;opacity:.9}
+#dashboard>.tabs .tab[data-tab="overview"]:before{content:"▦"}
+#dashboard>.tabs .tab[data-tab="timeline"]:before{content:"◷"}
+#dashboard>.tabs .tab[data-tab="audit"]:before{content:"≡"}
+#dashboard>.tabs .tab[data-tab="errors"]:before{content:"⚠"}
+#dashboard>.tabs .tab[data-tab="billing"]:before{content:"€"}
+#dashboard>.tabs .tab[data-tab="website-analytics"]:before{content:"⌁"}
+#dashboard>.tabs .tab:hover{background:rgba(255,255,255,.07);color:#fff}
+#dashboard>.tabs .tab.active{background:#123d2b;color:#38d99a;border-color:rgba(42,207,139,.15);box-shadow:inset 3px 0 #0db879}
+#dashboard>.toolbar{grid-area:filters;position:relative!important;top:auto!important;z-index:1!important;margin:0;padding:14px 16px;border:1px solid var(--cc-border);border-radius:14px;background:#fff;box-shadow:var(--cc-shadow)}
+#dashboard>.toolbar-grid{grid-template-columns:minmax(190px,1.2fr) minmax(180px,1fr) repeat(2,minmax(135px,.7fr));gap:12px}
+#dashboard>.toolbar label{font-size:10px;font-weight:800;letter-spacing:.075em;text-transform:uppercase;color:#68786f}
+#dashboard .control{min-height:42px;border:1px solid #dfe8e3;border-radius:9px;background:#fbfdfc;font-size:12px}
+#dashboard>#metrics{grid-area:metrics;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin:0}
+#dashboard>#metrics .metric{min-height:118px;padding:17px 18px 16px;border:1px solid var(--cc-border);border-radius:14px;background:#fff;box-shadow:var(--cc-shadow)}
+#dashboard>#metrics .metric:after{width:3px;opacity:1}
+#dashboard>#metrics .metric small{font-size:11px;color:#6d7c73;font-weight:650}
+#dashboard>#metrics .metric strong{font-size:29px;letter-spacing:-.055em;color:#12271d;font-weight:820;font-variant-numeric:tabular-nums}
+#dashboard>.grid{grid-area:overview;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,1fr);gap:14px;margin:0}
+#dashboard>.grid>.card{border:1px solid var(--cc-border);border-radius:15px;background:var(--cc-card);box-shadow:var(--cc-shadow);padding:19px}
+#dashboard>.grid>.card h3{font-size:14px;font-weight:780;color:#1b3025}
+#dashboard>.grid>.card.full{grid-column:1/-1}
+#dashboard .follow-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+#dashboard .follow{border-radius:11px;border:1px solid var(--cc-border);background:#f8fbf9;padding:14px}
+#dashboard .follow strong{font-size:25px;font-weight:800;letter-spacing:-.04em}
+#dashboard .bars{height:220px;padding:12px 6px 4px;gap:8px;border-bottom:1px solid var(--cc-border)}
+#dashboard .bar{max-width:42px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#20b77c,#08734b);box-shadow:0 3px 8px rgba(7,115,75,.12)}
+#dashboard .bar-label,#dashboard .bar-value{font-size:10px;color:#74827b}
+#dashboard>.tab-panel{grid-area:panel;min-width:0;margin:0!important}
+#dashboard>.tab-panel.active{display:block}
+#dashboard>.tab-panel .card,#dashboard>section#tab-website-analytics{
+ border:1px solid var(--cc-border);border-radius:15px;background:#fff;box-shadow:var(--cc-shadow)
+}
+#dashboard>.tab-panel .grid{margin-top:0}
+#dashboard .subhead h3,#dashboard .tab-panel h3{font-size:14px;font-weight:780;letter-spacing:-.02em}
+#dashboard .table-wrap{border:1px solid var(--cc-border);border-radius:11px;background:#fff}
+#dashboard table{min-width:760px}
+#dashboard th{background:#f5f8f6;color:#718078;font-size:10px;letter-spacing:.075em}
+#dashboard td{font-size:12px}
+#dashboard tbody tr:hover{background:#f2f8f4}
+#dashboard .detail-item{border:1px solid var(--cc-border);border-radius:11px;background:#f8fbf9}
+#dashboard .tag{border-radius:7px}
+#dashboard .health-ring{background:conic-gradient(#0b9b65 calc(var(--score)*1%),#e8efeb 0)}
+@media(max-width:1050px){
+ body>header{padding-left:245px}
+ main{padding-left:245px}
+ #dashboard:not(.hidden){grid-template-columns:195px minmax(0,1fr);column-gap:17px}
+ #dashboard>#metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #dashboard>.toolbar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #dashboard>.grid{grid-template-columns:1fr}
+ #dashboard .follow-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ body>header{padding:12px 14px;min-height:62px}
+ body>header h1{font-size:15px}
+ body>header p{display:none}
+ main{padding:14px}
+ #dashboard:not(.hidden){display:flex;flex-direction:column;gap:13px}
+ #dashboard>.topline{width:100%;padding:5px 2px 8px;align-items:flex-start}
+ #dashboard>.topline h2{font-size:25px}
+ #dashboard>.topline>.muted:last-child{font-size:10px}
+ #dashboard>.tabs{
+  width:100%;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:5px;padding:9px;border-radius:13px
+ }
+ #dashboard>.tabs:before{grid-column:1/-1;padding:2px 8px 10px;margin-bottom:4px}
+ #dashboard>.tabs .tab{min-height:41px;padding:9px 8px;font-size:11px;gap:7px}
+ #dashboard>.toolbar{width:100%;padding:12px}
+ #dashboard>.toolbar-grid{grid-template-columns:1fr 1fr;gap:9px}
+ #dashboard>#metrics{width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ #dashboard>#metrics .metric{min-height:91px;padding:12px}
+ #dashboard>#metrics .metric strong{font-size:23px}
+ #dashboard>.grid,#dashboard>.tab-panel{width:100%}
+ #dashboard>.grid{grid-template-columns:1fr}
+ #dashboard>.grid>.card{padding:15px}
+ #dashboard .follow-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #dashboard>.tab-panel .topline{align-items:flex-start}
+ #dashboard>.tab-panel .filters{width:100%;flex-wrap:wrap}
+ #dashboard>.tab-panel .filters input,#dashboard>.tab-panel .filters select{max-width:100%;min-width:0}
+}
+@media(max-width:420px){
+ #dashboard>.toolbar-grid{grid-template-columns:1fr}
+ #dashboard>.topline h2{font-size:22px}
+ #dashboard>#metrics .metric strong{font-size:21px}
+ #dashboard>.tabs .tab{font-size:10px}
+}
+
 </style>
 </head>
 <body>
