@@ -1,6 +1,11 @@
 name: Publiceer alleen Admin-dashboard naar STRATO
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'admin-dashboard.html'
+      - '.github/workflows/deploy-admin-dashboard-strato.yml'
   workflow_dispatch:
 
 permissions:
