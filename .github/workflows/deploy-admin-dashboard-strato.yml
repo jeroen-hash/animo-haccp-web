@@ -46,8 +46,21 @@ jobs:
           fi
           chmod 600 "$RUNNER_TEMP/strato_known_hosts"
           lftp -e "set sftp:connect-program 'ssh -a -x -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/strato_known_hosts'" -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<'LFTP'
+          set cmd:fail-exit yes
           set net:max-retries 3
           set net:timeout 30
           put admin-dashboard.html -o /app/admin-dashboard.html
+          get /app/admin-dashboard.html -o admin-dashboard-live.html
           bye
           LFTP
+
+          echo "Controleer SHA-256 van lokaal en live bestand..."
+          LOCAL_SHA="$(sha256sum admin-dashboard.html | awk '{print $1}')"
+          LIVE_SHA="$(sha256sum admin-dashboard-live.html | awk '{print $1}')"
+          echo "GitHub-bestand: $LOCAL_SHA"
+          echo "STRATO-bestand: $LIVE_SHA"
+          if [ "$LOCAL_SHA" != "$LIVE_SHA" ]; then
+            echo "::error::Het bestand op STRATO komt niet overeen met de GitHub-versie."
+            exit 1
+          fi
+          echo "::notice::STRATO-bestand succesvol teruggelezen en SHA-256 komt overeen."
