@@ -1,0 +1,53 @@
+name: Publiceer alleen Admin-dashboard naar STRATO
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-admin-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository ophalen
+        uses: actions/checkout@v4
+
+      - name: Controleren of STRATO-inloggegevens bestaan
+        env:
+          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
+          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
+          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+        run: |
+          if [ -z "$SFTP_HOST" ] || [ -z "$SFTP_USER" ] || [ -z "$SFTP_PASS" ]; then
+            echo "::error::STRATO SFTP-geheimen ontbreken."
+            exit 1
+          fi
+
+      - name: Upload uitsluitend admin-dashboard.html
+        env:
+          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
+          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
+          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+        run: |
+          set -e
+          test -f admin-dashboard.html
+          sudo apt-get update -y
+          sudo apt-get install -y lftp
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          ssh-keyscan -T 15 -p 22 -t ed25519 "$SFTP_HOST" > "$RUNNER_TEMP/strato_known_hosts" 2>/dev/null
+          test -s "$RUNNER_TEMP/strato_known_hosts"
+          ACTUAL_FINGERPRINT="$(ssh-keygen -lf "$RUNNER_TEMP/strato_known_hosts" -E sha256 | awk '{print $2}')"
+          EXPECTED_FINGERPRINT="SHA256:1gx2w8Rtv3wCgi7Jh8myf/KVd72cRQbow03UP8P095Q"
+          if [ "$ACTUAL_FINGERPRINT" != "$EXPECTED_FINGERPRINT" ]; then
+            echo "::error::STRATO SSH-hostkey fingerprint komt niet overeen. Upload afgebroken."
+            exit 1
+          fi
+          chmod 600 "$RUNNER_TEMP/strato_known_hosts"
+          lftp -e "set sftp:connect-program 'ssh -a -x -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/strato_known_hosts'" -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<'LFTP'
+          set net:max-retries 3
+          set net:timeout 30
+          put admin-dashboard.html -o /app/admin-dashboard.html
+          bye
+          LFTP
