@@ -153,6 +153,97 @@ table{overflow:hidden}
   *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
 
+
+/* ANIMO Platform Control — premium visual system (CSS only) */
+:root{
+ --green:#075f3f;--green2:#0b8154;--dark:#043d2b;--mint:#e8f5ef;
+ --paper:#f3f6f3;--white:#fff;--ink:#18372c;--muted:#667a71;
+ --line:#dce7e1;--shadow:0 12px 34px rgba(15,55,38,.075);
+}
+body{background:radial-gradient(ellipse at 12% 0%,#e3f2e9 0,transparent 34%),var(--paper);color:var(--ink)}
+header{
+ padding:18px clamp(16px,3vw,34px);min-height:92px;
+ background:linear-gradient(115deg,#06452f 0%,#08734b 58%,#0b8154 100%);
+ box-shadow:0 12px 32px rgba(4,61,43,.2)
+}
+header h1{font-size:clamp(18px,2vw,22px);letter-spacing:-.025em}
+header p{font-size:12px;letter-spacing:.02em}
+header .status{padding:9px 13px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:rgba(255,255,255,.09)}
+main{max-width:1600px;padding:clamp(14px,2.4vw,30px)}
+#dashboard>.topline{
+ align-items:center;padding:24px 26px;margin:8px 0 20px;border:1px solid #d6e7dd;
+ border-radius:24px;background:linear-gradient(120deg,#e2f2e9 0%,#f8fbf8 62%,#fff 100%);
+ box-shadow:0 10px 30px rgba(15,55,38,.045)
+}
+#dashboard>.topline h2{font-size:clamp(30px,3.4vw,42px);line-height:1.05;letter-spacing:-.06em}
+#dashboard>.topline h2:before{font-size:10px;letter-spacing:.2em;margin-bottom:10px}
+#dashboard>.topline>.muted:last-child{border:1px solid #d9e7df;border-radius:999px;background:#fff;padding:10px 14px;font-size:12px}
+.tabs{
+ display:flex;gap:7px;flex-wrap:wrap;padding:8px;margin:0 0 18px;
+ border:1px solid #dce7e1;border-radius:18px;background:rgba(255,255,255,.94);
+ box-shadow:0 8px 24px rgba(15,55,38,.06)
+}
+.tabs .tab{border:1px solid transparent;border-radius:12px;padding:12px 16px;font-size:13px;font-weight:800;transition:background .18s,border-color .18s,transform .18s}
+.tabs .tab:not(.active):hover{background:#f0f7f3;border-color:#dcebe2}
+.tabs .tab.active{background:linear-gradient(135deg,#08734b,#075f3f);box-shadow:0 5px 13px rgba(7,95,63,.2)}
+.toolbar{
+ border:1px solid #dce7e1;border-radius:21px;background:rgba(255,255,255,.97);
+ box-shadow:var(--shadow);padding:19px;margin-bottom:18px
+}
+.toolbar label{font-size:11px;letter-spacing:.065em;text-transform:uppercase;color:#62786d}
+.control,.field input{min-height:48px;border:1px solid #d8e4dd;border-radius:13px;background:#fbfdfb;transition:border-color .15s,box-shadow .15s}
+.control:focus,.field input:focus{outline:none;border-color:#0b8154;box-shadow:0 0 0 3px rgba(11,129,84,.12)}
+.metric,.card{
+ border:1px solid #e0e9e3;border-radius:21px;background:#fff;
+ box-shadow:0 9px 26px rgba(15,55,38,.055)
+}
+.metric{padding:18px;min-height:116px}
+.metric small{font-size:12px;font-weight:700;letter-spacing:.015em}
+.metric strong{font-size:clamp(27px,2.4vw,35px);letter-spacing:-.045em;font-variant-numeric:tabular-nums}
+.card{padding:21px}
+.card h3{font-size:16px;letter-spacing:-.02em}
+.detail-item,.follow{border-radius:15px}
+.btn{border-radius:12px;transition:transform .16s,box-shadow .16s,filter .16s}
+.btn:hover{filter:brightness(1.025);box-shadow:0 6px 15px rgba(15,55,38,.12)}
+.btn:focus-visible,.tab:focus-visible{outline:3px solid rgba(11,129,84,.35);outline-offset:2px}
+@media(min-width:1101px){
+ .toolbar-grid{grid-template-columns:minmax(260px,1.5fr) minmax(240px,1fr) repeat(2,minmax(170px,.65fr))}
+}
+@media(max-width:760px){
+ header{padding:13px 14px;min-height:0;gap:10px;align-items:center;flex-wrap:wrap}
+ header h1{font-size:17px;line-height:1.2}
+ header .status{font-size:11px;padding:7px 10px}
+ .head-actions{width:100%;justify-content:flex-end;gap:8px}
+ .head-actions .btn{padding:9px 13px;border-radius:12px}
+ main{padding:10px}
+ #dashboard>.topline{display:block;padding:19px 16px;margin:9px 0 13px;border-radius:19px}
+ #dashboard>.topline h2{font-size:29px;line-height:1.08}
+ #dashboard>.topline h2:before{font-size:9px;margin-bottom:8px}
+ #dashboard>.topline>.muted:last-child{display:inline-block;margin-top:12px;padding:7px 10px;border-radius:10px}
+ .tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:8px;margin:12px 0}
+ .tabs .tab{min-width:0;white-space:normal;text-align:center;padding:12px 6px;font-size:12px;line-height:1.2;border-radius:11px}
+ .toolbar{position:relative;top:auto;padding:14px;margin-bottom:13px;border-radius:18px}
+ .toolbar-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .toolbar-grid label{font-size:10px;min-width:0}
+ .control{font-size:13px;padding:10px 9px;min-width:0}
+ .metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .metric{min-width:0;min-height:96px;padding:13px;border-radius:17px}
+ .metric strong{font-size:26px;overflow-wrap:anywhere}
+ .grid{grid-template-columns:1fr;gap:12px;margin-top:12px}
+ .card{padding:15px;border-radius:18px}
+ .follow-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .detail-grid{grid-template-columns:1fr;gap:12px}
+}
+@media(max-width:420px){
+ header .status{width:100%;text-align:right}
+ .toolbar-grid,.follow-grid{grid-template-columns:1fr}
+ #dashboard>.topline h2{font-size:26px}
+ .tabs .tab{font-size:11px;padding:11px 5px}
+}
+@media(prefers-reduced-motion:reduce){
+ *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}
+
 </style>
 </head>
 <body>
