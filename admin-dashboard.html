@@ -376,6 +376,173 @@ main{max-width:none;margin:0;padding:26px 30px 44px 270px}
  #dashboard>.tabs .tab{font-size:10px}
 }
 
+
+/* STRUCTURAL REDESIGN v2 — echte dashboardarchitectuur, geen kleurlaag.
+   Bestaande HTML-IDs, knoppen, tab-logica, data en RPC's blijven intact. */
+:root{
+ --animo-sidebar:#07150f;--animo-sidebar-line:rgba(255,255,255,.09);
+ --animo-accent:#079766;--animo-bg:#f2f6f4;--animo-card:#fff;
+ --animo-text:#172a21;--animo-muted:#728078;--animo-line:#dfe8e3;
+ --animo-shadow:0 2px 5px rgba(15,40,27,.035),0 12px 30px rgba(15,40,27,.055)
+}
+body{background:var(--animo-bg);color:var(--animo-text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:0}
+body>header{
+ position:sticky;top:0;z-index:60;min-height:68px;padding:10px 28px 10px 276px;
+ display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:18px;
+ background:#fff;color:var(--animo-text);border-bottom:1px solid var(--animo-line);
+ box-shadow:0 2px 12px rgba(12,38,25,.035)
+}
+body>header>div:first-child{display:block}
+body>header>div:first-child:before{display:none}
+body>header h1{font-size:17px;font-weight:820;letter-spacing:-.035em;color:#14291f}
+body>header p{margin-top:3px;color:var(--animo-muted);font-size:11px}
+body>header .head-actions{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
+body>header .status{padding:7px 10px;background:#f4f8f5;border:1px solid var(--animo-line);border-radius:9px;color:#617168;font-size:11px;white-space:nowrap}
+body>header .btn{padding:9px 13px;border-radius:9px;font-size:11px}
+body>header .btn.primary{background:#eaf5ef;color:#08734d}
+body>header .btn.secondary{background:#10291e;color:#fff}
+main{max-width:none;margin:0;padding:25px 30px 48px 276px}
+#dashboard:not(.hidden){display:block;min-width:0}
+#dashboard>.topline{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:3px 0 20px;padding:0}
+#dashboard>.topline h2{font-size:29px;font-weight:820;letter-spacing:-.055em;color:#172a21}
+#dashboard>.topline h2:before{content:"ANIMO HACCP  /  PLATFORM CONTROL";display:block;margin-bottom:7px;color:#07875a;font-size:9px;font-weight:850;letter-spacing:.17em}
+#dashboard>.topline>.muted:last-child{padding:8px 11px;border:1px solid var(--animo-line);border-radius:9px;background:#fff;color:#718078;font-size:10px}
+#dashboard>.tabs{
+ position:fixed!important;z-index:55;left:0;top:68px;bottom:0;width:246px;
+ display:flex;flex-direction:column;align-items:stretch;gap:5px;overflow-y:auto;overflow-x:hidden;
+ margin:0;padding:20px 13px 22px;border:0;border-right:1px solid #14271e;border-radius:0;
+ background:var(--animo-sidebar);box-shadow:8px 0 24px rgba(5,20,13,.08);
+ scrollbar-width:thin
+}
+#dashboard>.tabs:before{
+ content:"ANIMO  /  PLATFORM CONTROL";display:block;padding:3px 10px 18px;margin:0 0 10px;
+ border-bottom:1px solid var(--animo-sidebar-line);color:#d9e9e0;font-size:11px;font-weight:850;letter-spacing:.105em
+}
+#dashboard>.tabs .tab{
+ width:100%;min-height:43px;flex:0 0 auto;display:flex;align-items:center;justify-content:flex-start;gap:11px;
+ padding:10px 12px;border:1px solid transparent;border-radius:9px;background:transparent;
+ color:#aab9b0;text-align:left;white-space:normal;font-size:12px;font-weight:650;box-shadow:none
+}
+#dashboard>.tabs .tab:before{width:19px;flex:0 0 19px;text-align:center;font-size:15px;color:currentColor}
+#dashboard>.tabs .tab[data-tab="overview"]:before{content:"▦"}
+#dashboard>.tabs .tab[data-tab="timeline"]:before{content:"◷"}
+#dashboard>.tabs .tab[data-tab="audit"]:before{content:"≡"}
+#dashboard>.tabs .tab[data-tab="errors"]:before{content:"⚠"}
+#dashboard>.tabs .tab[data-tab="billing"]:before{content:"€"}
+#dashboard>.tabs .tab[data-tab="website-analytics"]:before{content:"⌁"}
+#dashboard>.tabs .tab:hover{background:rgba(255,255,255,.065);color:#fff}
+#dashboard>.tabs .tab.active{background:#123c2b;border-color:rgba(32,199,132,.15);color:#31d99a;box-shadow:inset 3px 0 #0db77a}
+#dashboard>.toolbar{
+ position:relative!important;top:auto!important;z-index:1!important;margin:0 0 15px;padding:13px 15px;
+ border:1px solid var(--animo-line);border-radius:13px;background:#fff;box-shadow:var(--animo-shadow)
+}
+#dashboard>.toolbar-grid{grid-template-columns:minmax(190px,1.1fr) minmax(210px,1.35fr) repeat(2,minmax(125px,.7fr));gap:11px}
+#dashboard>.toolbar label{font-size:9px;font-weight:820;letter-spacing:.09em;text-transform:uppercase;color:#718078}
+#dashboard .control{min-height:39px;padding:8px 10px;border:1px solid #dfe8e3;border-radius:8px;background:#fbfdfc;color:#20372b;font-size:11px}
+#dashboard>#metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin:0 0 15px}
+#dashboard>#metrics .metric{position:relative;min-height:118px;padding:16px 17px;border:1px solid var(--animo-line);border-radius:13px;background:#fff;box-shadow:var(--animo-shadow)}
+#dashboard>#metrics .metric:after{width:3px;background:#079766;opacity:1}
+#dashboard>#metrics .metric small{font-size:10px;font-weight:700;color:#748178}
+#dashboard>#metrics .metric strong{margin-top:9px;font-size:29px;line-height:1.1;font-weight:820;letter-spacing:-.055em;color:#15291f;font-variant-numeric:tabular-nums}
+#dashboard>.grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(270px,.9fr);gap:14px;margin:0 0 15px}
+#dashboard>.grid>.card{min-width:0;padding:18px;border:1px solid var(--animo-line);border-radius:14px;background:#fff;box-shadow:var(--animo-shadow)}
+#dashboard>.grid>.card.full{grid-column:1/-1}
+#dashboard>.grid>.card h3,#dashboard>.tab-panel h3{margin:0 0 12px;font-size:13px;font-weight:780;letter-spacing:-.02em;color:#1c3025}
+#dashboard .follow-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+#dashboard .follow{min-width:0;padding:12px;border:1px solid var(--animo-line);border-radius:10px;background:#f8fbf9}
+#dashboard .follow strong{font-size:23px;font-weight:820}
+#dashboard #activityChart{height:225px;gap:8px;padding:12px 5px 5px;border-bottom:1px solid var(--animo-line)}
+#dashboard #activityChart .bar{max-width:42px;border-radius:5px 5px 1px 1px;background:linear-gradient(180deg,#1bb77c,#08734d)}
+#dashboard #activityChart .bar-label,#dashboard #activityChart .bar-value{font-size:9px;color:#78857d}
+#dashboard #usageMetrics{gap:8px}
+#dashboard #usageMetrics .metric{min-height:75px;padding:11px;border-radius:9px;box-shadow:none;background:#f8fbf9}
+#dashboard #usageMetrics .metric strong{font-size:21px}
+#dashboard>.tab-panel{min-width:0;margin:0 0 15px!important}
+#dashboard>.tab-panel.active{display:block}
+#dashboard>.tab-panel>.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:0}
+#dashboard>.tab-panel .card{min-width:0;border:1px solid var(--animo-line);border-radius:14px;background:#fff;box-shadow:var(--animo-shadow);padding:18px}
+#dashboard>.tab-panel .card.full{grid-column:1/-1}
+#dashboard>.tab-panel .topline{align-items:center;margin:0 0 13px}
+#dashboard .table-wrap{border:1px solid var(--animo-line);border-radius:10px;background:#fff}
+#dashboard table{min-width:760px}
+#dashboard th{background:#f5f8f6;color:#718078;font-size:9px;letter-spacing:.08em}
+#dashboard td{font-size:11px}
+#dashboard tbody tr:hover{background:#f3f8f5}
+#dashboard .detail-item{border:1px solid var(--animo-line);border-radius:10px;background:#f8fbf9}
+#dashboard .tag{border-radius:6px}
+#dashboard #tab-website-analytics{padding:19px!important}
+#dashboard #tab-website-analytics>.topline h2{font-size:23px;font-weight:820}
+@media(max-width:1050px) and (min-width:761px){
+ body>header{padding-left:238px}
+ main{padding-left:238px}
+ #dashboard>.tabs{width:210px}
+ #dashboard>#metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #dashboard>.grid{grid-template-columns:1fr 1fr}
+ #dashboard>.toolbar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #dashboard .follow-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ body>header{position:relative;min-height:58px;padding:10px 13px;gap:8px;align-items:center}
+ body>header h1{font-size:14px;line-height:1.2}
+ body>header p{display:none}
+ body>header .head-actions{gap:5px}
+ body>header .status{display:none}
+ body>header .btn{padding:8px 9px;font-size:10px}
+ main{padding:14px 13px 30px}
+ #dashboard:not(.hidden){display:flex;flex-direction:column;gap:12px}
+ #dashboard>.topline{width:100%;margin:2px 0 3px;align-items:flex-start;gap:6px}
+ #dashboard>.topline h2{font-size:23px}
+ #dashboard>.topline h2:before{font-size:8px}
+ #dashboard>.topline>.muted:last-child{font-size:9px;padding:6px 8px}
+ #dashboard>.tabs{
+  position:sticky!important;top:0;left:auto;bottom:auto;width:100%;height:auto;min-height:0;
+  display:flex;flex-direction:row;align-items:center;gap:5px;overflow-x:auto;overflow-y:hidden;
+  padding:8px;margin:0;border:0;border-radius:11px;background:var(--animo-sidebar);
+  box-shadow:0 5px 14px rgba(5,20,13,.13);scrollbar-width:none
+ }
+ #dashboard>.tabs::-webkit-scrollbar{display:none}
+ #dashboard>.tabs:before{display:none}
+ #dashboard>.tabs .tab{
+  width:auto;min-width:max-content;min-height:36px;flex:0 0 auto;display:flex;gap:6px;
+  padding:8px 10px;border-radius:8px;font-size:10px
+ }
+ #dashboard>.tabs .tab:before{width:auto;flex:0 0 auto;font-size:12px}
+ #dashboard>.toolbar{position:relative!important;top:auto!important;width:100%;margin:0;padding:11px;border-radius:11px}
+ #dashboard>.toolbar-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ #dashboard>.toolbar label{font-size:8px}
+ #dashboard .control{min-height:38px;font-size:10px}
+ #dashboard>#metrics{width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:0}
+ #dashboard>#metrics .metric{min-height:86px;padding:11px 12px;border-radius:11px}
+ #dashboard>#metrics .metric small{font-size:9px}
+ #dashboard>#metrics .metric strong{font-size:23px;margin-top:7px}
+ #dashboard>.grid{width:100%;grid-template-columns:1fr;gap:10px;margin:0}
+ #dashboard>.grid>.card{padding:14px;border-radius:12px}
+ #dashboard>.grid>.card.full{grid-column:auto}
+ #dashboard .follow-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ #dashboard .follow{padding:10px}
+ #dashboard .follow strong{font-size:21px}
+ #dashboard #activityChart{height:190px}
+ #dashboard>.tab-panel{width:100%;margin:0!important}
+ #dashboard>.tab-panel>.grid{grid-template-columns:1fr;gap:10px}
+ #dashboard>.tab-panel .card{padding:14px;border-radius:12px}
+ #dashboard>.tab-panel .card.full{grid-column:auto}
+ #dashboard>.tab-panel .topline{flex-direction:row;align-items:center}
+ #dashboard>.tab-panel .filters{width:100%;flex-wrap:wrap}
+ #dashboard>.tab-panel .filters input,#dashboard>.tab-panel .filters select{min-width:0;max-width:100%;flex:1 1 130px}
+ #dashboard #tab-website-analytics{padding:14px!important}
+ #dashboard #websiteAnalyticsMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #dashboard #websiteAnalyticsSites{grid-template-columns:1fr}
+}
+@media(max-width:420px){
+ body>header h1{font-size:12px}
+ body>header .btn{font-size:9px;padding:7px 8px}
+ main{padding:11px}
+ #dashboard>.toolbar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #dashboard>.topline h2{font-size:21px}
+ #dashboard>#metrics .metric strong{font-size:21px}
+ #dashboard>.tabs .tab{font-size:9px;padding:7px 8px}
+}
+
 </style>
 </head>
 <body>
