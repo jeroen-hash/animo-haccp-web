@@ -178,6 +178,162 @@ body{background:radial-gradient(ellipse at 70% -20%,#124b32 0,transparent 35%),#
 .login{background:linear-gradient(145deg,#0d2118,#08150f);border-color:#28543b}.login h2{color:#effff5}.field label{color:#9ab8a7}.message{background:#3a191d;color:#ff9aa2}
 @media(max-width:1100px){.app-sidebar{width:218px}.app-topbar,.workspace{margin-left:218px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.toolbar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.overview-grid,.overview-lower{grid-template-columns:1fr}.follow-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){.app-sidebar{position:sticky;top:60px;inset:auto;width:auto;height:auto;padding:8px 10px;background:#06140ef5;border-right:0;border-bottom:1px solid #204531}.sidebar-brand,.sidebar-foot,.nav-caption{display:none}.tabs{display:flex;gap:5px;overflow-x:auto}.tab{flex:0 0 auto;width:auto;min-height:42px;padding:0 11px;font-size:10px}.app-topbar{height:60px;margin-left:0;padding:0 12px}.workspace{margin-left:0}main{padding:20px 12px 38px}.dashboard-shell{gap:13px}.hero{display:block}.hero h1{font-size:26px}.hero-copy{text-align:left;margin-top:9px}.toolbar{padding:12px}.toolbar-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.metric{min-height:94px;padding:13px 11px}.metric strong{font-size:24px}.card{padding:14px}.bars{height:205px}.follow-grid{gap:8px}.follow{padding:11px}.platform-health{gap:14px;min-height:190px}.health-donut{width:128px;height:128px;flex-basis:128px}.health-donut:before{inset:18px}.health-donut strong{font-size:25px}.health-legend{gap:10px;min-width:98px}.detail-list,.subscription{grid-template-columns:repeat(2,minmax(0,1fr))}.filters{width:100%}.filters input,.filters select{min-width:0;flex:1}#tab-website-analytics .topline{display:block}}
+
+
+/* ANIMO PREMIUM FINISH — hierarchy, depth, chart and table refinement */
+:root{
+ --panel:#0a1b14;--panel-raised:#0d241a;--stroke:#244b36;
+ --glow:rgba(28,220,145,.12);--text-soft:#a4c1b0;
+}
+body{
+ background:
+  radial-gradient(ellipse at 76% 0%,rgba(17,105,65,.22),transparent 31%),
+  radial-gradient(ellipse at 8% 42%,rgba(8,77,49,.12),transparent 32%),
+  #040d09;
+}
+.app-topbar{
+ height:72px;
+ background:rgba(4,14,10,.94);
+ border-bottom:1px solid rgba(72,159,111,.22);
+ box-shadow:0 10px 35px rgba(0,0,0,.24);
+}
+.brand-inline{font-size:12px;letter-spacing:.13em}
+.brand-inline .brand-mark{width:38px;height:38px;border-radius:12px;font-size:18px}
+.head-actions .status{border-radius:8px;padding:9px 12px;font:500 10px 'IBM Plex Mono',monospace}
+.btn{letter-spacing:.015em}
+.btn.primary,.btn.green{background:linear-gradient(135deg,#36e0a2,#079667);color:#032015;box-shadow:0 7px 24px rgba(13,194,126,.2)}
+.app-sidebar{width:252px;padding:25px 17px;background:linear-gradient(180deg,#030b08 0%,#06170f 60%,#071b12 100%);border-right:1px solid #1a402d}
+.workspace,.app-topbar{margin-left:252px}
+.sidebar-brand{padding:3px 10px 25px;margin-bottom:25px}
+.sidebar-brand .brand-mark{width:42px;height:42px;border-radius:13px}
+.sidebar-brand strong{font-size:14px}
+.nav-caption{font-size:9px;letter-spacing:.19em}
+.tabs{gap:7px}
+.tab{min-height:46px;padding:0 13px;border-radius:10px;font-size:11px;letter-spacing:.015em}
+.tab.active{background:linear-gradient(105deg,rgba(20,105,68,.55),rgba(9,49,32,.8));border-color:#28734d;box-shadow:inset 3px 0 #4aefb4,0 7px 22px #0003}
+.sidebar-foot{font-size:10px;line-height:1.9}
+main{max-width:1920px;padding:34px 38px 76px}
+.dashboard-shell{gap:17px}
+.hero{
+ position:relative;isolation:isolate;overflow:hidden;min-height:158px;
+ padding:25px 29px;border:1px solid #24543a;border-radius:18px;
+ background:linear-gradient(112deg,rgba(13,57,37,.98),rgba(7,31,21,.98) 62%,rgba(6,24,17,.98));
+ box-shadow:0 18px 42px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.035);
+ align-items:center;
+}
+.hero:before{
+ content:"";position:absolute;z-index:-1;width:330px;height:330px;right:7%;top:-215px;
+ border:1px solid rgba(82,238,177,.18);border-radius:50%;
+ box-shadow:0 0 0 28px rgba(82,238,177,.025),0 0 0 58px rgba(82,238,177,.02),0 0 0 88px rgba(82,238,177,.015);
+}
+.hero:after{
+ content:"";position:absolute;z-index:-1;right:0;bottom:0;width:42%;height:2px;
+ background:linear-gradient(90deg,transparent,#34d99c,transparent);opacity:.75;
+}
+.hero h1{font-size:clamp(29px,3.1vw,42px);font-weight:800;letter-spacing:-.06em;color:#f3fff8}
+.hero .eyebrow{font-size:9px;letter-spacing:.22em;color:#65e8b3}
+.hero-meta{color:#9abda8;font-size:10px}
+.hero-copy{max-width:390px;padding:15px 17px;border:1px solid rgba(95,184,132,.19);border-radius:11px;background:rgba(2,17,10,.26);color:#b0cabb;font-size:11px;line-height:1.8;text-align:left}
+.toolbar{
+ padding:16px 18px;border-radius:14px;
+ background:linear-gradient(110deg,#0b1e15,#091710);
+ border-color:#234b35;box-shadow:0 10px 26px rgba(0,0,0,.16);
+}
+.toolbar label{gap:9px;font-size:9px;color:#9ab8a5}
+.control{min-height:43px;border-radius:9px;background:#06140e;border-color:#294e39;color:#eaf8ef}
+.control:hover{border-color:#397d55}
+.metrics{gap:13px}
+.metric{
+ min-height:126px;padding:19px 19px 17px;border-radius:14px;
+ background:linear-gradient(145deg,#10271c 0%,#0b1b13 75%);
+ border:1px solid #28513a;box-shadow:0 12px 28px rgba(0,0,0,.2),inset 0 1px rgba(255,255,255,.025);
+ transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.metric:hover{transform:translateY(-2px);border-color:#3a8057;box-shadow:0 17px 32px rgba(0,0,0,.25),0 0 0 1px rgba(54,224,162,.06)}
+.metric:before{width:3px;background:linear-gradient(180deg,#6af4bd,#0b9b68)}
+.metric:after{width:112px;height:112px;right:-31px;top:-40px;border-color:rgba(71,195,129,.16);box-shadow:0 0 0 15px rgba(37,121,77,.055),0 0 0 31px rgba(37,121,77,.035)}
+.metric small{font-size:10px;color:#9bb9a7;letter-spacing:.045em}
+.metric strong{font-size:32px;letter-spacing:-.07em;color:#f2fff7}
+.metric-icon{display:grid;place-items:center;position:absolute;right:17px;top:16px;width:34px;height:34px;border-radius:10px;font-size:15px}
+.overview-grid{grid-template-columns:minmax(0,1.6fr) minmax(310px,.85fr);gap:16px}
+.overview-lower{grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);gap:16px;margin-top:16px}
+.card{
+ padding:22px;border-radius:15px;border-color:#244b36;
+ background:linear-gradient(145deg,rgba(12,34,24,.98),rgba(7,22,15,.98));
+ box-shadow:0 14px 34px rgba(0,0,0,.19),inset 0 1px rgba(255,255,255,.025);
+}
+.card h3{font-size:14px;font-weight:800;letter-spacing:-.025em}
+.subhead{margin-bottom:18px}
+.subhead .tag{font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.035em;padding:7px 10px}
+.activity-card{min-height:340px}
+#activityChart{height:275px;padding:20px 9px 8px;gap:13px}
+.bar-wrap{max-width:72px}
+.bar{border-radius:7px 7px 2px 2px;background:linear-gradient(180deg,#62f2bd 0%,#16bd80 48%,#08764e 100%);box-shadow:0 0 19px rgba(23,205,132,.13)}
+.bar-value{font-size:10px;color:#b3d1bf}
+.bar-label{font-size:9px;color:#8eae9b}
+.platform-health{min-height:275px;gap:25px}
+.health-donut{width:174px;height:174px;flex-basis:174px;background:conic-gradient(#20d995 0 calc(var(--good)*1%),#e9ac3c 0 calc((var(--good) + var(--warn))*1%),#f06470 0 100%);box-shadow:0 0 35px rgba(20,196,124,.1)}
+.health-donut:before{inset:23px;background:#0a1d14;border:1px solid #214632}
+.health-donut strong{font-size:35px}
+.health-legend{gap:15px}
+.legend-row{font-size:10px}
+.follow-grid{gap:11px}
+.follow{min-height:98px;padding:15px;border-radius:11px;background:linear-gradient(145deg,#112b1e,#0b1d14);border-color:#294f39}
+.follow small{font-size:10px;letter-spacing:.015em}
+.follow strong{font-size:28px;margin-top:8px}
+.detail-item{padding:15px;border-radius:11px;background:#0c2117;border-color:#244a34}
+.table-wrap{border-radius:12px;border-color:#244a35}
+table{min-width:780px}
+th{padding:15px 14px;background:#10281c;color:#9abba7;letter-spacing:.13em}
+td{padding:16px 14px;font-size:11px}
+tbody tr{transition:background .15s ease}
+tbody tr:hover{background:#102d1e}
+.tag{border-radius:6px}
+#tab-website-analytics .overview-lower{margin-top:16px}
+#tab-website-analytics .card{border-radius:15px}
+#websiteAnalyticsChart{height:245px}
+#tab-timeline .card,#tab-audit .card,#tab-errors .card{min-height:320px}
+.timeline-item{padding-bottom:25px}
+.timeline-item:before{width:11px;height:11px;left:-6.5px}
+.revenue-note{border-radius:10px;line-height:1.8}
+@media(max-width:1100px){
+ .app-sidebar{width:220px}.app-topbar,.workspace{margin-left:220px}
+ .overview-grid,.overview-lower{grid-template-columns:1fr}
+}
+@media(max-width:720px){
+ .app-sidebar{top:60px;padding:8px 10px}
+ .app-topbar{height:60px;margin-left:0;padding:0 12px}
+ .workspace{margin-left:0}
+ main{padding:17px 12px 36px}
+ .dashboard-shell{gap:12px}
+ .hero{min-height:0;padding:20px 17px;border-radius:14px}
+ .hero h1{font-size:26px}
+ .hero-copy{max-width:none;margin-top:13px;padding:11px 12px;font-size:10px}
+ .hero:before{right:-150px;top:-245px}
+ .toolbar{padding:12px;border-radius:12px}
+ .toolbar-grid{gap:9px}
+ .control{min-height:41px;padding:10px 9px;font-size:10px}
+ .metrics{gap:8px}
+ .metric{min-height:104px;padding:14px 12px;border-radius:12px}
+ .metric small{font-size:9px}
+ .metric strong{font-size:25px;margin-top:10px}
+ .metric-icon{width:28px;height:28px;right:11px;top:11px}
+ .overview-grid,.overview-lower{gap:11px;margin-top:11px}
+ .card{padding:15px;border-radius:12px}
+ .activity-card{min-height:0}
+ #activityChart{height:215px;gap:7px}
+ .platform-health{min-height:190px;gap:14px}
+ .health-donut{width:128px;height:128px;flex-basis:128px}
+ .health-donut:before{inset:18px}
+ .health-donut strong{font-size:26px}
+ .health-legend{gap:10px;min-width:100px}
+ .follow-grid{gap:8px}
+ .follow{min-height:84px;padding:11px}
+ .follow strong{font-size:24px}
+ th{padding:12px 10px}td{padding:13px 10px}
+}
+@media(prefers-reduced-motion:reduce){.metric,.metric:hover{transition:none;transform:none}}
+
 </style>
 </head>
 
