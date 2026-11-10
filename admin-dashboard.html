@@ -105,6 +105,54 @@ tbody tr:hover{background:#f4faf6}
 .toolbar{position:relative!important;top:auto!important;z-index:1!important}
 .tab{position:relative;z-index:3;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:rgba(8,115,77,.15)}
 .tab-panel{scroll-margin-top:16px}
+
+
+/* Admin dashboard refinement — visual-only; no data queries or permissions changed. */
+:focus-visible{outline:3px solid rgba(17,149,104,.35);outline-offset:3px}
+button,.tab{touch-action:manipulation}
+#dashboard>.topline{padding:4px 2px 2px}
+#dashboard>.topline>.muted:last-child{color:#456256}
+#metrics{margin:0 0 18px}
+#metrics .metric{min-height:112px;display:flex;flex-direction:column;justify-content:center}
+#metrics .metric strong{font-variant-numeric:tabular-nums}
+#tab-website-analytics{background:linear-gradient(180deg,#fff 0%,#fbfdfb 100%)}
+#tab-website-analytics>.topline{align-items:center;padding-bottom:14px;border-bottom:1px solid var(--line)}
+#tab-website-analytics>.topline h2{font-size:clamp(22px,2.4vw,29px);letter-spacing:-.045em}
+#tab-website-analytics>.topline .muted{margin-top:5px;line-height:1.5}
+#websiteAnalyticsMetrics .metric{min-height:108px;background:linear-gradient(145deg,#fff,#f5faf7)}
+#websiteAnalyticsMetrics .metric strong{font-size:clamp(26px,2.5vw,34px);font-variant-numeric:tabular-nums}
+#websiteAnalyticsSites{grid-template-columns:repeat(3,minmax(0,1fr))}
+#websiteAnalyticsSites .detail-item{padding:17px;border-radius:15px;background:linear-gradient(145deg,#fff,#f7faf8)}
+#websiteAnalyticsSites .detail-item strong{display:block;margin-top:8px;font-size:20px;letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+#websiteAnalyticsSites .detail-item .muted{line-height:1.5}
+#websiteDailyFollowup .metric{min-height:94px}
+#websiteDailyFollowup .metric strong{font-size:clamp(21px,2vw,27px);font-variant-numeric:tabular-nums}
+#websiteDailyInsight{border-radius:14px;line-height:1.65}
+#websiteAnalyticsChart{align-items:flex-end;min-height:230px;padding:18px 8px 8px;gap:8px}
+#websiteAnalyticsChart .bar-wrap{min-width:16px}
+#websiteAnalyticsChart .bar{max-width:42px;min-height:4px;transition:height .25s ease;box-shadow:0 3px 8px rgba(7,95,63,.12)}
+#websiteAnalyticsChart .bar-value{font-variant-numeric:tabular-nums;color:#456256}
+#websiteAnalyticsChart .bar-label{white-space:nowrap}
+#tab-website-analytics>article.card{margin-top:14px!important;background:#fff}
+#tab-website-analytics .subhead{align-items:center}
+#tab-website-analytics .subhead h3{letter-spacing:-.025em}
+#websiteAnalyticsMessage{padding:8px 2px;line-height:1.5}
+.table-wrap{border:1px solid var(--line);border-radius:13px}
+table{overflow:hidden}
+@media(max-width:760px){
+  #metrics .metric{min-height:88px}
+  #tab-website-analytics>.topline{gap:12px}
+  #tab-website-analytics>.topline .btn{width:100%}
+  #websiteAnalyticsSites{grid-template-columns:1fr}
+  #websiteAnalyticsSites .detail-item{padding:14px}
+  #websiteDailyFollowup .metric{min-height:84px}
+  #websiteAnalyticsChart{min-height:205px;gap:6px}
+  #websiteAnalyticsChart .bar-label{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}
+
 </style>
 </head>
 <body>
