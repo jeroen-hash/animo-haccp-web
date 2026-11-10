@@ -28,6 +28,136 @@ body:not(:has(#dashboard:not(.hidden))) .app-sidebar{display:none}body:not(:has(
 @media(max-width:720px){.app-sidebar{position:sticky;top:60px;inset:auto;width:auto;height:auto;padding:8px 10px;background:linear-gradient(100deg,#0a2119,#103b2b);box-shadow:0 7px 20px #10291c18}.sidebar-brand,.sidebar-foot,.app-topbar .brand-inline,.nav-caption{display:none}.tabs{display:flex;overflow-x:auto;gap:5px;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tab{flex:0 0 auto;width:auto;min-height:42px;padding:0 12px;font-size:10px;white-space:nowrap}.tab:before{width:auto}.app-topbar{height:60px;margin-left:0;padding:0 12px}.status{max-width:135px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;padding:8px 10px}.btn{padding:9px 10px;font-size:10px}.workspace{margin-left:0;min-height:calc(100vh - 60px)}main{padding:22px 13px 38px}.topline{display:block;margin-bottom:17px}.topline h2{font-size:26px}.topline>.muted{text-align:left;margin-top:8px}.toolbar{padding:13px;margin-bottom:13px;border-radius:13px}.toolbar-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.toolbar label{font-size:8px}.control{padding:11px 9px;font-size:11px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.metric{min-height:105px;padding:15px 13px;border-radius:13px}.metric small{font-size:9px}.metric strong{font-size:26px;margin-top:11px}.grid{gap:11px;margin-top:12px}.card{padding:15px;border-radius:13px}.card h3{font-size:13px}.follow-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.follow{padding:12px}.follow small{font-size:9px}.follow strong{font-size:23px}.bars{height:215px;gap:7px}.bar-label{font-size:8px}.platform-health{gap:17px;min-height:205px}.health-donut{width:135px;height:135px;flex-basis:135px}.health-donut:before{inset:18px}.health-donut strong{font-size:25px}.health-legend{gap:11px;min-width:105px}.legend-row{font-size:9px;gap:6px}.detail-list,.subscription{grid-template-columns:repeat(2,minmax(0,1fr))}.health-wrap{gap:15px;min-height:165px}.health-ring{width:125px;height:125px;flex-basis:125px}.health-ring:before{inset:11px}.health-ring strong{font-size:29px}.filters input,.filters select{min-width:0;flex:1}.login{margin:7vh 13px;padding:26px}.modal-layer{padding:10px}.modal{padding:17px}.topline .nav-caption{display:block}}
 @media(max-width:380px){.tab{padding:0 9px;font-size:9px}.tab:before{display:none}.platform-health{gap:12px}.health-donut{width:118px;height:118px;flex-basis:118px}.health-donut:before{inset:16px}.health-legend{min-width:96px}.metric strong{font-size:23px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+/* ANIMO DARK COMMAND CENTER — complete visual skin */
+:root{
+ --bg:#04100d;--surface:#081a16;--surface-2:#0b211b;--ink:#e9f5ef;--muted:#89a99b;
+ --line:#173a2e;--nav:#030e0b;--nav2:#082219;--navText:#9bbcaf;
+ --green:#08b77b;--mint:#54efbd;--mint-soft:#0c3528;--red:#ff6570;--amber:#f1b64b;--blue:#69b8ee;
+ --shadow:0 18px 50px rgba(0,0,0,.22);--shadow-sm:0 8px 24px rgba(0,0,0,.18)
+}
+html{background:#030b09}
+body{background:radial-gradient(ellipse at 75% -10%,#0b3828 0,transparent 38%),radial-gradient(ellipse at 0% 40%,#08231a 0,transparent 34%),#04100d;color:var(--ink);font-family:'DM Sans','Manrope',sans-serif}
+.app-sidebar{width:246px;background:linear-gradient(180deg,#020b09 0%,#04130f 58%,#061b14 100%);border-right:1px solid #164332;box-shadow:14px 0 45px #0005;padding:25px 16px 19px}
+.sidebar-brand{border-bottom:1px solid #1b3d30;padding-bottom:28px}
+.sidebar-brand .brand-mark,.brand-mark{background:linear-gradient(145deg,#63f3bd,#079b68);color:#042016;box-shadow:0 0 24px #12c98b30}
+.sidebar-brand strong{letter-spacing:.2em;color:#e7fff3}
+.sidebar-brand small,.nav-caption{color:#5e907a}
+.tab{border-radius:10px;color:#91b3a4;min-height:45px;font-size:12px}
+.tab:before{color:#72a68e}
+.tab:hover{background:#0b2a20;color:#e5fff2}
+.tab.active{background:linear-gradient(100deg,#0c5138,#0b3427);border-color:#167b55;color:#5bf0b9;box-shadow:inset 3px 0 #20e5a0,0 8px 24px #0003}
+.sidebar-foot{border-color:#1b3d30;color:#779e8b}
+.sidebar-foot:before{color:#42e4a8}
+.app-topbar{height:76px;margin-left:246px;background:rgba(4,17,13,.88);border-bottom:1px solid #174331;box-shadow:0 8px 30px #0002}
+.brand-inline{color:#e8fff3;letter-spacing:.1em}
+.brand-inline small{color:#6e9a84}
+.status{background:#0b241b;border-color:#1a4a35;color:#91c8ad}
+.btn{border-radius:9px}
+.btn.primary,.btn.green{background:linear-gradient(135deg,#12c98b,#08784f);color:#03160f;box-shadow:0 7px 22px #04b77b2b}
+.btn.secondary{background:#0c3023;color:#68e7b4;border-color:#1a6547}
+.btn.ghost{background:#0a2119;border-color:#24513d;color:#d9eee4}
+.btn.danger{background:#35171a;color:#ff8990}
+.workspace{margin-left:246px}
+main{max-width:1900px;padding:32px 34px 72px}
+.topline h2{color:#f1fff7;font-size:30px;letter-spacing:-.055em}
+.topline .nav-caption{color:#48d8a0}
+.topline>.muted{color:#83a596}
+.muted{color:#82a394}
+.toolbar{background:linear-gradient(135deg,#0a211a,#071812);border:1px solid #194533;border-radius:15px;box-shadow:var(--shadow-sm)}
+.toolbar label{color:#83a997}
+.control,.filters input,.filters select,.field input{background:#061711;color:#e4f5eb;border:1px solid #24523e;border-radius:9px}
+.control:focus,.filters input:focus,.filters select:focus,.field input:focus{border-color:#1cce8e;box-shadow:0 0 0 3px #16c98720}
+.control option{background:#071a13;color:#e9f5ef}
+.metrics{gap:13px}
+.metric{background:linear-gradient(145deg,#0c251d,#081a15 78%);border:1px solid #1a4634;border-radius:13px;box-shadow:0 9px 28px #0003;min-height:122px;padding:18px 18px 16px}
+.metric:before{width:2px;background:linear-gradient(180deg,#5df3bb,#078b5e)}
+.metric:after{right:-25px;top:-32px;border-color:#1c503a;box-shadow:0 0 0 13px #0b211a,0 0 0 27px #0a1d17}
+.metric small{color:#8eb2a0;font-size:10px;letter-spacing:.04em}
+.metric strong{color:#f0fff6;font-size:29px}
+.metric.alert strong{color:#ff7881}.metric.warn strong{color:#f2c15d}.metric.info strong{color:#78c5f1}
+.metric-icon{background:#0e3928;color:#55e7b2;border:1px solid #1c6748}
+.grid{gap:15px;margin-top:16px}
+.card{background:linear-gradient(145deg,#0a211a,#071812);border:1px solid #1b4835;border-radius:14px;box-shadow:0 12px 34px #0003;color:#e5f3eb;padding:20px}
+.card h3{color:#eaf8f0;font-size:14px;letter-spacing:-.02em}
+.subhead h3{color:#eaf8f0}
+.tag{background:#0d3928;color:#65e8b3;border:1px solid #1b6043}
+.tag.red{background:#3b191d;color:#ff8b91;border-color:#74313a}
+.tag.amber{background:#382a13;color:#f2c36a;border-color:#70501e}
+.tag.blue{background:#102c3c;color:#83c9f1;border-color:#24536c}
+.follow{background:linear-gradient(145deg,#0d281f,#091d16);border:1px solid #1b4835;color:#e8f6ed}
+.follow small{color:#91b5a2}
+.follow strong{color:#f2fff7}
+.follow.red{background:#2b1719;border-color:#673039;color:#ff8991}
+.follow.red small,.follow.red strong{color:#ff8991}
+.follow.amber{background:#2b2414;border-color:#655020;color:#f3c96e}
+.follow.amber small,.follow.amber strong{color:#f3c96e}
+.follow.blue{background:#102637;border-color:#244a60;color:#8acdf3}
+.follow.blue small,.follow.blue strong{color:#8acdf3}
+.bars{border-bottom-color:#1b4232;background:repeating-linear-gradient(to top,transparent 0,transparent 51px,#153427 52px)}
+.bar-value{color:#8fb5a1}.bar{background:linear-gradient(180deg,#4af0b5,#07875b);box-shadow:0 0 20px #12c98b26}.bar-label{color:#789b89}
+.detail-item{background:#0b211a;border-color:#1b4634;color:#e4f3ea}
+.detail-item small{color:#83a996}
+.health-donut:before,.health-ring:before{background:#0a2018}
+.health-donut{filter:drop-shadow(0 9px 20px #0006)}
+.health-donut small,.health-ring small{color:#8eaf9f}
+.health-donut strong,.health-ring strong{color:#f1fff6}
+.legend-row{color:#9bb8a8}.legend-row strong{color:#e7f6ed}
+.health-ring{background:conic-gradient(#18c98a calc(var(--score)*1%),#183d2e 0)}
+.table-wrap{border-color:#1b4534;background:#071811}
+table{color:#e4f2e9}
+th{background:#0c281e;color:#80a994;border-bottom:1px solid #1d4a36}
+td{border-top-color:#173b2d;color:#cfe3d7}
+tbody tr:hover{background:#0c2a1f}
+.selected-row{background:#103a29!important}
+.empty{color:#85a696}
+.timeline-item{border-left-color:#1d4b36}
+.timeline-item:before{background:#38dda0;box-shadow:0 0 0 4px #123b2a}
+.timeline-item time{color:#7fa18e}
+.timeline-detail{color:#92ad9f}
+.revenue-note{background:#0c261d;border-color:#1b4a35;color:#9ab8a8}
+.modal-layer{background:#000b;backdrop-filter:blur(10px)}
+.modal{background:#081b14;border-color:#1c4b36;color:#e9f7ef}
+.modal .muted{color:#8aa998}
+.close{background:#153528;color:#d9f4e6}
+.preview-banner{background:linear-gradient(110deg,#06150f,#0c4a32);color:#d9ffeb}
+.login{background:linear-gradient(145deg,#0c241b,#071710);border-color:#1b4b35;box-shadow:0 25px 70px #0007}
+.login h2{color:#effff5}
+.login .muted{color:#91ad9e}
+.field label{color:#91b5a2}
+.message{background:#3b191d;color:#ff9aa0}
+#websiteDailyInsight{background:#0d2b20!important;color:#a9e7c9!important;border:1px solid #1c5c40}
+#websiteAnalyticsUpdated{color:#7fa390}
+#tab-website-analytics .card{background:linear-gradient(145deg,#0b241b,#071812)}
+body:not(:has(#dashboard:not(.hidden))) .app-topbar{margin-left:0}
+body:not(:has(#dashboard:not(.hidden))) .workspace{margin-left:0}
+@media(min-width:1250px){
+ main{padding-left:42px;padding-right:42px}
+ .metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .grid{grid-template-columns:minmax(0,1.35fr) minmax(320px,.9fr)}
+ #activityChart{height:290px}
+}
+@media(max-width:1100px){
+ .app-sidebar{width:220px}.app-topbar,.workspace{margin-left:220px}
+ .grid{grid-template-columns:1fr}
+}
+@media(max-width:720px){
+ .app-sidebar{position:sticky;top:60px;inset:auto;width:auto;height:auto;padding:8px 10px;background:linear-gradient(100deg,#020d0a,#0a2c1f);border:1px solid #17442f;border-radius:0 0 13px 13px}
+ .app-topbar{height:60px;margin-left:0;padding:0 12px}
+ .workspace{margin-left:0}
+ main{padding:20px 12px 38px}
+ .topline h2{font-size:24px}
+ .toolbar,.card,.metric{box-shadow:0 8px 22px #0003}
+ .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .metric{min-height:104px;padding:14px 12px}
+ .metric strong{font-size:25px}
+ .card{padding:14px}
+ .bars{height:205px}
+ .tab.active{box-shadow:inset 0 -3px #20e5a0,0 5px 16px #0003}
+ .login{margin:7vh 12px;padding:25px}
+}
+@media(max-width:380px){.app-topbar .status{max-width:105px}.metric strong{font-size:22px}}
+
 </style>
 </head>
 <body>
@@ -182,7 +312,18 @@ function renderAll(){const d=dashboardData,s=d.summary,businesses=filteredBusine
 renderFollow(businesses);renderPlatformHealth();renderChart();renderUsage();renderBusinesses(businesses);renderDetail();renderTimeline();renderActivities();renderErrors();renderBilling();$('businessCount').textContent=`${businesses.length} zaak${businesses.length===1?'':'en'}`}
 function averageHealth(list){return list.length?Math.round(list.reduce((sum,b)=>sum+health(b),0)/list.length):0}
 function renderFollow(businesses){const s=dashboardData.summary;const openErrors=selectedBusiness?dashboardData.recent_errors.filter(x=>activityForSelection(x)&&!x.resolved).length:s.unresolved_errors;const inactive=businesses.filter(b=>!active(b)).length;const low=businesses.filter(b=>health(b)<70).length;const actions=selectedBusiness?Number(selectedBusiness.actions_7d||0):Number(s.open_corrective_actions||0);$('followMetrics').innerHTML=`<div class="follow ${actions?'amber':''}"><small>${selectedBusiness?'Acties laatste 7 dagen':'Open correctieve acties'}</small><strong>${esc(actions)}</strong></div><div class="follow ${openErrors?'red':''}"><small>Onopgeloste fouten</small><strong>${esc(openErrors)}</strong></div><div class="follow ${inactive?'amber':''}"><small>Inactieve zaken</small><strong>${esc(inactive)}</strong></div><div class="follow ${low?'red':'blue'}"><small>Lage gezondheidsscore</small><strong>${esc(low)}</strong></div>`}
-function renderChart(){const d=dashboardData;let points=d.daily_activity;if(selectedBusiness){const byDay={};for(const x of d.recent_activity.filter(activityForSelection)){const day=String(x.created_at||'').slice(0,10);byDay[day]=(byDay[day]||0)+1}points=d.daily_activity.map(x=>({day:x.day,count:byDay[x.day]||0}))}const max=Math.max(1,...points.map(x=>Number(x.count||0)));$('activityChart').innerHTML=points.map(x=>`<div class="bar-wrap"><div class="bar-value">${esc(x.count)}</div><div class="bar" style="height:${Math.max(3,Number(x.count||0)/max*165)}px"></div><div class="bar-label">${esc(String(x.day).slice(5))}</div></div>`).join('')||'<div class="empty">Geen daggegevens.</div>'}
+function renderChart(){
+ const d=dashboardData;let points=d.daily_activity;
+ if(selectedBusiness){const byDay={};for(const x of d.recent_activity.filter(activityForSelection)){const day=String(x.created_at||'').slice(0,10);byDay[day]=(byDay[day]||0)+1}points=d.daily_activity.map(x=>({day:x.day,count:byDay[x.day]||0}))}
+ points=points.slice(-14);const values=points.map(x=>Math.max(0,Number(x.count||0)));const max=Math.max(1,...values);const w=900,h=250,left=44,right=18,top=20,bottom=34,innerW=w-left-right,innerH=h-top-bottom;
+ const coords=values.map((v,i)=>({x:left+(values.length<2?innerW/2:i*innerW/(values.length-1)),y:top+innerH-(v/max)*innerH,v}));
+ const line=coords.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ');
+ const area=line+' L '+(left+innerW)+' '+(top+innerH)+' L '+left+' '+(top+innerH)+' Z';
+ const grid=[0,.25,.5,.75,1].map(r=>{const y=top+innerH-r*innerH;return '<line x1="'+left+'" y1="'+y+'" x2="'+(left+innerW)+'" y2="'+y+'" stroke="#1a4332" stroke-dasharray="4 7"/><text x="'+(left-10)+'" y="'+(y+4)+'" fill="#789b89" font-size="11" text-anchor="end">'+Math.round(max*r)+'</text>'}).join('');
+ const labels=coords.map((p,i)=>'<text x="'+p.x+'" y="'+(h-9)+'" fill="#7d9f8d" font-size="10" text-anchor="middle">'+String(points[i].day||'').slice(5)+'</text>').join('');
+ const dots=coords.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="3.5" fill="#5df2bb" stroke="#092017" stroke-width="2"><title>'+p.v+' registraties</title></circle>').join('');
+ $('activityChart').innerHTML='<div class="line-chart-head"><span>Registraties per dag</span><span>'+values.reduce((a,b)=>a+b,0).toLocaleString('nl-BE')+' totaal</span></div><svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Registraties per dag, lijn grafiek" style="width:100%;height:auto;overflow:visible"><defs><linearGradient id="animoArea" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#25d99a" stop-opacity=".32"/><stop offset="100%" stop-color="#25d99a" stop-opacity="0"/></linearGradient><filter id="animoGlow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>'+grid+'<path d="'+area+'" fill="url(#animoArea)"/><path d="'+line+'" fill="none" stroke="#4be9b2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" filter="url(#animoGlow)"/>'+dots+labels+'</svg>';
+}
 function renderUsage(){const s=dashboardData.summary;if(selectedBusiness){const acts=dashboardData.recent_activity.filter(activityForSelection);const countModule=m=>acts.filter(x=>x.module===m).length;$('usageMetrics').innerHTML=[metric('Temperaturen',countModule('temperature')),metric('Kuisactiviteiten',countModule('cleaning')),metric('Acties 7d',selectedBusiness.actions_7d,Number(selectedBusiness.actions_7d)>0?'warn':''),metric('Rapporten',countModule('report'))].join('')}else{$('usageMetrics').innerHTML=[metric('Temperaturen',s.temperatures_7d),metric('Afgewerkte kuistaken',s.cleaning_completed_7d),metric('Open acties',s.open_corrective_actions,s.open_corrective_actions>0?'alert':''),metric('Rapporten',s.reports_7d)].join('')}}
 function renderBusinesses(list){$('businessRows').innerHTML=list.length?list.map(b=>`<tr class="click-row ${selectedBusiness&&String(b.id)===String(selectedBusiness.id)?'selected-row':''}" data-business-id="${esc(b.id)}"><td><strong>${esc(b.name)}</strong><br><small>${esc(b.enterprise_number||'')}</small></td><td>${esc(b.owner_email||'-')}</td><td>${esc(b.members)}</td><td>${esc(b.actions_7d)}</td><td>${Number(b.errors_7d)?`<span class="tag red">${esc(b.errors_7d)}</span>`:'0'}</td><td><span class="tag ${health(b)<70?'red':health(b)<90?'amber':''}">${health(b)}/100</span></td><td class="nowrap">${esc(fmt(b.last_activity))}</td><td><span class="tag ${active(b)?'':'amber'}">${active(b)?'Actief':'Niet actief'}</span></td></tr>`).join(''):'<tr><td colspan="8" class="empty">Geen zaken gevonden.</td></tr>';$('businessRows').querySelectorAll('[data-business-id]').forEach(row=>row.addEventListener('click',()=>selectBusiness(row.dataset.businessId)))}
 function selectBusiness(id){selectedBusinessId=String(id||'all');$('businessSelector').value=selectedBusinessId;renderAll();if(selectedBusinessId!=='all')$('businessDetailCard').scrollIntoView({behavior:'smooth',block:'center'})}
