@@ -959,6 +959,140 @@ main{max-width:none;padding:25px 30px 46px 290px}
  #dashboard>#metrics .metric strong{font-size:21px}
 }
 
+
+/* ANIMO ADMIN — definitive app-shell layout (overrides legacy layout rules) */
+:root{--animo-bg:#f1f5f3;--animo-ink:#142b21;--animo-muted:#728078;--animo-line:#dfe8e3;--animo-green:#079767;--animo-deep:#06150f;--animo-panel:#fff}
+html,body{min-height:100%;background:var(--animo-bg)!important;color:var(--animo-ink)!important}
+body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important}
+body>header{height:76px!important;min-height:76px!important;padding:10px 30px 10px 292px!important;background:#fff!important;border-bottom:1px solid var(--animo-line)!important;box-shadow:0 3px 15px rgba(16,43,30,.045)!important}
+body>header h1{font-size:17px!important;font-weight:850!important;letter-spacing:-.04em!important;color:var(--animo-ink)!important}
+body>header p{font-size:11px!important;color:var(--animo-muted)!important}
+body>header .status{border:1px solid var(--animo-line)!important;border-radius:9px!important;background:#f7faf8!important;padding:8px 12px!important}
+body>header .btn{border-radius:9px!important;font-weight:750!important}
+body>header .btn.primary{background:#e8f5ef!important;color:#08734d!important}
+body>header .btn.secondary{background:#10291f!important;color:#fff!important}
+main{width:auto!important;max-width:none!important;margin:0!important;padding:25px 30px 48px 292px!important}
+body #dashboard{display:block!important;min-width:0!important}
+body #dashboard .topline{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:16px!important;margin:0 0 18px!important}
+body #dashboard .topline h2{font-size:27px!important;font-weight:850!important;letter-spacing:-.055em!important;color:#162d23!important}
+body #dashboard .topline h2:before{content:"ANIMO  /  PLATFORM CONTROL";display:block;margin:0 0 7px;color:#079767;font-size:9px;font-weight:900;letter-spacing:.17em}
+body #dashboard .tabs{
+ position:fixed!important;inset:0 auto 0 0!important;z-index:100!important;
+ width:258px!important;height:100dvh!important;max-height:100dvh!important;
+ display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;
+ align-items:stretch!important;justify-content:flex-start!important;gap:6px!important;
+ overflow-y:auto!important;overflow-x:hidden!important;white-space:normal!important;
+ margin:0!important;padding:25px 14px!important;border:0!important;border-right:1px solid #1a3025!important;
+ border-radius:0!important;background:#06150f!important;box-shadow:8px 0 26px rgba(4,20,12,.10)!important
+}
+body #dashboard .tabs:before{content:"ANIMO  /  PLATFORM CONTROL";display:block!important;flex:none!important;margin:0 8px 18px!important;padding:7px 5px 20px!important;border-bottom:1px solid rgba(255,255,255,.13)!important;color:#e0eee6!important;font-size:12px!important;font-weight:900!important;letter-spacing:.12em!important}
+body #dashboard .tabs .tab{
+ display:flex!important;flex:0 0 46px!important;width:100%!important;min-width:0!important;min-height:46px!important;
+ flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:12px!important;
+ padding:10px 12px!important;margin:0!important;border:1px solid transparent!important;border-radius:10px!important;
+ background:transparent!important;color:#aabbb1!important;text-align:left!important;white-space:normal!important;
+ font-size:12px!important;font-weight:750!important;line-height:1.2!important;box-shadow:none!important
+}
+body #dashboard .tabs .tab:before{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:21px!important;min-width:21px!important;flex:0 0 21px!important;font-size:16px!important}
+body #dashboard .tabs .tab:nth-child(1):before{content:"▦"}body #dashboard .tabs .tab:nth-child(2):before{content:"◷"}body #dashboard .tabs .tab:nth-child(3):before{content:"≡"}body #dashboard .tabs .tab:nth-child(4):before{content:"⚠"}body #dashboard .tabs .tab:nth-child(5):before{content:"€"}body #dashboard .tabs .tab:nth-child(6):before{content:"⌁"}
+body #dashboard .tabs .tab.active{background:#123d2b!important;border-color:rgba(24,197,138,.22)!important;color:#39d99d!important;box-shadow:inset 3px 0 #18c58a!important}
+body #dashboard .toolbar{position:relative!important;top:auto!important;z-index:1!important;width:100%!important;margin:0 0 16px!important;padding:14px!important;border:1px solid var(--animo-line)!important;border-radius:14px!important;background:#fff!important;box-shadow:0 6px 22px rgba(17,47,33,.055)!important}
+body #dashboard .toolbar .toolbar-grid{display:grid!important;grid-template-columns:1.1fr 1.4fr .8fr .8fr!important;gap:12px!important}
+body #dashboard .toolbar label{font-size:9px!important;font-weight:850!important;letter-spacing:.1em!important;color:#738078!important}
+body #dashboard .toolbar .control{min-height:42px!important;border:1px solid #e1e9e4!important;border-radius:9px!important;background:#fafcfb!important;color:#20372b!important;font-size:11px!important}
+body #dashboard #metrics{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:13px!important;margin:0 0 16px!important}
+body #dashboard #metrics .metric{position:relative!important;display:flex!important;flex-direction:column!important;justify-content:center!important;min-width:0!important;min-height:124px!important;padding:17px 16px 15px 19px!important;overflow:hidden!important;border:1px solid var(--animo-line)!important;border-radius:14px!important;background:#fff!important;box-shadow:0 6px 22px rgba(17,47,33,.055)!important}
+body #dashboard #metrics .metric:after{content:""!important;position:absolute!important;inset:0 auto 0 0!important;width:4px!important;background:linear-gradient(#20c58b,#08734d)!important}
+body #dashboard #metrics .metric small{font-size:10px!important;font-weight:750!important;color:#738078!important}
+body #dashboard #metrics .metric strong{margin:10px 0 0!important;font-size:29px!important;font-weight:850!important;letter-spacing:-.06em!important;line-height:1.05!important;color:#142d22!important;font-variant-numeric:tabular-nums!important}
+body #dashboard .grid{display:grid!important;grid-template-columns:minmax(0,1.55fr) minmax(280px,.95fr)!important;gap:14px!important;margin:0 0 15px!important}
+body #dashboard .grid>.card,body #dashboard>.card,body #dashboard .tab-panel .card{min-width:0!important;padding:19px!important;border:1px solid var(--animo-line)!important;border-radius:15px!important;background:#fff!important;box-shadow:0 6px 22px rgba(17,47,33,.055)!important}
+body #dashboard .grid>.card.full{grid-column:1/-1!important}
+body #dashboard .card h3{font-size:14px!important;font-weight:820!important;letter-spacing:-.025em!important;color:#1a3025!important}
+body #dashboard .follow-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:10px!important}
+body #dashboard .follow{min-width:0!important;min-height:90px!important;padding:13px!important;border:1px solid var(--animo-line)!important;border-radius:11px!important;background:#f7faf8!important}
+body #dashboard .follow small{font-size:10px!important;font-weight:750!important;color:#718078!important}
+body #dashboard .follow strong{font-size:26px!important;font-weight:850!important;letter-spacing:-.05em!important}
+body #dashboard .bars{min-height:215px!important;padding:15px 6px 6px!important;border-bottom:1px solid var(--animo-line)!important}
+body #dashboard .bar{border-radius:7px 7px 2px 2px!important;background:linear-gradient(180deg,#24c58b,#08734d)!important}
+body #dashboard .bar-value{font-size:10px!important;font-weight:750!important;color:#5d6e64!important}
+body #dashboard .bar-label{font-size:9px!important;color:#7b8981!important}
+body #dashboard #usageMetrics{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+body #dashboard #usageMetrics .metric{min-height:82px!important;padding:12px!important;border:1px solid var(--animo-line)!important;border-radius:10px!important;background:#f8fbf9!important;box-shadow:none!important}
+body #dashboard #usageMetrics .metric strong{margin-top:6px!important;font-size:24px!important}
+body #dashboard .tab-panel{min-width:0!important;margin:0 0 16px!important}
+body #dashboard .tab-panel .grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px!important}
+body #dashboard .table-wrap{max-width:100%!important;overflow:auto!important;border:1px solid var(--animo-line)!important;border-radius:11px!important;-webkit-overflow-scrolling:touch!important}
+body #dashboard table{min-width:760px!important}
+body #dashboard th{background:#f5f8f6!important;color:#748179!important;font-size:9px!important;letter-spacing:.09em!important}
+body #dashboard td{font-size:11px!important}
+body #dashboard tbody tr:hover{background:#f2faf6!important}
+body #dashboard #tab-website-analytics{padding:19px!important}
+body #dashboard #websiteAnalyticsMetrics,body #dashboard #websiteAnalyticsSites{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}
+@media(max-width:1100px) and (min-width:761px){
+ body>header{padding-left:240px!important}main{padding-left:240px!important}
+ body #dashboard .tabs{width:215px!important}
+ body #dashboard #metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body #dashboard .toolbar .toolbar-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body #dashboard .grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body #dashboard .follow-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:760px){
+ body>header{height:auto!important;min-height:60px!important;padding:9px 12px!important;gap:8px!important}
+ body>header h1{font-size:13px!important}body>header p{display:none!important}
+ body>header .status{display:none!important}body>header .btn{padding:8px 9px!important;font-size:9px!important}
+ main{width:100%!important;padding:12px!important}
+ body #dashboard .topline{align-items:flex-start!important;gap:8px!important;margin:0 0 12px!important}
+ body #dashboard .topline h2{font-size:21px!important}
+ body #dashboard .topline h2:before{font-size:8px!important}
+ body #dashboard .tabs{
+  position:relative!important;inset:auto!important;width:100%!important;height:auto!important;max-height:none!important;
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;grid-auto-flow:row!important;
+  align-items:stretch!important;justify-content:stretch!important;gap:7px!important;overflow:visible!important;
+  margin:0 0 12px!important;padding:10px!important;border:0!important;border-radius:13px!important;
+  background:#06150f!important;box-shadow:0 7px 18px rgba(4,20,12,.13)!important
+ }
+ body #dashboard .tabs:before{display:none!important}
+ body #dashboard .tabs .tab{
+  display:flex!important;flex:initial!important;width:100%!important;min-width:0!important;min-height:56px!important;
+  flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:5px!important;
+  padding:7px 3px!important;margin:0!important;border:1px solid transparent!important;border-radius:9px!important;
+  font-size:9px!important;line-height:1.15!important;text-align:center!important;white-space:normal!important
+ }
+ body #dashboard .tabs .tab:before{display:block!important;width:auto!important;min-width:0!important;flex:0 0 auto!important;font-size:16px!important}
+ body #dashboard .tabs .tab.active{box-shadow:inset 0 -3px #18c58a!important;background:#123d2b!important}
+ body #dashboard .toolbar{width:100%!important;margin:0 0 11px!important;padding:10px!important;border-radius:12px!important}
+ body #dashboard .toolbar .toolbar-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+ body #dashboard .toolbar label{font-size:8px!important}
+ body #dashboard .toolbar .control{min-height:40px!important;padding:8px!important;font-size:10px!important}
+ body #dashboard #metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important;margin:0 0 11px!important}
+ body #dashboard #metrics .metric{min-height:94px!important;padding:12px!important;border-radius:11px!important}
+ body #dashboard #metrics .metric small{font-size:9px!important}
+ body #dashboard #metrics .metric strong{margin-top:7px!important;font-size:24px!important}
+ body #dashboard .grid{grid-template-columns:minmax(0,1fr)!important;gap:10px!important;margin:0 0 11px!important}
+ body #dashboard .grid>.card,body #dashboard .tab-panel .card{padding:14px!important;border-radius:12px!important}
+ body #dashboard .grid>.card.full{grid-column:auto!important}
+ body #dashboard .follow-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+ body #dashboard .follow{min-height:78px!important;padding:10px!important}
+ body #dashboard .follow small{font-size:9px!important}
+ body #dashboard .follow strong{font-size:22px!important}
+ body #dashboard .bars{min-height:185px!important}
+ body #dashboard #usageMetrics{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+ body #dashboard #usageMetrics .metric{min-height:75px!important;padding:10px!important}
+ body #dashboard #usageMetrics .metric strong{font-size:21px!important}
+ body #dashboard .tab-panel .grid{grid-template-columns:minmax(0,1fr)!important;gap:10px!important}
+ body #dashboard #tab-website-analytics{padding:13px!important}
+ body #dashboard #websiteAnalyticsMetrics,body #dashboard #websiteAnalyticsSites{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body #dashboard #websiteAnalyticsChart{min-width:680px!important}
+}
+@media(max-width:390px){
+ body #dashboard .tabs{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body #dashboard .tabs .tab{min-height:45px!important;flex-direction:row!important;font-size:9px!important}
+ body #dashboard .tabs .tab:before{font-size:13px!important}
+ body #dashboard #metrics .metric{min-height:86px!important}
+ body #dashboard #metrics .metric strong{font-size:22px!important}
+}
+
 </style>
 </head>
 <body>
