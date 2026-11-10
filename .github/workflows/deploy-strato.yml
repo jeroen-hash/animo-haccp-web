@@ -132,9 +132,7 @@ jobs:
           set net:max-retries 3
           set net:timeout 30
           mirror -R --verbose out/landing /landing
-          # Werk uitsluitend het Admin-dashboard bij in de bevestigde app-map.
-          # Geen index.html, service worker, klantbestanden of andere app-bestanden uploaden.
-          put out/app/admin-dashboard.html -o /app/admin-dashboard.html
+          # De bestaande app blijft onaangeroerd; alleen de publieke landingspagina wordt bijgewerkt.
           bye
           LFTP
 
