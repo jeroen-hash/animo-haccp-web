@@ -1234,6 +1234,7 @@ async function finishPendingBusinessRegistration(){
 }
 get('cloudForgetConfig').addEventListener('click',()=>{if(!confirm('Lokale Supabase-instellingen wissen?'))return;localStorage.removeItem(CONFIG_KEY);cloudClient=null;get('cloudUrl').value='';get('cloudKey').value='';setStatus('Lokale veilige modus');showSetup()});
 const config=validConfig(PUBLIC_SUPABASE_CONFIG)?PUBLIC_SUPABASE_CONFIG:readConfig();if(validConfig(config)){localStorage.setItem(CONFIG_KEY,JSON.stringify(config));initClient(config)}else{get('cloudSetup').classList.add('cloud-hidden');get('cloudLoginForm').classList.add('cloud-hidden');get('cloudSignupForm').classList.add('cloud-hidden');get('cloudSessionBox').classList.add('cloud-hidden');hidePasswordSetup();setStatus('Configuratie ontbreekt');const card=document.querySelector('.cloud-card');card.insertAdjacentHTML('beforeend','<div class="cloud-message error show">De publieke appconfiguratie is nog niet voltooid.</div>')}
+window.FAVVGetSupabaseClient=()=>cloudClient;
 })();
 </script>
 <script>
@@ -1268,6 +1269,8 @@ function migrateLegacyBusiness(){let list=loadBusinessRegistry();if(list.length)
 migrateLegacyBusiness();
 let state=load();let modalMode='',editId=null,activeTemperaturePointId=null;
 window.FAVVGetLocalState=()=>clone(state);
+window.FAVVGetCurrentUser=()=>currentUser;
+window.FAVVNavigate=(page)=>navigate(page);
 window.FAVVCreateCleanBusinessState=()=>({cleaning:[],temperatures:[],dishes:[],reports:[],stock:[],stockMovements:[],deliveries:[],recipes:[],productions:[],temperatureActions:[],businessProfile:businessProfile?{businessName:businessProfile.businessName||'',enterpriseNumber:businessProfile.enterpriseNumber||'',businessType:businessProfile.businessType||'Horecazaak',address:businessProfile.address||'',phone:businessProfile.phone||''}:null});
 window.FAVVApplyCloudState=(x)=>{if(!x||!Array.isArray(x.cleaning)||!Array.isArray(x.temperatures)||!Array.isArray(x.dishes))throw new Error('Ongeldige cloudgegevens');state=normalizeStateCollections(clone(x));state.stock=normalizeStockBatchData(state.stock);if(x.businessProfile&&businessProfile){businessProfile={...businessProfile,...x.businessProfile,id:businessProfile.id,businessName:window.FAVVCloudBusiness?.name||x.businessProfile.businessName||businessProfile.businessName,enterpriseNumber:window.FAVVCloudBusiness?.enterprise_number||x.businessProfile.enterpriseNumber||businessProfile.enterpriseNumber};saveBusiness();updateBusinessUI()}localStorage.setItem(businessKey('favv-professional-v1'),JSON.stringify(state));renderDashboard();return true};
 window.FAVVStartCleanBusinessState=()=>{state=window.FAVVCreateCleanBusinessState();localStorage.setItem(businessKey('favv-professional-v1'),JSON.stringify(state));renderDashboard();return clone(state)};
@@ -2084,6 +2087,7 @@ setInterval(()=>{
 },60000);
 })();
 </script>
+<script type="module">import { initFoodWasteUi } from "./voedselverspilling-ui.mjs"; initFoodWasteUi();</script>
 <!-- ANIMO_ALL_DOMAIN_VISIT_TRACKER: privacyvriendelijke telling van app-paginaweergaven -->
 <script id="animo-all-domain-visit-tracker">
 (function(){
