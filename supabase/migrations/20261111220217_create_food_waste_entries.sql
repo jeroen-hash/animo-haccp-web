@@ -71,6 +71,36 @@ create index food_waste_entries_business_created_idx
 create index food_waste_entries_business_employee_created_idx
   on public.food_waste_entries (business_id, created_by, created_at desc);
 
+-- A void is a one-way audit action: managers cannot silently restore or rewrite it.
+create or replace function private.prevent_food_waste_unvoid()
+returns trigger
+language plpgsql
+set search_path = ''
+as $function$
+begin
+  if old.voided_at is not null then
+    if new.voided_at is distinct from old.voided_at
+      or new.void_reason is distinct from old.void_reason then
+      raise exception 'Een ongeldig verklaarde verspilling kan niet opnieuw worden gewijzigd.';
+    end if;
+    return new;
+  end if;
+
+  if new.voided_at is null or nullif(btrim(new.void_reason), '') is null then
+    raise exception 'Een correctie vereist een reden en kan maar één keer worden uitgevoerd.';
+  end if;
+
+  new.voided_at := statement_timestamp();
+  return new;
+end;
+$function$;
+
+create trigger food_waste_entries_prevent_unvoid
+before update of voided_at, void_reason
+on public.food_waste_entries
+for each row
+execute function private.prevent_food_waste_unvoid();
+
 alter table public.food_waste_entries enable row level security;
 
 -- New public tables are not automatically exposed by current Supabase defaults.
