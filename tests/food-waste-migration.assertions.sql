@@ -33,7 +33,7 @@ begin
 
   select count(*) into n from storage.objects where bucket_id = 'food-waste-photos';
   if n <> 1 then raise exception 'Employee should see only own photo, got %', n; end if;
-end $;
+end $do$;
 
 -- Employee can upload only into their own uploader folder.
 insert into storage.objects (bucket_id, name, metadata)
@@ -66,7 +66,7 @@ begin
     and name = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/11111111-1111-4111-8111-111111111111/aaaaaaaa-0000-4000-8000-000000000004.jpg';
   get diagnostics n = row_count;
   if n <> 1 then raise exception 'Uploader retry update should affect one photo, got %', n; end if;
-end $;
+end $do$;
 
 -- Employees cannot forge another creator or write into a different business.
 do language plpgsql $
@@ -112,7 +112,7 @@ begin
     raise exception 'Expected Storage RLS to reject another uploader folder';
   exception when insufficient_privilege then null;
   end;
-end $;
+end $do$;
 
 -- Employees cannot void records; RLS returns no updated row.
 do language plpgsql $
@@ -123,7 +123,7 @@ begin
   where client_id = 'aaaaaaaa-0000-4000-8000-000000000001';
   get diagnostics n = row_count;
   if n <> 0 then raise exception 'Employee unexpectedly updated a waste entry'; end if;
-end $;
+end $do$;
 
 -- Employee has no column-level permission to rewrite historic product details.
 do language plpgsql $
@@ -135,7 +135,7 @@ begin
     raise exception 'Expected column privilege check to reject product rewrite';
   exception when insufficient_privilege then null;
   end;
-end $;
+end $do$;
 reset role;
 
 -- Manager can read all entries and photos in their business, and can void an entry.
@@ -150,7 +150,7 @@ begin
 
   select count(*) into n from storage.objects where bucket_id = 'food-waste-photos';
   if n <> 3 then raise exception 'Manager should see all business A photos, got %', n; end if;
-end $;
+end $do$;
 
 do language plpgsql $
 declare n integer;
@@ -160,7 +160,7 @@ begin
   where client_id = 'aaaaaaaa-0000-4000-8000-000000000001';
   get diagnostics n = row_count;
   if n <> 1 then raise exception 'Manager should void one entry, got %', n; end if;
-end $;
+end $do$;
 
 do language plpgsql $
 begin
@@ -179,7 +179,7 @@ begin
     raise exception using errcode = 'P0001', message = 'Expected void reason to be immutable';
   exception when check_violation then null;
   end;
-end $;
+end $do$;
 reset role;
 
 -- A user in business B cannot see business A rows or photos.
@@ -196,7 +196,7 @@ begin
   where bucket_id = 'food-waste-photos'
     and (storage.foldername(name))[1] = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
   if n <> 0 then raise exception 'Cross-tenant user can see business A photos'; end if;
-end $;
+end $do$;
 reset role;
 
 -- The table exposes no anonymous access and no direct delete permission.
@@ -226,7 +226,7 @@ begin
   if not has_function_privilege('authenticated', 'private.prevent_food_waste_unvoid()', 'EXECUTE') then
     raise exception 'authenticated is missing trigger function execution permission';
   end if;
-end $;
+end $do$;
 
 -- Confirm bucket defaults remain private and constrained.
 do language plpgsql $
@@ -245,4 +245,4 @@ begin
   ) then
     raise exception 'Missing index for created_by foreign key';
   end if;
-end $;
+end $do$;
