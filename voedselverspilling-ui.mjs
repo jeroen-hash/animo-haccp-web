@@ -4,6 +4,10 @@ import {
   enqueueFoodWasteEntry,
   listFoodWasteQueue
 } from "./voedselverspilling-core.mjs";
+import {
+  deductFoodWasteStock,
+  reverseFoodWasteStock
+} from "./voedselverspilling-stock.mjs";
 import { syncFoodWasteQueue } from "./voedselverspilling-sync.mjs";
 
 const TABLE = "food_waste_entries";
@@ -31,6 +35,83 @@ function user() {
 function stockItems() {
   const state = window.FAVVGetLocalState?.() || {};
   return Array.isArray(state.stock) ? state.stock : [];
+}
+
+function applyWasteStockLocally(entry) {
+  if (!entry?.stockItemId) return { status: "not_linked" };
+  const state = window.FAVVGetLocalState?.() || {};
+  const stockItem = (state.stock || []).find((item) => String(item.id) === String(entry.stockItemId));
+  if (!stockItem) return { status: "stock_item_missing" };
+  const result = deductFoodWasteStock({
+    stockItem,
+    quantity: entry.quantity,
+    inputUnit: entry.inputUnit,
+    sourceId: entry.clientId,
+    stockMovements: state.stockMovements || [],
+    userId: entry.userId,
+    userName: entry.employeeName
+  });
+  if (result.status === "deducted") {
+    const applied = window.FAVVApplyFoodWasteStockChange?.({
+      stockItem: result.stockItem,
+      movement: result.movement
+    });
+    if (!applied || !["applied", "already_applied"].includes(applied.status)) {
+      throw new Error("De verspilling is bewaard, maar de voorraadboeking kon niet lokaal worden bevestigd.");
+    }
+  }
+  return result;
+}
+
+async function syncStockBeforeWasteRow(entry) {
+  const result = applyWasteStockLocally(entry);
+  if (!["deducted", "already_applied"].includes(result.status)) return result;
+  const currentState = window.FAVVGetLocalState?.() || {};
+  const saved = await window.FAVVCloudSync?.saveNow?.(currentState);
+  if (saved !== true) {
+    throw new Error("De voorraadwijziging is nog niet veilig naar de cloud opgeslagen. De verspilling blijft wachten en wordt later opnieuw geprobeerd.");
+  }
+  return result;
+}
+
+async function reverseVoidedStockRows(rows) {
+  for (const row of rows || []) {
+    if (!row?.voided_at || !row.stock_item_id || !row.client_id) continue;
+    const state = window.FAVVGetLocalState?.() || {};
+    const movements = state.stockMovements || [];
+    if (movements.some((movement) =>
+      movement?.sourceType === "food_waste_reversal" && movement?.sourceId === "void:" + row.client_id
+    )) continue;
+    const original = movements.find((movement) =>
+      movement?.sourceType === "food_waste" && movement?.sourceId === row.client_id
+    );
+    if (!original) continue;
+    const stockItem = (state.stock || []).find((item) => String(item.id) === String(row.stock_item_id));
+    if (!stockItem) {
+      status("Een ongeldig verklaarde verspilling is gekoppeld aan een verwijderd stockproduct. Controleer de voorraadbeweging handmatig.", true);
+      continue;
+    }
+    const result = reverseFoodWasteStock({
+      stockItem,
+      sourceId: row.client_id,
+      stockMovements: movements,
+      userId: user()?.id || null,
+      userName: window.FAVVGetCurrentUser?.()?.name || user()?.email || ""
+    });
+    if (result.status !== "reversed") continue;
+    const applied = window.FAVVApplyFoodWasteStockChange?.({
+      stockItem: result.stockItem,
+      movement: result.movement
+    });
+    if (!applied || !["applied", "already_applied"].includes(applied.status)) {
+      status("De verspilling is ongeldig, maar de voorraadterugboeking kon niet worden toegepast.", true);
+      continue;
+    }
+    const saved = await window.FAVVCloudSync?.saveNow?.(window.FAVVGetLocalState?.() || {});
+    if (saved !== true) {
+      status("De verspilling is ongeldig verklaard. De voorraadterugboeking staat lokaal klaar en wacht op veilige cloudsynchronisatie.", true);
+    }
+  }
 }
 function role() { return window.FAVVCloudRole || business()?.role || user()?.cloudRole || user()?.role || "employee"; }
 function canManage() { return role() === "owner" || role() === "manager"; }
@@ -164,7 +245,9 @@ function updatePendingBadge(count) {
 async function trySyncQueue() {
   const supabase = client();
   if (!supabase || !business()?.id || !user()?.id || !navigator.onLine || window.FAVVOfflineMode) return null;
-  const result = await syncFoodWasteQueue(supabase);
+  const result = await syncFoodWasteQueue(supabase, {
+    beforeServerInsert: syncStockBeforeWasteRow
+  });
   updatePendingBadge(result.pending);
   return result;
 }
@@ -181,6 +264,8 @@ async function loadEntries() {
     .eq("business_id", biz.id).order("client_created_at", { ascending: false }).limit(100);
   if (error) throw error;
   const rows = data || [];
+  // Herstel voorraad ook wanneer een void-actie eerder offline/conflictgevoelig was.
+  await reverseVoidedStockRows(rows);
   // Toon lokale wachtende registraties expliciet; ze staan nog niet in de serverlijst.
   const pendingHtml = queued.filter((entry) => entry.businessId === biz.id).map((entry) => `
     <article class="fw-entry">
@@ -278,9 +363,20 @@ async function saveRegistration(event) {
       stockItem: selectedStock
     });
     await enqueueFoodWasteEntry(entry);
+    const stockResult = applyWasteStockLocally(entry);
     $("foodWasteForm").reset();
     refreshStockOptions();
-    status("Registratie lokaal bewaard. Foto en gegevens blijven behouden tot synchronisatie.");
+    if (stockResult.status === "deducted") {
+      status("Registratie bewaard. " + stockResult.stockQuantity + " " + (selectedStock?.unit || "") + " werd uit de voorraad afgeboekt; cloudsynchronisatie volgt.");
+    } else if (stockResult.status === "insufficient_stock") {
+      status("Registratie bewaard, maar niet afgeboekt: onvoldoende voorraad. Beschikbaar: " + stockResult.available + " " + (selectedStock?.unit || "") + ".");
+    } else if (stockResult.status === "unit_mismatch") {
+      status("Registratie bewaard, maar niet afgeboekt: de eenheid komt niet overeen met de stockeenheid.", true);
+    } else if (stockResult.status === "stock_item_missing") {
+      status("Registratie bewaard, maar het gekoppelde stockproduct bestaat niet meer. Controleer de koppeling.", true);
+    } else {
+      status("Registratie lokaal bewaard. Foto en gegevens blijven behouden tot synchronisatie.");
+    }
     updatePendingBadge((await listFoodWasteQueue()).length);
     if (navigator.onLine && !window.FAVVOfflineMode) {
       const result = await trySyncQueue();
