@@ -14,6 +14,9 @@ test("food waste UI is wired into the feature preview and uses the isolated test
   assert.match(app, /FAVVGetSupabaseClient=\(\)=>cloudClient/);
   assert.match(app, /FAVVGetCurrentUser=\(\)=>currentUser/);
   assert.match(app, /<script type="module" src="\.\/voedselverspilling-ui\.mjs"><\/script>/);
+  assert.match(ui, /const mobileNav = document\.querySelector\("\.mobile-nav"\)/);
+  assert.match(ui, /foodWasteMobileNav/);
+  assert.match(app, /class="mobile-nav"/);
   assert.match(app, /PUBLIC_SUPABASE_CONFIG=\{url:'https:\/\/xwjcwravfeldndwlugai\.supabase\.co'/);
   assert.doesNotMatch(app, /PUBLIC_SUPABASE_CONFIG=\{url:'https:\/\/zimzsovvtdmrthrflkgm\.supabase\.co'/);
 });
