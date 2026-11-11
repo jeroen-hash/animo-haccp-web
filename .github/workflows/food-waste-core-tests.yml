@@ -1,0 +1,31 @@
+name: Food waste core tests
+
+on:
+  pull_request:
+    paths:
+      - "voedselverspilling-core.mjs"
+      - "tests/voedselverspilling-core.test.mjs"
+      - ".github/workflows/food-waste-core-tests.yml"
+  push:
+    branches:
+      - "feature/voedselverspilling-module"
+    paths:
+      - "voedselverspilling-core.mjs"
+      - "tests/voedselverspilling-core.test.mjs"
+      - ".github/workflows/food-waste-core-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  node-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run food waste core tests
+        run: node --test tests/voedselverspilling-core.test.mjs
