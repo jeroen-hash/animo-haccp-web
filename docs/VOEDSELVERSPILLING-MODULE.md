@@ -180,3 +180,18 @@ Fase D — Review en expliciete goedkeuring vóór enige release naar productie.
 - Nettowinstberekening van de volledige horecazaak.
 
 Deze kunnen later worden onderzocht, maar mogen de betrouwbare basisregistratie niet vertragen.
+
+## Offline synchronisatie — geïsoleerde adapter
+
+De eerste versie van `voedselverspilling-sync.mjs` is toegevoegd, zonder koppeling aan de bestaande app:
+
+- controleert of de ingelogde Supabase-gebruiker dezelfde medewerker is als de eigenaar van de offline registratie;
+- controleert UUID's, product, hoeveelheid, fotoformaat en de limiet van 5 MB;
+- uploadt naar het private pad `business_id/uploader_user_id/client_id.ext` met dezelfde vaste client-ID bij een retry;
+- schrijft pas daarna de registratie naar `food_waste_entries`;
+- behandelt een dubbele client-ID alleen als geslaagde retry wanneer de volledige oorspronkelijke registratie en kostprijsmomentopname overeenkomen;
+- verwijdert de IndexedDB-registratie pas nadat de server de foto én de databaseregel heeft bevestigd;
+- houdt mislukte registraties lokaal en gaat bij de volgende wachtrij-items verder.
+
+Deze adapter is nog niet verbonden met de bestaande app-interface, automatische online/offline-events of echte Supabase Storage. De tests gebruiken een nagebootste Supabase-client; echte autorisatie- en iPhone-tests moeten nog in een geïsoleerde testomgeving gebeuren.
+
