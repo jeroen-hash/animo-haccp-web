@@ -92,7 +92,7 @@ function ensureUi() {
             <div><strong id="foodWasteWeight">0</strong><span>Hoeveelheid (kg/l/stuk apart)</span></div>
             <div><strong id="foodWasteCost">€ 0,00</strong><span>Gekende kost</span></div>
           </div>
-          <div class="fw-legend">Kostprijs wordt vastgelegd op het moment van registratie. Voedselverspilling vermindert de stock niet automatisch.</div>
+          <div class="fw-legend">Kostprijs wordt vastgelegd op het moment van registratie. Voedselverspilling vermindert de stock niet automatisch.</div><button id="foodWasteRetry" class="btn secondary" type="button">Synchroniseer wachtende registraties</button>
           <h2 class="fw-list-title">Recente registraties</h2>
           <div id="foodWasteEntries"><div class="empty">Nog geen registraties geladen.</div></div>
         </section>
@@ -275,13 +275,17 @@ async function handlePhoto(event) {
   const link = event.target.closest("[data-fw-photo]");
   if (!link) return;
   event.preventDefault();
+  const preview = window.open("about:blank", "_blank");
+  if (preview) preview.opener = null;
   const path = link.dataset.fwPhoto;
   try {
     const { data, error } = await client().storage.from(BUCKET).createSignedUrl(path, 60);
     if (error) throw error;
     if (!data?.signedUrl) throw new Error("De foto kon niet worden geopend.");
-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    if (preview) preview.location.replace(data.signedUrl);
+    else status("Je browser blokkeerde het fotovenster. Sta pop-ups toe om de foto te bekijken.", true);
   } catch (error) {
+    if (preview) preview.close();
     status(error.message || "De foto kon niet worden geopend.", true);
   }
 }
@@ -307,10 +311,27 @@ async function voidEntry(event) {
   }
 }
 
+async function retryPending() {
+  const button = $("foodWasteRetry");
+  if (button) button.disabled = true;
+  try {
+    if (!navigator.onLine || window.FAVVOfflineMode) throw new Error("Er is nog geen actieve online ANIMO-sessie. Probeer opnieuw zodra je verbinding hersteld is.");
+    const result = await trySyncQueue();
+    if (!result) throw new Error("De synchronisatie is nog niet beschikbaar.");
+    status(result.pending ? result.synced + " gesynchroniseerd; " + result.pending + " wachten nog." : result.synced + " registratie(s) gesynchroniseerd.");
+    await loadEntries();
+  } catch (error) {
+    status(error.message || "Synchronisatie mislukt.", true);
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
 export function initFoodWasteUi() {
   if (initialized || !ensureUi()) return;
   initialized = true;
   $("foodWasteForm").addEventListener("submit", saveRegistration);
+  $("foodWasteRetry").addEventListener("click", retryPending);
   $("foodWasteStock").addEventListener("change", () => {
     const item = stockItems().find((entry) => String(entry.id) === $("foodWasteStock").value);
     if (!item) return;
