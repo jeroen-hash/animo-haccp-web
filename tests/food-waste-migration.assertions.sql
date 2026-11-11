@@ -24,7 +24,7 @@ insert into storage.objects (bucket_id, name, metadata) values
 -- Employee sees only their own row in their own business.
 set role authenticated;
 set request.jwt.claim.sub = '11111111-1111-4111-8111-111111111111';
-do $$$
+DO $block$
 declare n integer;
 begin
   select count(*) into n from public.food_waste_entries
@@ -33,7 +33,7 @@ begin
 
   select count(*) into n from storage.objects where bucket_id = 'food-waste-photos';
   if n <> 1 then raise exception 'Employee should see only own photo, got %', n; end if;
-end $$;
+END; $block$ LANGUAGE plpgsql;
 
 -- Employee can upload only into their own uploader folder.
 insert into storage.objects (bucket_id, name, metadata)
@@ -57,7 +57,7 @@ insert into public.food_waste_entries (
 );
 
 -- A retry/upsert can update the uploader's own object.
-do $$$
+DO $block$
 declare n integer;
 begin
   update storage.objects
@@ -66,10 +66,10 @@ begin
     and name = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/11111111-1111-4111-8111-111111111111/aaaaaaaa-0000-4000-8000-000000000004.jpg';
   get diagnostics n = row_count;
   if n <> 1 then raise exception 'Uploader retry update should affect one photo, got %', n; end if;
-end $$;
+END; $block$ LANGUAGE plpgsql;
 
 -- Employees cannot forge another creator or write into a different business.
-do $$$
+DO $block$
 begin
   begin
     insert into public.food_waste_entries (
@@ -112,10 +112,10 @@ begin
     raise exception 'Expected Storage RLS to reject another uploader folder';
   exception when insufficient_privilege then null;
   end;
-end $$;
+END; $block$ LANGUAGE plpgsql;
 
 -- Employees cannot void records; RLS returns no updated row.
-do $$$
+DO $block$
 declare n integer;
 begin
   update public.food_waste_entries
@@ -123,10 +123,10 @@ begin
   where client_id = 'aaaaaaaa-0000-4000-8000-000000000001';
   get diagnostics n = row_count;
   if n <> 0 then raise exception 'Employee unexpectedly updated a waste entry'; end if;
-end $$;
+END; $block$ LANGUAGE plpgsql;
 
 -- Employee has no column-level permission to rewrite historic product details.
-do $$$
+DO $block$
 begin
   begin
     update public.food_waste_entries
@@ -135,13 +135,13 @@ begin
     raise exception 'Expected column privilege check to reject product rewrite';
   exception when insufficient_privilege then null;
   end;
-end $$;
+END; $block$ LANGUAGE plpgsql;
 reset role;
 
 -- Manager can read all entries and photos in their business, and can void an entry.
 set role authenticated;
 set request.jwt.claim.sub = '22222222-2222-4222-8222-222222222222';
-do $$$
+DO $block$
 declare n integer;
 begin
   select count(*) into n from public.food_waste_entries
@@ -150,9 +150,9 @@ begin
 
   select count(*) into n from storage.objects where bucket_id = 'food-waste-photos';
   if n <> 3 then raise exception 'Manager should see all business A photos, got %', n; end if;
-end $$;
+END; $block$ LANGUAGE plpgsql;
 
-do $$$
+DO $block$
 declare n integer;
 begin
   update public.food_waste_entries
@@ -160,9 +160,9 @@ begin
   where client_id = 'aaaaaaaa-0000-4000-8000-000000000001';
   get diagnostics n = row_count;
   if n <> 1 then raise exception 'Manager should void one entry, got %', n; end if;
-end $$;
+END; $block$ LANGUAGE plpgsql;
 
-do $$$
+DO $block$
 begin
   begin
     update public.food_waste_entries
@@ -179,13 +179,13 @@ begin
     raise exception using errcode = 'P0001', message = 'Expected void reason to be immutable';
   exception when check_violation then null;
   end;
-end $$;
+END; $block$ LANGUAGE plpgsql;
 reset role;
 
 -- A user in business B cannot see business A rows or photos.
 set role authenticated;
 set request.jwt.claim.sub = '44444444-4444-4444-8444-444444444444';
-do $$$
+DO $block$
 declare n integer;
 begin
   select count(*) into n from public.food_waste_entries
@@ -196,11 +196,11 @@ begin
   where bucket_id = 'food-waste-photos'
     and (storage.foldername(name))[1] = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
   if n <> 0 then raise exception 'Cross-tenant user can see business A photos'; end if;
-end $$;
+END; $block$ LANGUAGE plpgsql;
 reset role;
 
 -- The table exposes no anonymous access and no direct delete permission.
-do $$$
+DO $block$
 begin
   if has_table_privilege('anon', 'public.food_waste_entries', 'SELECT') then
     raise exception 'anon unexpectedly has SELECT on food waste entries';
@@ -226,10 +226,10 @@ begin
   if not has_function_privilege('authenticated', 'private.prevent_food_waste_unvoid()', 'EXECUTE') then
     raise exception 'authenticated is missing trigger function execution permission';
   end if;
-end $$;
+END; $block$ LANGUAGE plpgsql;
 
 -- Confirm bucket defaults remain private and constrained.
-do $$$
+DO $block$
 declare b record;
 begin
   select * into b from storage.buckets where id = 'food-waste-photos';
@@ -245,4 +245,4 @@ begin
   ) then
     raise exception 'Missing index for created_by foreign key';
   end if;
-end $$;
+END; $block$ LANGUAGE plpgsql;
