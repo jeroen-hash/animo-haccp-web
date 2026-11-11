@@ -1,4 +1,4 @@
-name: Create food waste index migration
+name: Create food waste audit and index migration
 
 on:
   workflow_dispatch:
@@ -25,22 +25,22 @@ jobs:
       - name: Install official Supabase CLI
         uses: supabase/setup-cli@v3
 
-      - name: Generate index migration with Supabase CLI
+      - name: Generate audit and index migration with Supabase CLI
         shell: bash
         run: |
           set -euo pipefail
           supabase --version
-          supabase migration new index_food_waste_created_by
-          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_index_food_waste_created_by.sql' -print -quit)"
+          supabase migration new harden_food_waste_audit_and_index
+          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_harden_food_waste_audit_and_index.sql' -print -quit)"
           test -n "$migration_file"
           test -f "$migration_file"
           echo "Generated: $migration_file"
 
-      - name: Commit generated index migration
+      - name: Commit generated audit and index migration
         shell: bash
         run: |
           set -euo pipefail
-          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_index_food_waste_created_by.sql' -print -quit)"
+          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_harden_food_waste_audit_and_index.sql' -print -quit)"
           test -n "$migration_file"
           git fetch origin feature/voedselverspilling-module
           git rebase origin/feature/voedselverspilling-module
@@ -51,5 +51,5 @@ jobs:
             echo "No new migration file to commit."
             exit 0
           fi
-          git commit -m "chore(db): generate food waste index migration scaffold"
+          git commit -m "chore(db): generate food waste audit and index migration scaffold"
           git push origin HEAD:feature/voedselverspilling-module
