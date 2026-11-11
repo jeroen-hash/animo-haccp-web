@@ -176,10 +176,20 @@ async function loadEntries() {
     $("foodWasteEntries").innerHTML = '<div class="empty">Meld aan bij je horecazaak om registraties te bekijken. Offline registraties blijven op dit toestel bewaard.</div>';
     return;
   }
+  const queued = await listFoodWasteQueue().catch(() => []);
   const { data, error } = await supabase.from(TABLE).select(COLUMNS)
     .eq("business_id", biz.id).order("client_created_at", { ascending: false }).limit(100);
   if (error) throw error;
   const rows = data || [];
+  // Toon lokale wachtende registraties expliciet; ze staan nog niet in de serverlijst.
+  const pendingHtml = queued.filter((entry) => entry.businessId === biz.id).map((entry) => `
+    <article class="fw-entry">
+      <div>
+        <strong>${esc(entry.productName)} · ${esc(entry.quantity)} ${esc(entry.inputUnit)}</strong>
+        <small>${esc(entry.reason)} · ${dateTime(entry.clientCreatedAt)} · Door ${esc(entry.employeeName || "medewerker")}</small>
+        <small><span class="fw-badge">Wacht op synchronisatie</span> Deze registratie staat veilig op dit toestel.</small>
+      </div>
+    </article>`).join("");
   const active = rows.filter((row) => !row.voided_at);
   const knownCost = active.filter((row) => row.cost_status === "calculated" && Number.isFinite(Number(row.cost_value_snapshot)));
   const totalCost = knownCost.reduce((sum, row) => sum + Number(row.cost_value_snapshot || 0), 0);
@@ -199,7 +209,7 @@ async function loadEntries() {
   $("foodWasteWeight").textContent = parts.join(" · ") || "0";
 
   const canVoid = canManage();
-  $("foodWasteEntries").innerHTML = rows.length ? rows.map((row) => `
+  $("foodWasteEntries").innerHTML = (pendingHtml ? pendingHtml : "") + (rows.length ? rows.map((row) => `
     <article class="fw-entry ${row.voided_at ? "fw-voided" : ""}">
       <div>
         <strong>${esc(row.product_name)} · ${esc(row.quantity)} ${esc(row.input_unit)}</strong>
@@ -210,7 +220,7 @@ async function loadEntries() {
       <div class="fw-actions">
         ${canVoid && !row.voided_at ? `<button class="btn secondary small" type="button" data-fw-void="${esc(row.id)}">Ongeldig verklaren</button>` : ""}
       </div>
-    </article>`).join("") : '<div class="empty">Nog geen registraties gevonden.</div>';
+    </article>`).join("") : (pendingHtml ? "" : '<div class="empty">Nog geen registraties gevonden.</div>'));
 }
 
 async function render() {
@@ -329,7 +339,10 @@ async function retryPending() {
     if (!navigator.onLine || window.FAVVOfflineMode) throw new Error("Er is nog geen actieve online ANIMO-sessie. Probeer opnieuw zodra je verbinding hersteld is.");
     const result = await trySyncQueue();
     if (!result) throw new Error("De synchronisatie is nog niet beschikbaar.");
-    status(result.pending ? result.synced + " gesynchroniseerd; " + result.pending + " wachten nog." : result.synced + " registratie(s) gesynchroniseerd.");
+    const firstFailure = result.results?.find((item) => item.status === "pending" && item.error);
+    status(result.pending
+      ? result.synced + " gesynchroniseerd; " + result.pending + " wachten nog. Reden: " + (firstFailure?.error || "onbekende synchronisatiefout")
+      : result.synced + " registratie(s) gesynchroniseerd.");
     await loadEntries();
   } catch (error) {
     status(error.message || "Synchronisatie mislukt.", true);
