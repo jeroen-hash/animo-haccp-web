@@ -220,6 +220,12 @@ begin
   if has_column_privilege('authenticated', 'public.food_waste_entries', 'product_name', 'UPDATE') then
     raise exception 'authenticated can rewrite product_name';
   end if;
+  if has_function_privilege('anon', 'private.prevent_food_waste_unvoid()', 'EXECUTE') then
+    raise exception 'anon unexpectedly can execute the private audit trigger function';
+  end if;
+  if not has_function_privilege('authenticated', 'private.prevent_food_waste_unvoid()', 'EXECUTE') then
+    raise exception 'authenticated is missing trigger function execution permission';
+  end if;
 end $$;
 
 -- Confirm bucket defaults remain private and constrained.
