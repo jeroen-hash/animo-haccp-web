@@ -78,3 +78,5 @@ Status: technische inspectie + geïsoleerde feature-branch. De live database is 
 ## 7. Conclusie
 
 De huidige app heeft bruikbare bestaande bouwstenen: voorraadartikelen, batches, voorraadbewegingen, recepten, receptversies, receptkost, gebruikersrollen en offline snapshots. De grootste technische risico's zijn de bestaande volledige-snapshot-synchronisatie, het veilig bewaren/synchroniseren van foto's en het ontbreken van bewezen kassaverkoopdata in de bekeken hoofdcode. De nieuwe modules moeten daarom eerst geïsoleerd worden gebouwd en pas daarna gecontroleerd worden aangesloten.
+- De geïsoleerde adapter `voedselverspilling-sync.mjs` controleert de ingelogde gebruiker, fotoformaat/-grootte, upload naar private Storage, databasebevestiging en idempotente retries. Ze verwijdert een IndexedDB-entry pas na beide serverbevestigingen. Deze adapter is nog niet aan de app gekoppeld; tests gebruiken een fake Supabase-client.
+
