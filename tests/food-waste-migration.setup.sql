@@ -23,6 +23,10 @@ create schema auth;
 create schema private;
 create schema storage;
 
+-- Mirror this Supabase project's inherited table grants so the migration
+-- must explicitly revoke broad defaults before granting least privilege.
+alter default privileges in schema public grant all on tables to authenticated;
+
 create table auth.users (
   id uuid primary key
 );
