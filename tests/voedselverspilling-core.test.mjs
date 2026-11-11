@@ -56,6 +56,17 @@ test("registration requires a photo, a valid reason and positive quantity", () =
   assert.throws(() => createFoodWasteEntry({ ...base, quantity: 0 }), /groter.*dan nul/);
 });
 
+test("an incompatible stock unit does not block the waste report or invent a cost", () => {
+  const entry = createFoodWasteEntry({
+    clientId: "test-client-id", businessId: "test-business", userId: "test-user",
+    productName: "Fles saus", quantity: 1, unit: "stuk", reason: "Beschadigd product",
+    photo: new Blob(["foto"], { type: "image/jpeg" }),
+    stockItem: { id: "stock-2", unit: "fles", purchasePrice: 8, purchaseQuantity: 1 }
+  });
+  assert.equal(entry.costSnapshot.value, null);
+  assert.equal(entry.costSnapshot.status, "Nog te bepalen");
+});
+
 test("other reason requires an explanation", () => {
   const base = {
     clientId: "test-client-id", businessId: "test-business", userId: "test-user",
