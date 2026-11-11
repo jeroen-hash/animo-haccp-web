@@ -123,7 +123,8 @@ function matchesExistingEntry(existing, row) {
  * row matches the original registration.
  */
 export async function syncFoodWasteEntry(entry, supabase, {
-  removeQueueEntry = removeFoodWasteQueueEntry
+  removeQueueEntry = removeFoodWasteQueueEntry,
+  beforeServerInsert = async () => null
 } = {}) {
   if (!supabase?.auth?.getUser || typeof supabase?.storage?.from !== "function" || typeof supabase?.from !== "function") {
     throw new Error("De beveiligde ANIMO-verbinding is niet beschikbaar.");
@@ -164,6 +165,10 @@ export async function syncFoodWasteEntry(entry, supabase, {
     throw new Error("De foto-upload is niet door de server bevestigd. De offline registratie blijft bewaard.");
   }
 
+  // Save the app snapshot containing any linked stock deduction before the
+  // waste row is committed. A failed snapshot save keeps this entry queued.
+  const stockSync = await beforeServerInsert(entry);
+
   const insert = await supabase
     .from(FOOD_WASTE_TABLE)
     .insert(row)
@@ -199,7 +204,8 @@ export async function syncFoodWasteEntry(entry, supabase, {
     id: serverId,
     clientId,
     photoPath,
-    alreadySynced
+    alreadySynced,
+    stockSync
   };
 }
 
@@ -209,14 +215,15 @@ export async function syncFoodWasteEntry(entry, supabase, {
  */
 export async function syncFoodWasteQueue(supabase, {
   listQueue = listFoodWasteQueue,
-  removeQueueEntry = removeFoodWasteQueueEntry
+  removeQueueEntry = removeFoodWasteQueueEntry,
+  beforeServerInsert = async () => null
 } = {}) {
   const entries = await listQueue();
   const results = [];
 
   for (const entry of entries) {
     try {
-      results.push(await syncFoodWasteEntry(entry, supabase, { removeQueueEntry }));
+      results.push(await syncFoodWasteEntry(entry, supabase, { removeQueueEntry, beforeServerInsert }));
     } catch (error) {
       results.push({
         status: "pending",
