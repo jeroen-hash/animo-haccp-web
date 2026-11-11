@@ -1,0 +1,182 @@
+# ANIMO HACCP — Module Voedselverspilling
+
+Status: functionele en technische uitwerking (fase 1 — nog niet gekoppeld aan productiecode of database).
+
+## Doel
+
+Medewerkers kunnen voedselverspilling snel registreren vanaf een smartphone. Elke registratie bevat minimaal een foto, productnaam en gemeten gewicht. ANIMO berekent waar mogelijk de aankoopwaarde en toont de resultaten in de Horeca-bedrijfsanalyse.
+
+Deze module is aanvullend op de bestaande voorraad-, recept-, foodcost- en offlinefunctionaliteit. Bestaande functies en klantgegevens blijven onaangeroerd.
+
+## 1. Medewerkerflow
+
+1. Open **Voedselverspilling**.
+2. Tik op **Nieuwe verspilling registreren**.
+3. Maak een foto met de camera of kies een bestaande foto.
+4. Vul de productnaam in of selecteer een bestaand voorraadproduct.
+5. Vul het gewicht in (gram of kilogram).
+6. Kies de reden.
+7. Bevestig en registreer.
+
+Verplichte velden:
+- Foto (minstens één).
+- Productnaam.
+- Gewicht groter dan nul.
+- Eenheid (g of kg).
+- Reden van verspilling.
+
+Automatisch vastgelegd:
+- Horecazaak/organisatie.
+- Medewerker-ID en weergavenaam.
+- Datum en tijd van aanmaak (serverdatum na synchronisatie; lokaal tijdstip apart bewaren).
+- Client-generated UUID voor veilige offline synchronisatie.
+- Synchronisatiestatus.
+
+Optioneel:
+- Opmerking.
+- Gerecht/recept waaraan het product gekoppeld was.
+- Extra foto, bijvoorbeeld verpakking of houdbaarheidsdatum.
+
+## 2. Redenen (standaardlijst)
+
+- Houdbaarheid verstreken.
+- Product bedorven.
+- Te veel bereid.
+- Verkeerd bereid.
+- Beschadigd product.
+- Restjes van klanten.
+- Temperatuurprobleem.
+- Product gevallen/verontreinigd.
+- Andere reden (opmerking verplicht).
+
+De eigenaar/manager kan later eventueel eigen redenen toevoegen. De lijst mag niet verhinderen dat een medewerker een geldige registratie kan opslaan.
+
+## 3. Product- en kostprijslogica
+
+- Product kan gekoppeld worden aan een bestaand voorraadartikel.
+- Bij koppeling gebruikt ANIMO de relevante aankoopprijs en basiseenheid uit de bestaande voorraadadministratie.
+- Gewicht wordt eerst omgerekend naar de basiseenheid van het voorraadartikel.
+- Bewaar bij registratie een momentopname van de gebruikte eenheidsprijs, valuta, eenheid en berekende verspilde waarde. Zo veranderen historische rapporten niet wanneer de aankoopprijs later wijzigt.
+- Formule: verspilde waarde = omgerekende hoeveelheid × eenheidskostprijs.
+- Wanneer geen betrouwbare koppeling of kostprijs bestaat: registratie wel bewaren, maar waarde markeren als **Nog te bepalen**. Geen nulwaarde presenteren alsof het gratis was.
+- Handmatige productnaam blijft mogelijk; eigenaar/manager kan achteraf product en kostprijs koppelen.
+
+Voorbeeld: 750 g kipfilet aan €12/kg = €9,00 verspilde voorraadwaarde. Dit is geen nettowinstverliesberekening en houdt geen rekening met btw, arbeid of overhead.
+
+## 4. Voorraadkoppeling zonder dubbele afboeking
+
+Voor de technische implementatie moet eerst de bestaande voorraadbewegingen worden nagekeken.
+
+- Elke definitieve verspilling mag maximaal één voorraadbeweging veroorzaken.
+- Gebruik waar mogelijk het bestaande voorraadbewegingssysteem met een herkenbare categorie **Verspilling**.
+- Als de voorraad al via een andere bestaande flow wordt afgeboekt, mag de verspillingregistratie geen tweede afboeking uitvoeren.
+- Bij offline synchronisatie moet de client UUID als idempotency key dienen, zodat opnieuw proberen nooit dubbel registreert of dubbel afboekt.
+- Historische voorraad- en kostprijsgegevens blijven intact.
+
+## 5. Offline en foto-opslag
+
+- Registratie moet offline kunnen worden aangemaakt.
+- Foto en formuliergegevens worden tijdelijk veilig in IndexedDB bewaard; geen grote foto's in localStorage.
+- Toon duidelijk **Wacht op synchronisatie**.
+- Bij verbinding: upload foto, controleer uploadresultaat en synchroniseer daarna de registratie.
+- Herhaal mislukte uploads automatisch zonder dubbele records.
+- Toon bij fouten een begrijpelijke status en laat handmatig opnieuw proberen.
+- Comprimeer foto's op het toestel tot een redelijke uploadgrootte, met behoud van leesbare productdetails.
+- Verwijder de lokale wachtrij pas nadat zowel foto als registratie bevestigd zijn gesynchroniseerd.
+
+## 6. Eigenaar/manager-dashboard
+
+Filters:
+- Vandaag, deze week, deze maand, aangepaste periode.
+- Product.
+- Reden.
+- Medewerker.
+- Gerecht/recept.
+- Alleen registraties met/zonder bepaalde kostprijs.
+
+Kerncijfers:
+- Totaal verspild gewicht (kg).
+- Aantal registraties.
+- Geregistreerde verspilde voorraadwaarde (€).
+- Gemiddelde waarde per registratie.
+- Topproducten op verspild gewicht en waarde.
+- Verdeling per reden.
+- Evolutie tegenover vorige periode.
+
+Detailweergave:
+- Foto.
+- Product en gewicht.
+- Reden en opmerking.
+- Medewerker, datum en uur.
+- Gekoppeld voorraadproduct.
+- Gebruikte kostprijs en berekende waarde.
+- Synchronisatie- en eventuele correctiestatus.
+
+## 7. Rollen en rechten
+
+- Medewerker: registraties aanmaken en eigen registraties bekijken volgens de bestaande apprechten.
+- Manager: registraties van de eigen horecazaak bekijken en corrigeren volgens afgesproken rechten.
+- Eigenaar: alle registraties en analyses van de eigen horecazaak beheren.
+- Platformbeheer krijgt geen automatische inhoudelijke toegang tot klantfoto's; volg de bestaande support- en auditregels.
+
+Database en Storage moeten tenant-isolatie afdwingen. RLS moet organisatie-lidmaatschap en rol controleren; alleen ingelogd zijn is onvoldoende. Foto-opslag moet privé zijn, met beperkte toegang via geautoriseerde sessies of kortlevende signed URLs. Geen publieke bucket.
+
+Correcties moeten auditbaar zijn. Bij voorkeur wordt een registratie niet stilzwijgend verwijderd: markeer ze als ongeldig met reden en behoud de auditgeschiedenis.
+
+## 8. UX-eisen
+
+- Mobile-first, bruikbaar met één hand.
+- Grote knop **Foto nemen**.
+- Duidelijke invoer voor productnaam en gewicht.
+- Numeriek toetsenbord voor gewicht.
+- Eenheid expliciet tonen.
+- Voorbeeld: 750 + gram.
+- Bevestigingsscherm vóór definitieve opslag.
+- Duidelijke melding wanneer kostprijs ontbreekt.
+- Geen AI-herkenning nodig voor de eerste versie. Foto is bewijs; medewerker bevestigt productnaam en gewicht.
+
+## 9. Acceptatie- en testcriteria
+
+1. Medewerker kan online een foto, product, gewicht en reden registreren.
+2. Registratie verschijnt bij de juiste horecazaak en is niet zichtbaar voor andere zaken.
+3. Kostprijsberekening klopt bij g/kg-omrekening.
+4. Historische waarde blijft gelijk na wijziging van de huidige aankoopprijs.
+5. Zonder kostprijs blijft de registratie bruikbaar en krijgt ze status **Nog te bepalen**.
+6. Offline registratie met foto blijft na herladen van de app bewaard.
+7. Na herstel van internet synchroniseert de registratie precies één keer.
+8. Herhaald uploaden of synchroniseren maakt geen dubbele foto-records of voorraadbewegingen.
+9. Medewerkers kunnen geen dashboard- of eigenaaracties uitvoeren waarvoor ze geen rechten hebben.
+10. Foto's zijn niet publiek toegankelijk.
+11. Filters, totalen en periodevergelijkingen komen overeen met de onderliggende registraties.
+12. Correcties zijn terug te vinden in de auditgeschiedenis.
+
+## 10. Veilige implementatievolgorde
+
+Fase A — Alleen-lezen technische inventaris:
+- Bestaande voorraadtabellen en voorraadbewegingslogica identificeren.
+- Bestaande offline queue en IndexedDB-structuur identificeren.
+- Huidige foto-/bestandsopslag en toegangsregels identificeren.
+- Bestaande rol- en organisatie-RLS controleren.
+- Nagaan of een verspillingstype al bestaat om duplicatie te vermijden.
+
+Fase B — Ontwikkeling op aparte branch en geïsoleerde testomgeving:
+- Datamodel en private foto-opslag.
+- RLS en Storage policies.
+- Mobiele registratieflow.
+- Offline wachtrij en idempotente synchronisatie.
+- Koppeling aan bestaande voorraadbewegingen.
+- Dashboard en rapportage.
+
+Fase C — Tests met fictieve gegevens:
+- Online/offline, dubbele sync, meerdere medewerkers, meerdere organisaties, ontbrekende kostprijs, verschillende gewichtseenheden en foto-uploadfouten.
+
+Fase D — Review en expliciete goedkeuring vóór enige release naar productie.
+
+## Buiten scope van de eerste versie
+
+- Automatische AI-herkenning van producten of gewicht op foto's.
+- Automatische bestelling bij leveranciers.
+- Automatische receptaanpassingen.
+- Nettowinstberekening van de volledige horecazaak.
+
+Deze kunnen later worden onderzocht, maar mogen de betrouwbare basisregistratie niet vertragen.
