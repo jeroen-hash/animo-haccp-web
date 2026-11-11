@@ -42,6 +42,8 @@ jobs:
           set -euo pipefail
           migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_tighten_food_waste_table_grants.sql' -print -quit)"
           test -n "$migration_file"
+          git fetch origin feature/voedselverspilling-module
+          git rebase origin/feature/voedselverspilling-module
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "$migration_file"
