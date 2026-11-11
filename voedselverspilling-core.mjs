@@ -48,6 +48,7 @@ function calculateWasteCost({ quantity, inputUnit, stockUnit, purchasePrice, pur
     value: Math.round(stockQuantity * unitCost * 100) / 100,
     unitCost: Math.round(unitCost * 10000) / 10000,
     stockQuantity,
+    stockUnit: normaliseWasteUnit(stockUnit),
     currency: String(currency || "EUR").toUpperCase(),
     status: "Berekend"
   };
@@ -69,7 +70,7 @@ function createFoodWasteEntry(input) {
   if (!["g", "kg", "ml", "cl", "l", "stuk"].includes(inputUnit)) throw new Error("Kies gram, kilogram, milliliter, centiliter, liter of stuks.");
 
   const stockItem = input.stockItem || null;
-  let cost = { value: null, unitCost: null, stockQuantity: null, currency: "EUR", status: "Nog te bepalen" };
+  let cost = { value: null, unitCost: null, stockQuantity: null, stockUnit: null, currency: "EUR", status: "Nog te bepalen" };
   if (stockItem && stockItem.unit) {
     try {
       cost = calculateWasteCost({
@@ -82,7 +83,7 @@ function createFoodWasteEntry(input) {
       });
     } catch (error) {
       // A mismatched or custom stock unit must not block a valid waste report.
-      cost = { value: null, unitCost: null, stockQuantity: null, currency: stockItem.currency || "EUR", status: "Nog te bepalen" };
+      cost = { value: null, unitCost: null, stockQuantity: null, stockUnit: null, currency: stockItem.currency || "EUR", status: "Nog te bepalen" };
     }
   }
 
