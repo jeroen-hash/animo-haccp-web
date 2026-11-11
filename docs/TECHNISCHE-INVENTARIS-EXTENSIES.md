@@ -55,25 +55,25 @@ Status: technische inspectie + geïsoleerde feature-branch. De live database is 
 - Deze inventaris is gebaseerd op de repositorycode in de ontwikkelbranch; dit is geen live runtime-test.
 - Er is geen database- of Storage-schemawijziging uitgevoerd.
 - Supabase-projecten zijn bevestigd: ANIMO HACCP = test (ref xwjcwravfeldndwlugai); animo-haccp-test = live (ref zimzsovvtdmrthrflkgm). De live projectref is niet aangeraakt.
-- De feature-branchconfiguratie in index.html is aangepast naar de testproject-URL en de bijbehorende publishable key. De live app op main behoudt zijn bestaande configuratie.
+- De tijdelijke testconfiguratie in `index.html` is teruggedraaid. De featurebranch bevat nu dezelfde bestaande live-configuratieregel als `main`; er is geen app-codewijziging meer bedoeld. Open of deploy deze featurebranch niet als testapp: de testdatabase wordt voor deze fase alleen rechtstreeks en read-only onderzocht.
 - Het testproject bevat momenteel geen bedrijfs-/klantrecords in de gecontroleerde public-tabellen. De bestaande voorraad zit in app_data.data als JSON-snapshot; er bestaat geen aparte voorraad- of voorraadbewegingstabel.
 - De twee bestaande private Storage-buckets zijn onboarding-documentbuckets. Er bestaat nog geen voedselverspillingbucket.
-- Er is nog geen officiële Supabase-migratie gegenereerd of toegepast. De beschikbare Supabase-integratie biedt geen CLI-commando voor supabase migration new; daarom wordt geen DDL rechtstreeks uitgevoerd en wordt de verplichte migratiestap uitgesteld tot de CLI beschikbaar is.
+- De officiële Supabase CLI heeft via GitHub Actions het migratiebestand `supabase/migrations/20261111220217_create_food_waste_entries.sql` aangemaakt. De SQL is daarna op de featurebranch uitgewerkt. De migratie is nog niet toegepast; er is geen DDL- of Storage-wijziging uitgevoerd in Supabase.
 - Er is een geïsoleerde kernmodule toegevoegd in voedselverspilling-core.mjs met validatie, eenheidsconversie, kostprijsmomentopname en een aparte IndexedDB-wachtrij voor foto's/registraties. Deze module is nog niet aan de bestaande app-UI of cloud-sync gekoppeld.
 - Eenheidstestscenario's zijn toegevoegd in tests/voedselverspilling-core.test.mjs. De berekenings- en validatiechecks zijn lokaal uitgevoerd; echte IndexedDB-, Supabase-, Storage- en iPhone-tests zijn nog niet uitgevoerd.
 - Eerste release is bewust rapportage-only: geen automatische voorraadbeweging, om dubbele afboeking te voorkomen.
-- Er is geen Supabase-testproject bevestigd of gebruikt.
+- Supabase-projectmapping is bevestigd: `ANIMO HACCP` is test (`xwjcwravfeldndwlugai`) en `animo-haccp-test` is live (`zimzsovvtdmrthrflkgm`). De testdatabase is alleen read-only geïnspecteerd; de live database is niet benaderd.
 - RLS- en Storage-policies voor de nieuwe tabellen/foto's moeten in een afzonderlijke testomgeving ontworpen en getest worden.
 - De bestaande snapshot-RPC en volledige offline-sync vereisen regressietests voordat een nieuwe collectie aan de productiestaat kan worden toegevoegd.
 
 ## 6. Aanbevolen technische volgorde
 
-1. Maak/identificeer een afzonderlijk Supabase-testproject en verifieer expliciet projectreferentie en test-URL; nooit productiecredentials kopiëren naar deze branch.
-2. Bouw eerst de module als geïsoleerde feature met eigen datamodel, geen productie-integratie.
-3. Voeg geautomatiseerde tests toe voor prijsberekening, gram/kg, idempotentie, dubbele sync en tenant-isolatie.
-4. Integreer daarna via een kleine, gecontroleerde adapter met bestaande voorraad- en recepthelpers.
-5. Test de bestaande snapshot-/offlinefunctionaliteit integraal.
-6. Laat de eigenaar de testversie beoordelen vóór een eventuele productie-release.
+1. Valideer de nieuwe SQL eerst in een geïsoleerde tijdelijke PostgreSQL/Supabase-omgeving, zonder productieverbinding.
+2. Test RLS en Storage met tijdelijke testaccounts en testzaken: medewerker, manager, eigenaar, niet-lid en verlopen abonnement.
+3. Test offline wachtrij, foto-upload, retry en dubbele synchronisatie met dezelfde client-ID.
+4. Integreer pas daarna via een kleine adapter met bestaande voorraad- en recepthelpers; laat de bestaande snapshot-sync ongemoeid.
+5. Voer regressietests uit voor alle bestaande live functies in een aparte testbuild.
+6. Vraag expliciete goedkeuring voordat iets naar de live branch, database of hosting gaat.
 
 ## 7. Conclusie
 
