@@ -5,7 +5,7 @@ import {
   calculateWasteCost,
   createFoodWasteEntry,
   normaliseWasteUnit
-} from "../voedselverspilling-core.js";
+} from "../voedselverspilling-core.mjs";
 
 test("gram and kilogram are converted correctly", () => {
   assert.equal(convertWasteQuantity(750, "gram", "kg"), 0.75);
