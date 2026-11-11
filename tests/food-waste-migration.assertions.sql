@@ -231,4 +231,12 @@ begin
   if b.public is not false then raise exception 'Food waste bucket must be private'; end if;
   if b.file_size_limit <> 5242880 then raise exception 'Unexpected bucket size limit'; end if;
   if cardinality(b.allowed_mime_types) <> 3 then raise exception 'Unexpected bucket MIME allow-list'; end if;
-end $$;
+  if not exists (
+    select 1 from pg_indexes
+    where schemaname = 'public'
+      and tablename = 'food_waste_entries'
+      and indexname = 'food_waste_entries_created_by_idx'
+  ) then
+    raise exception 'Missing index for created_by foreign key';
+  end if;
+end $;
