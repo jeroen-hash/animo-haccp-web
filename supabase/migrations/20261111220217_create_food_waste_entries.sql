@@ -75,7 +75,7 @@ alter table public.food_waste_entries enable row level security;
 
 -- New public tables are not automatically exposed by current Supabase defaults.
 -- Grant only the operations needed by the authenticated app.
-revoke all on table public.food_waste_entries from public, anon;
+revoke all on table public.food_waste_entries from public, anon, authenticated;
 grant select, insert on table public.food_waste_entries to authenticated;
 grant update (voided_at, void_reason) on table public.food_waste_entries to authenticated;
 grant all on table public.food_waste_entries to service_role;
