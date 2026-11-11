@@ -24,6 +24,7 @@ Status: ontwerp voor geïsoleerde testimplementatie. Dit document is nadrukkelij
 | note | text | Toelichting |
 | photo_path | text | Pad naar foto in private Storage |
 | cost_unit | text, nullable | Eenheid van de kostprijsmomentopname |
+| currency | text | Valuta van de kostprijsmomentopname (EUR voor de Belgische eerste release) |
 | unit_cost_snapshot | numeric, nullable | Kostprijs per basiseenheid op registratiemoment |
 | cost_value_snapshot | numeric, nullable | Berekende verspilde voorraadwaarde |
 | cost_status | text | calculated / unknown |
