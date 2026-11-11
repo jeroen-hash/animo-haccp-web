@@ -1,6 +1,6 @@
 -- ANIMO HACCP: isolated food-waste reporting module.
 -- Target: ANIMO HACCP test project only (xwjcwravfeldndwlugai).
--- Never apply this migration to the live project (zimzsovvtdmrthrflkgm).
+-- Never apply this migration to production.
 begin;
 
 create table public.food_waste_entries (
