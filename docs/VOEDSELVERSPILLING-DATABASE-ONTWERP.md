@@ -130,3 +130,9 @@ Een extra Node-test controleert de veiligheidsvoorwaarden van het migratiebestan
 
 De volgende veilige stap is de migratie eerst in een geïsoleerde tijdelijke database of Supabase-branch te valideren, daarna de allow/deny-tests met tijdelijke accounts uit te voeren. Pas na geslaagde tests kan een expliciete toepassing op het ANIMO HACCP-testproject worden overwogen.
 
+## Synchronisatieadapter toegevoegd (nog niet live gekoppeld)
+
+De geïsoleerde module `voedselverspilling-sync.mjs` voert de afgesproken volgorde uit: authenticatie controleren, private foto uploaden, database-insert bevestigen en pas daarna de lokale wachtrij-entry verwijderen. Bij retries gebruikt ze dezelfde client UUID en hetzelfde foto-pad. Een duplicate wordt alleen geaccepteerd wanneer alle relevante registratievelden en de kostprijsmomentopname exact overeenkomen. Een fout laat de lokale registratie en foto staan.
+
+De adapter en tests zijn voorbereid, maar niet aan de app gekoppeld en niet tegen een echte Supabase-database uitgevoerd.
+
