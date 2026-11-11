@@ -11,7 +11,7 @@ De huidige testintegratie bevat:
 - Een basisoverzicht met aantallen, gekende kost en recente registraties.
 - Medewerker-/manager-/eigenaarrechten die door RLS en Storage-policies in de testdatabase worden afgedwongen; eigenaar/manager kan een registratie ongeldig verklaren met reden.
 
-Nog niet afgewerkt: uitgebreide filters en periodevergelijkingen, top-producten/redenrapporten, fotocompressie, handmatige retry-bediening en een volledige praktijktest met aparte testaccounts en echte mobiele toestellen. De module is dus nog geen productieklare release.
+Nog niet afgewerkt: uitgebreide filters en periodevergelijkingen, top-producten/redenrapporten, fotocompressie en een volledige praktijktest met aparte testaccounts en echte mobiele toestellen. Handmatige synchronisatie opnieuw proberen is inmiddels aanwezig. De module is dus nog geen productieklare release.
 
 ## Doel
 
