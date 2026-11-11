@@ -1,6 +1,17 @@
 # ANIMO HACCP — Module Voedselverspilling
 
-Status: functionele en technische uitwerking (fase 1 — nog niet gekoppeld aan productiecode of database).
+Status: eerste werkende testintegratie op de aparte feature-branch; niet samengevoegd of gepubliceerd naar productie.
+
+De huidige testintegratie bevat:
+- Een aparte navigatiepagina **Voedselverspilling** in de ANIMO HACCP-testapp.
+- Registratie met productnaam, hoeveelheid, eenheid, reden en verplichte foto (JPEG/PNG/WebP, maximaal 5 MB).
+- Optionele koppeling met een bestaand stockartikel en kostprijsmomentopname.
+- Een afzonderlijke IndexedDB-wachtrij voor offline registraties en foto's.
+- Synchronisatie naar de private fotobucket en de tabel `public.food_waste_entries`; de lokale wachtrij wordt pas verwijderd na bevestiging.
+- Een basisoverzicht met aantallen, gekende kost en recente registraties.
+- Medewerker-/manager-/eigenaarrechten die door RLS en Storage-policies in de testdatabase worden afgedwongen; eigenaar/manager kan een registratie ongeldig verklaren met reden.
+
+Nog niet afgewerkt: uitgebreide filters en periodevergelijkingen, top-producten/redenrapporten, fotocompressie, handmatige retry-bediening en een volledige praktijktest met aparte testaccounts en echte mobiele toestellen. De module is dus nog geen productieklare release.
 
 ## Doel
 
@@ -11,7 +22,7 @@ Deze module is aanvullend op de bestaande voorraad-, recept-, foodcost- en offli
 ## 1. Medewerkerflow
 
 1. Open **Voedselverspilling**.
-2. Tik op **Nieuwe verspilling registreren**.
+2. Open **Nieuwe registratie**.
 3. Maak een foto met de camera of kies een bestaande foto.
 4. Vul de productnaam in of selecteer een bestaand voorraadproduct.
 5. Vul het gewicht in (gram of kilogram).
@@ -22,7 +33,7 @@ Verplichte velden:
 - Foto (minstens één).
 - Productnaam.
 - Gewicht groter dan nul.
-- Eenheid (g of kg).
+- Eenheid (g, kg, ml, cl, l of stuk).
 - Reden van verspilling.
 
 Automatisch vastgelegd:
