@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { initFoodWasteUi } from "../voedselverspilling-ui.mjs";
+  assert.match(app, /<script type="module" src="\.\/voedselverspilling-ui\.mjs"><\/script>/);
 
 const ui = await readFile(new URL("../voedselverspilling-ui.mjs", import.meta.url), "utf8");
 const app = await readFile(new URL("../index.html", import.meta.url), "utf8");
