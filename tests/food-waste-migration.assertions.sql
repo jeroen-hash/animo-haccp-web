@@ -57,7 +57,7 @@ insert into public.food_waste_entries (
 );
 
 -- A retry/upsert can update the uploader's own object.
-do $
+do $$
 declare n integer;
 begin
   update storage.objects
@@ -115,7 +115,7 @@ begin
 end $$;
 
 -- Employees cannot void records; RLS returns no updated row.
-do $
+do $$
 declare n integer;
 begin
   update public.food_waste_entries
@@ -152,7 +152,7 @@ begin
   if n <> 3 then raise exception 'Manager should see all business A photos, got %', n; end if;
 end $$;
 
-do $
+do $$
 declare n integer;
 begin
   update public.food_waste_entries
