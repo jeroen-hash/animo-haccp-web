@@ -133,7 +133,7 @@ Een extra Node-test controleert de veiligheidsvoorwaarden van het migratiebestan
 - De nieuwe tabel en bucket bevatten nog nul registraties en nul foto's.
 - GitHub Actions coretests en de disposable PostgreSQL 17 RLS/Storage-test zijn geslaagd. De PostgreSQL-test simuleert Supabase-structuur; ze vervangt nog geen volledige Supabase Auth- en Storage API-test.
 - Supabase Security Advisor: dezelfde bestaande baseline-aantallen als vóór de module; geen nieuwe food-waste security findings. Performance Advisor: de nieuwe `created_by` FK is nu geïndexeerd; de drie nieuwe indexen staan als ongebruikt omdat de tabel nog leeg is.
-- Twee bestaande PR-controles falen op onderdelen buiten deze module: de onboarding-test verwacht 3 trial-CTA's maar vindt er 5; de publieke verkooppagina-test mist een link naar `verwerkersovereenkomst.html`. Deze pagina's en hun tests zijn niet door de voedselverspillingswijzigingen aangepast.
+- Op de meest recente PR-commit zijn de onboarding Stripe-feevalidatie, de ANIMO HACCP offline-codevalidatie, de food-waste coretests en de PostgreSQL 17 RLS/Storage-tests geslaagd. De legal/landing-page workflow is op de laatste commit niet getriggerd omdat de PR geen publieke landing- of legal-documenten wijzigt.
 - Live project `zimzsovvtdmrthrflkgm`: niet benaderd of gewijzigd. De PR bevat geen wijziging aan `index.html` of bestaande app-code.
 
 De volgende stap is de geïsoleerde app-interface en echte Storage/API-tests voorbereiden op het testproject. Pas na iPhone-regressietests en expliciete goedkeuring kan integratie in de bestaande app of een live release worden overwogen.
