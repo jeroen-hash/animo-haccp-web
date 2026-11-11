@@ -32,13 +32,23 @@ $function$;
 grant usage on schema private to authenticated;
 grant execute on function private.prevent_food_waste_unvoid() to authenticated;
 
-drop trigger if exists food_waste_entries_prevent_unvoid
-  on public.food_waste_entries;
-create trigger food_waste_entries_prevent_unvoid
-before update of voided_at, void_reason
-on public.food_waste_entries
-for each row
-execute function private.prevent_food_waste_unvoid();
+do $trigger$
+begin
+  if not exists (
+    select 1
+    from pg_trigger
+    where tgname = 'food_waste_entries_prevent_unvoid'
+      and tgrelid = 'public.food_waste_entries'::regclass
+      and not tgisinternal
+  ) then
+    create trigger food_waste_entries_prevent_unvoid
+    before update of voided_at, void_reason
+    on public.food_waste_entries
+    for each row
+    execute function private.prevent_food_waste_unvoid();
+  end if;
+end;
+$trigger$;
 
 create index if not exists food_waste_entries_created_by_idx
   on public.food_waste_entries (created_by);
