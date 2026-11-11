@@ -144,7 +144,7 @@ De geïsoleerde module `voedselverspilling-sync.mjs` voert de afgesproken volgor
 
 De adapter en tests zijn voorbereid, maar niet aan de app gekoppeld en niet tegen een echte Supabase-database uitgevoerd.
 
-### Extra validatie zonder live of Supabase-testdatabase
+### Extra validatie in CI en het geïsoleerde testproject
 
 Er is een aparte GitHub Actions-workflow toegevoegd die de migratie uitvoert in een wegwerpbare PostgreSQL 17-container. De fixture bootst alleen de minimaal benodigde Auth-, business-membership- en Storage-structuur na. De SQL-assertions testen medewerker/eigenaar/manager, tenantisolatie, actieve membership, private fotopaden, retry-updates, beperkte correctierechten en het ontbreken van anon-/delete-toegang.
 
