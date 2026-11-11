@@ -263,4 +263,44 @@ with check (
   )
 );
 
+
+-- Voiding is an append-only audit action: once voided, an entry cannot be
+-- silently restored or have its void timestamp/reason rewritten.
+create or replace function private.prevent_food_waste_unvoid()
+returns trigger
+language plpgsql
+set search_path = ''
+as $function$
+begin
+  if old.voided_at is not null then
+    if new.voided_at is distinct from old.voided_at
+       or new.void_reason is distinct from old.void_reason then
+      raise exception using
+        errcode = '23514',
+        message = 'A voided food-waste entry cannot be changed or restored.';
+    end if;
+    return new;
+  end if;
+
+  if new.voided_at is null or nullif(btrim(new.void_reason), '') is null then
+    if new.voided_at is not null or new.void_reason is not null then
+      raise exception using
+        errcode = '23514',
+        message = 'Voiding requires both a timestamp and a reason.';
+    end if;
+  end if;
+
+  return new;
+end;
+$function$;
+
+grant usage on schema private to authenticated;
+grant execute on function private.prevent_food_waste_unvoid() to authenticated;
+
+create trigger food_waste_entries_prevent_unvoid
+before update of voided_at, void_reason
+on public.food_waste_entries
+for each row
+execute function private.prevent_food_waste_unvoid();
+
 commit;
