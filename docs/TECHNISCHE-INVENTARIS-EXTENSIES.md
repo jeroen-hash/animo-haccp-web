@@ -2,7 +2,7 @@
 
 Datum: 2026-11-11
 Branch: feature/voedselverspilling-module
-Status: read-only code-inspectie; geen productiecode of database gewijzigd.
+Status: technische inspectie + geïsoleerde feature-branch. De live database is niet gewijzigd. De testdatabase is alleen gelezen; er is nog geen DDL of Storage-wijziging uitgevoerd.
 
 ## 1. Architectuur die in de huidige app-code is bevestigd
 
@@ -54,6 +54,14 @@ Status: read-only code-inspectie; geen productiecode of database gewijzigd.
 
 - Deze inventaris is gebaseerd op de repositorycode in de ontwikkelbranch; dit is geen live runtime-test.
 - Er is geen database- of Storage-schemawijziging uitgevoerd.
+- Supabase-projecten zijn bevestigd: ANIMO HACCP = test (ref xwjcwravfeldndwlugai); animo-haccp-test = live (ref zimzsovvtdmrthrflkgm). De live projectref is niet aangeraakt.
+- De feature-branchconfiguratie in index.html is aangepast naar de testproject-URL en de bijbehorende publishable key. De live app op main behoudt zijn bestaande configuratie.
+- Het testproject bevat momenteel geen bedrijfs-/klantrecords in de gecontroleerde public-tabellen. De bestaande voorraad zit in app_data.data als JSON-snapshot; er bestaat geen aparte voorraad- of voorraadbewegingstabel.
+- De twee bestaande private Storage-buckets zijn onboarding-documentbuckets. Er bestaat nog geen voedselverspillingbucket.
+- Er is nog geen officiële Supabase-migratie gegenereerd of toegepast. De beschikbare Supabase-integratie biedt geen CLI-commando voor supabase migration new; daarom wordt geen DDL rechtstreeks uitgevoerd en wordt de verplichte migratiestap uitgesteld tot de CLI beschikbaar is.
+- Er is een geïsoleerde kernmodule toegevoegd in voedselverspilling-core.js met validatie, eenheidsconversie, kostprijsmomentopname en een aparte IndexedDB-wachtrij voor foto's/registraties. Deze module is nog niet aan de bestaande app-UI of cloud-sync gekoppeld.
+- Eenheidstestscenario's zijn toegevoegd in tests/voedselverspilling-core.test.mjs. De berekenings- en validatiechecks zijn lokaal uitgevoerd; echte IndexedDB-, Supabase-, Storage- en iPhone-tests zijn nog niet uitgevoerd.
+- Eerste release is bewust rapportage-only: geen automatische voorraadbeweging, om dubbele afboeking te voorkomen.
 - Er is geen Supabase-testproject bevestigd of gebruikt.
 - RLS- en Storage-policies voor de nieuwe tabellen/foto's moeten in een afzonderlijke testomgeving ontworpen en getest worden.
 - De bestaande snapshot-RPC en volledige offline-sync vereisen regressietests voordat een nieuwe collectie aan de productiestaat kan worden toegevoegd.
