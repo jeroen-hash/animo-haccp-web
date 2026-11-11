@@ -14,6 +14,8 @@ on:
       - "feature/voedselverspilling-module"
     paths:
       - "supabase/migrations/20261111220217_create_food_waste_entries.sql"
+      - "supabase/migrations/20261111222400_tighten_food_waste_table_grants.sql"
+      - "supabase/migrations/20261111222644_harden_food_waste_audit_and_index.sql"
       - "tests/food-waste-migration.setup.sql"
       - "tests/food-waste-migration.assertions.sql"
       - ".github/workflows/food-waste-postgres-tests.yml"
