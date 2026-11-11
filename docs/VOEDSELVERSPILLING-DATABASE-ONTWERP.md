@@ -125,7 +125,7 @@ Een extra Node-test controleert de veiligheidsvoorwaarden van het migratiebestan
 - SQL-migratie: geschreven op de featurebranch, nog niet toegepast.
 - Voedselverspillings-coretests: GitHub Actions geslaagd op commit `0cc995a`.
 - Migratie-veiligheidstest: toegevoegd aan de workflow; uitvoering op de nieuwste commit moet nog worden bevestigd.
-- De algemene PR-controles bevatten ook twee mislukte bestaande controles: onboarding Stripe-fee/payment safeguards en publieke verkooppagina/links. Die controleren andere onderdelen en zijn niet door deze migratie gewijzigd; ze moeten afzonderlijk worden nagekeken voordat PR #180 kan worden samengevoegd.
+- Twee bestaande PR-controles falen op onderdelen buiten deze module: de onboarding-test verwacht 3 trial-CTA's maar vindt er 5; de publieke verkooppagina-test mist een link naar `verwerkersovereenkomst.html`. Deze pagina's en hun tests zijn niet door de voedselverspillingswijzigingen aangepast. Los dit apart op vóór PR #180 kan worden samengevoegd.
 - Supabase-testproject `xwjcwravfeldndwlugai`: niet gewijzigd. Live project `zimzsovvtdmrthrflkgm`: niet benaderd of gewijzigd.
 
 De volgende veilige stap is de migratie eerst in een geïsoleerde tijdelijke database of Supabase-branch te valideren, daarna de allow/deny-tests met tijdelijke accounts uit te voeren. Pas na geslaagde tests kan een expliciete toepassing op het ANIMO HACCP-testproject worden overwogen.
