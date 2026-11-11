@@ -87,3 +87,27 @@ Storage en Postgres vormen geen gedeelde transactie. Een mislukte database-inser
 5. Test Storage upload, retry, signed download en cross-tenant weigering.
 6. Voer database-tests uit en controleer Supabase Security- en Performance-Advisors.
 7. Pas pas na review de frontend-integratie toe. Project animo-haccp-test (live, ref zimzsovvtdmrthrflkgm) blijft onaangeroerd.
+
+## Gecontroleerde Supabase-teststructuur (11 november 2026)
+
+Deze punten zijn rechtstreeks nagekeken in het testproject `xwjcwravfeldndwlugai`; ze zijn geen aannames:
+
+- `public.business_members` heeft exact de kolommen `business_id uuid`, `user_id uuid`, `role text` en `active boolean`. De toegelaten rollen zijn `owner`, `manager` en `employee`.
+- `business_members` heeft een samengestelde primaire sleutel op `(business_id, user_id)`; de tabel heeft RLS aan.
+- `private.can_access_business(p_business_id uuid)` bestaat en is `STABLE SECURITY DEFINER`. De helper controleert actief lidmaatschap én toegang via lifetime-free, lopende proefperiode of actief abonnement. Hij controleert **niet** of iemand owner/manager is.
+- De bestaande `public.is_business_member(target_business uuid)` en `public.is_active_business_member(p_business_id uuid)` zijn eveneens SECURITY DEFINER-functies die actief lidmaatschap controleren.
+- `public.app_data` bevat de bestaande JSON-snapshot; er is geen aparte genormaliseerde stocktabel aangetroffen.
+- De bestaande Storage-buckets zijn privé. Er bestaat nog geen bucket `food-waste-photos`.
+- De bestaande Storage-policies voor onboarding gebruiken `storage.foldername(name)`, actieve membership en `private.can_access_business(...)` als patroon.
+
+### Gevolgen voor de migratie
+
+1. Gebruik `private.can_access_business(business_id)` als aanvullende toegangs-/abonnementscontrole, niet als rolcontrole.
+2. Controleer owner/manager expliciet via `public.business_members.role` en `active IS TRUE`; laat medewerkers alleen hun eigen registraties lezen.
+3. Vermijd een RLS-policy die onbedoeld recursief dezelfde membership-policy triggert. Hergebruik de bestaande, gecontroleerde SECURITY DEFINER-membershiphelpers waar dat passend is; voeg geen nieuwe brede bypassfunctie toe.
+4. De tabel en Storage-bucket moeten afzonderlijk beveiligd worden. Een private bucket alleen is niet voldoende: ook SELECT/INSERT/UPDATE-policies op `storage.objects` zijn nodig voor de gekozen upload- en retrystrategie.
+5. Het huidige voorgestelde fotopad `business_id/client_id.ext` is nog niet definitief. Voor de uiteindelijke Storage-policy moet ook de privacyregel worden vastgelegd: mag een medewerker foto's van collega's in dezelfde zaak openen, of uitsluitend eigen foto's? De standaardkeuze voor de implementatie wordt **eigen foto's voor medewerkers; eigenaar/manager alle foto's**.
+6. De testdatabase bevat momenteel geen bedrijfs-/klantrecords in de relevante tabellen. Toegangstests moeten daarom met tijdelijke testaccounts en testzaken worden opgezet, zonder echte klantgegevens.
+
+De CLI-workflow heeft op 11 november 2026 succesvol het officiële, lege migratiebestand `20261111220217_create_food_waste_entries.sql` gegenereerd. Het bestand is bewust nog leeg: er is geen DDL toegepast en de testdatabase is niet gewijzigd.
+
