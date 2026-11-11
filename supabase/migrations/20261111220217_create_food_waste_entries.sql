@@ -295,6 +295,7 @@ end;
 $function$;
 
 grant usage on schema private to authenticated;
+revoke all on function private.prevent_food_waste_unvoid() from public, anon;
 grant execute on function private.prevent_food_waste_unvoid() to authenticated;
 
 create trigger food_waste_entries_prevent_unvoid
