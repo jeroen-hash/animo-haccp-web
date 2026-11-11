@@ -25,7 +25,7 @@ test("deducts using FEFO and records exact batch allocations", () => {
   assert.deepEqual(result.allocations.map((item) => [item.batchId, item.quantity]), [
     ["batch-sooner", 2], ["batch-later", 0.5]
   ]);
-  assert.equal(result.movement.delta, -1.5);
+  assert.equal(result.movement.delta, -2.5);
 });
 
 test("does not deduct when stock is insufficient", () => {
