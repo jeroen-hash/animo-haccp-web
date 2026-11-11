@@ -56,6 +56,17 @@ function ensureUi() {
     nav.insertBefore(button, reports || null);
   }
 
+  // The sidebar is hidden on phones, so expose the same page in the fixed mobile menu.
+  const mobileNav = document.querySelector(".mobile-nav");
+  if (mobileNav && !$("foodWasteMobileNav")) {
+    const button = document.createElement("button");
+    button.id = "foodWasteMobileNav";
+    button.dataset.page = "food-waste";
+    button.setAttribute("aria-label", "Voedselverspilling");
+    button.innerHTML = "<b>♻</b>Verspilling";
+    mobileNav.insertBefore(button, mobileNav.querySelector('[data-page="reports"]') || null);
+  }
+
   if (!$("food-waste")) {
     const section = document.createElement("section");
     section.id = "food-waste";
