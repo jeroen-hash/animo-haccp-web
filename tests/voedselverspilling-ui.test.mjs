@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-  assert.match(app, /<script type="module" src="\.\/voedselverspilling-ui\.mjs"><\/script>/);
+import { initFoodWasteUi } from "../voedselverspilling-ui.mjs";
 
 const ui = await readFile(new URL("../voedselverspilling-ui.mjs", import.meta.url), "utf8");
 const app = await readFile(new URL("../index.html", import.meta.url), "utf8");
@@ -13,7 +13,7 @@ test("food waste UI module loads without touching the DOM at import time", () =>
 test("food waste UI is wired into the feature preview and uses the isolated test project", () => {
   assert.match(app, /FAVVGetSupabaseClient=\(\)=>cloudClient/);
   assert.match(app, /FAVVGetCurrentUser=\(\)=>currentUser/);
-  assert.match(app, /import \{ initFoodWasteUi \} from "\.\/voedselverspilling-ui\.mjs"/);
+  assert.match(app, /<script type="module" src="\.\/voedselverspilling-ui\.mjs"><\/script>/);
   assert.match(app, /PUBLIC_SUPABASE_CONFIG=\{url:'https:\/\/xwjcwravfeldndwlugai\.supabase\.co'/);
   assert.doesNotMatch(app, /PUBLIC_SUPABASE_CONFIG=\{url:'https:\/\/zimzsovvtdmrthrflkgm\.supabase\.co'/);
 });
