@@ -2,7 +2,7 @@
 
 Datum: 2026-11-11
 Branch: feature/voedselverspilling-module
-Status: technische inspectie + geïsoleerde feature-branch. De live database is niet gewijzigd. De testdatabase is alleen gelezen; er is nog geen DDL of Storage-wijziging uitgevoerd.
+Status: technische inspectie + geïsoleerde feature-branch. De live database is niet benaderd of gewijzigd. De drie voedselverspillingsmigraties zijn uitsluitend op het testproject toegepast; de nieuwe tabel en fotobucket zijn nog leeg.
 
 ## 1. Architectuur die in de huidige app-code is bevestigd
 
@@ -58,7 +58,7 @@ Status: technische inspectie + geïsoleerde feature-branch. De live database is 
 - De tijdelijke testconfiguratie in `index.html` is teruggedraaid. De featurebranch bevat nu dezelfde bestaande live-configuratieregel als `main`; er is geen app-codewijziging meer bedoeld. Open of deploy deze featurebranch niet als testapp: de testdatabase wordt voor deze fase alleen rechtstreeks en read-only onderzocht.
 - Het testproject bevat momenteel geen bedrijfs-/klantrecords in de gecontroleerde public-tabellen. De bestaande voorraad zit in app_data.data als JSON-snapshot; er bestaat geen aparte voorraad- of voorraadbewegingstabel.
 - De twee bestaande private Storage-buckets zijn onboarding-documentbuckets. Er bestaat nog geen voedselverspillingbucket.
-- De officiële Supabase CLI heeft via GitHub Actions het migratiebestand `supabase/migrations/20261111220217_create_food_waste_entries.sql` aangemaakt. De SQL is daarna op de featurebranch uitgewerkt. De migratie is nog niet toegepast; er is geen DDL- of Storage-wijziging uitgevoerd in Supabase.
+- De officiële Supabase CLI heeft via GitHub Actions drie migratiebestanden aangemaakt. Tabel, RLS, private bucket, least-privilege grants, one-way audit-trigger en FK-index zijn toegepast op het testproject `xwjcwravfeldndwlugai`. De live omgeving `zimzsovvtdmrthrflkgm` is niet aangeraakt.
 - Er is een geïsoleerde kernmodule toegevoegd in voedselverspilling-core.mjs met validatie, eenheidsconversie, kostprijsmomentopname en een aparte IndexedDB-wachtrij voor foto's/registraties. Deze module is nog niet aan de bestaande app-UI of cloud-sync gekoppeld.
 - Eenheidstestscenario's zijn toegevoegd in tests/voedselverspilling-core.test.mjs. De berekenings- en validatiechecks zijn lokaal uitgevoerd; echte IndexedDB-, Supabase-, Storage- en iPhone-tests zijn nog niet uitgevoerd.
 - Eerste release is bewust rapportage-only: geen automatische voorraadbeweging, om dubbele afboeking te voorkomen.
