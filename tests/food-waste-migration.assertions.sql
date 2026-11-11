@@ -57,17 +57,16 @@ insert into public.food_waste_entries (
 );
 
 -- A retry/upsert can update the uploader's own object.
-update storage.objects
-set metadata = '{"retry": true}'::jsonb
-where bucket_id = 'food-waste-photos'
-  and name = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/11111111-1111-4111-8111-111111111111/aaaaaaaa-0000-4000-8000-000000000004.jpg';
-
-do $$
+do $
 declare n integer;
 begin
+  update storage.objects
+  set metadata = '{"retry": true}'::jsonb
+  where bucket_id = 'food-waste-photos'
+    and name = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/11111111-1111-4111-8111-111111111111/aaaaaaaa-0000-4000-8000-000000000004.jpg';
   get diagnostics n = row_count;
   if n <> 1 then raise exception 'Uploader retry update should affect one photo, got %', n; end if;
-end $$;
+end $;
 
 -- Employees cannot forge another creator or write into a different business.
 do $$
@@ -116,15 +115,15 @@ begin
 end $$;
 
 -- Employees cannot void records; RLS returns no updated row.
-update public.food_waste_entries
-set voided_at = now(), void_reason = 'Medewerker mag dit niet'
-where client_id = 'aaaaaaaa-0000-4000-8000-000000000001';
-do $$
+do $
 declare n integer;
 begin
+  update public.food_waste_entries
+  set voided_at = now(), void_reason = 'Medewerker mag dit niet'
+  where client_id = 'aaaaaaaa-0000-4000-8000-000000000001';
   get diagnostics n = row_count;
   if n <> 0 then raise exception 'Employee unexpectedly updated a waste entry'; end if;
-end $$;
+end $;
 
 -- Employee has no column-level permission to rewrite historic product details.
 do $$
@@ -153,15 +152,15 @@ begin
   if n <> 3 then raise exception 'Manager should see all business A photos, got %', n; end if;
 end $$;
 
-update public.food_waste_entries
-set voided_at = now(), void_reason = 'Controlecorrectie'
-where client_id = 'aaaaaaaa-0000-4000-8000-000000000001';
-do $$
+do $
 declare n integer;
 begin
+  update public.food_waste_entries
+  set voided_at = now(), void_reason = 'Controlecorrectie'
+  where client_id = 'aaaaaaaa-0000-4000-8000-000000000001';
   get diagnostics n = row_count;
   if n <> 1 then raise exception 'Manager should void one entry, got %', n; end if;
-end $$;
+end $;
 reset role;
 
 -- A user in business B cannot see business A rows or photos.
