@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - "voedselverspilling-core.mjs"
+      - "voedselverspilling-core.mjs"\n      - "voedselverspilling-stock.mjs"\n      - "tests/voedselverspilling-stock.test.mjs"
       - "tests/voedselverspilling-core.test.mjs"
       - ".github/workflows/food-waste-core-tests.yml"
       - "supabase/migrations/20261111220217_create_food_waste_entries.sql"
@@ -47,4 +47,4 @@ jobs:
         with:
           node-version: "22"
       - name: Run food waste core tests
-        run: node --check voedselverspilling-ui.mjs && node --test tests/voedselverspilling-core.test.mjs tests/voedselverspilling-migration.test.mjs tests/voedselverspilling-sync.test.mjs tests/voedselverspilling-demo.test.mjs tests/voedselverspilling-ui.test.mjs
+        run: node --check voedselverspilling-ui.mjs && node --test tests/voedselverspilling-stock.test.mjs tests/voedselverspilling-core.test.mjs tests/voedselverspilling-migration.test.mjs tests/voedselverspilling-sync.test.mjs tests/voedselverspilling-demo.test.mjs tests/voedselverspilling-ui.test.mjs
