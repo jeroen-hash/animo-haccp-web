@@ -160,9 +160,9 @@ begin
   where client_id = 'aaaaaaaa-0000-4000-8000-000000000001';
   get diagnostics n = row_count;
   if n <> 1 then raise exception 'Manager should void one entry, got %', n; end if;
-end $;
+end $$;
 
-do $
+do $$
 begin
   begin
     update public.food_waste_entries
@@ -179,7 +179,7 @@ begin
     raise exception using errcode = 'P0001', message = 'Expected void reason to be immutable';
   exception when check_violation then null;
   end;
-end $;
+end $$;
 reset role;
 
 -- A user in business B cannot see business A rows or photos.
@@ -245,4 +245,4 @@ begin
   ) then
     raise exception 'Missing index for created_by foreign key';
   end if;
-end $;
+end $$;
