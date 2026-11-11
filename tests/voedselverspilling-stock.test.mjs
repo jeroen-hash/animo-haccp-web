@@ -68,7 +68,7 @@ test("void restores the exact original batches and is idempotent", () => {
   assert.equal(reversed.status, "reversed");
   assert.equal(reversed.stockItem.quantity, 5);
   assert.deepEqual(reversed.stockItem.batches.map((batch) => [batch.id, batch.quantity]), [
-    ["batch-later", 3], ["batch-sooner", 2]
+    ["batch-sooner", 2], ["batch-later", 3]
   ]);
   const retry = reverseFoodWasteStock({
     stockItem: reversed.stockItem,
