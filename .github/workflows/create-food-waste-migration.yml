@@ -1,0 +1,53 @@
+name: Create food waste migration file
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/voedselverspilling-module
+    paths:
+      - ".github/workflows/create-food-waste-migration.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  create-migration:
+    if: github.ref == 'refs/heads/feature/voedselverspilling-module'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/voedselverspilling-module
+          fetch-depth: 0
+
+      - name: Install official Supabase CLI
+        uses: supabase/setup-cli@v3
+
+      - name: Generate migration with Supabase CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase --version
+          supabase migration new create_food_waste_entries
+          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_create_food_waste_entries.sql' -print -quit)"
+          test -n "$migration_file"
+          test -f "$migration_file"
+          echo "Generated: $migration_file"
+
+      - name: Commit generated empty migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_create_food_waste_entries.sql' -print -quit)"
+          test -n "$migration_file"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$migration_file"
+          if git diff --cached --quiet; then
+            echo "No new migration file to commit."
+            exit 0
+          fi
+          git commit -m "chore(db): generate food waste migration scaffold"
+          git push origin HEAD:feature/voedselverspilling-module
