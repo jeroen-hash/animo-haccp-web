@@ -10,7 +10,10 @@ on:
       - "supabase/migrations/20261111220217_create_food_waste_entries.sql"
       - "tests/voedselverspilling-migration.test.mjs"
       - "voedselverspilling-sync.mjs"
+      - "voedselverspilling-ui.mjs"
+      - "index.html"
       - "tests/voedselverspilling-sync.test.mjs"
+      - "tests/voedselverspilling-ui.test.mjs"
       - "prototypes/voedselverspilling-demo.html"
       - "tests/voedselverspilling-demo.test.mjs"
   push:
@@ -23,7 +26,10 @@ on:
       - "supabase/migrations/20261111220217_create_food_waste_entries.sql"
       - "tests/voedselverspilling-migration.test.mjs"
       - "voedselverspilling-sync.mjs"
+      - "voedselverspilling-ui.mjs"
+      - "index.html"
       - "tests/voedselverspilling-sync.test.mjs"
+      - "tests/voedselverspilling-ui.test.mjs"
       - "prototypes/voedselverspilling-demo.html"
       - "tests/voedselverspilling-demo.test.mjs"
 
@@ -41,4 +47,4 @@ jobs:
         with:
           node-version: "22"
       - name: Run food waste core tests
-        run: node --test tests/voedselverspilling-core.test.mjs tests/voedselverspilling-migration.test.mjs tests/voedselverspilling-sync.test.mjs tests/voedselverspilling-demo.test.mjs
+        run: node --check voedselverspilling-ui.mjs && node --test tests/voedselverspilling-core.test.mjs tests/voedselverspilling-migration.test.mjs tests/voedselverspilling-sync.test.mjs tests/voedselverspilling-demo.test.mjs tests/voedselverspilling-ui.test.mjs
