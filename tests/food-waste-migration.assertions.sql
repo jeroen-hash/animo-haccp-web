@@ -24,7 +24,7 @@ insert into storage.objects (bucket_id, name, metadata) values
 -- Employee sees only their own row in their own business.
 set role authenticated;
 set request.jwt.claim.sub = '11111111-1111-4111-8111-111111111111';
-do language plpgsql $$
+do $$$
 declare n integer;
 begin
   select count(*) into n from public.food_waste_entries
@@ -57,7 +57,7 @@ insert into public.food_waste_entries (
 );
 
 -- A retry/upsert can update the uploader's own object.
-do language plpgsql $$
+do $$$
 declare n integer;
 begin
   update storage.objects
@@ -69,7 +69,7 @@ begin
 end $$;
 
 -- Employees cannot forge another creator or write into a different business.
-do language plpgsql $$
+do $$$
 begin
   begin
     insert into public.food_waste_entries (
@@ -115,7 +115,7 @@ begin
 end $$;
 
 -- Employees cannot void records; RLS returns no updated row.
-do language plpgsql $$
+do $$$
 declare n integer;
 begin
   update public.food_waste_entries
@@ -126,7 +126,7 @@ begin
 end $$;
 
 -- Employee has no column-level permission to rewrite historic product details.
-do language plpgsql $$
+do $$$
 begin
   begin
     update public.food_waste_entries
@@ -141,7 +141,7 @@ reset role;
 -- Manager can read all entries and photos in their business, and can void an entry.
 set role authenticated;
 set request.jwt.claim.sub = '22222222-2222-4222-8222-222222222222';
-do language plpgsql $$
+do $$$
 declare n integer;
 begin
   select count(*) into n from public.food_waste_entries
@@ -152,7 +152,7 @@ begin
   if n <> 3 then raise exception 'Manager should see all business A photos, got %', n; end if;
 end $$;
 
-do language plpgsql $$
+do $$$
 declare n integer;
 begin
   update public.food_waste_entries
@@ -162,7 +162,7 @@ begin
   if n <> 1 then raise exception 'Manager should void one entry, got %', n; end if;
 end $$;
 
-do language plpgsql $$
+do $$$
 begin
   begin
     update public.food_waste_entries
@@ -185,7 +185,7 @@ reset role;
 -- A user in business B cannot see business A rows or photos.
 set role authenticated;
 set request.jwt.claim.sub = '44444444-4444-4444-8444-444444444444';
-do language plpgsql $$
+do $$$
 declare n integer;
 begin
   select count(*) into n from public.food_waste_entries
@@ -200,7 +200,7 @@ end $$;
 reset role;
 
 -- The table exposes no anonymous access and no direct delete permission.
-do language plpgsql $$
+do $$$
 begin
   if has_table_privilege('anon', 'public.food_waste_entries', 'SELECT') then
     raise exception 'anon unexpectedly has SELECT on food waste entries';
@@ -229,7 +229,7 @@ begin
 end $$;
 
 -- Confirm bucket defaults remain private and constrained.
-do language plpgsql $$
+do $$$
 declare b record;
 begin
   select * into b from storage.buckets where id = 'food-waste-photos';
