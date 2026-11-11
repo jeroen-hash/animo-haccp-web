@@ -44,8 +44,8 @@ test("employees cannot directly delete or rewrite historical waste details", () 
   assert.match(migration, /create policy "food waste owners managers void entries"/i);
 });
 test("voiding is a one-way audit action and cannot be silently reversed", () => {
-  assert.match(migration, /create or replace function private\\.prevent_food_waste_unvoid\\(\\)/i);
-  assert.match(migration, /new\\.voided_at is null or nullif\\(btrim\\(new\\.void_reason\\), ''\\) is null/i);
-  assert.match(migration, /old\\.voided_at is not null[\\s\\S]*?new\\.voided_at is distinct from old\\.voided_at/i);
+  assert.match(migration, /create or replace function private\.prevent_food_waste_unvoid\(\)/i);
+  assert.match(migration, /new\.voided_at is null or nullif\(btrim\(new\.void_reason\), ''\) is null/i);
+  assert.match(migration, /old\.voided_at is not null[\s\S]*?new\.voided_at is distinct from old\.voided_at/i);
   assert.match(migration, /create trigger food_waste_entries_prevent_unvoid/i);
 });
