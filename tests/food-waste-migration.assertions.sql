@@ -189,6 +189,12 @@ begin
   if has_table_privilege('authenticated', 'public.food_waste_entries', 'DELETE') then
     raise exception 'authenticated unexpectedly has DELETE on food waste entries';
   end if;
+  if has_table_privilege('authenticated', 'public.food_waste_entries', 'TRUNCATE') then
+    raise exception 'authenticated unexpectedly has TRUNCATE on food waste entries';
+  end if;
+  if has_table_privilege('authenticated', 'public.food_waste_entries', 'UPDATE') then
+    raise exception 'authenticated unexpectedly has broad table-level UPDATE';
+  end if;
   if not has_column_privilege('authenticated', 'public.food_waste_entries', 'voided_at', 'UPDATE') then
     raise exception 'authenticated is missing the intended void column grant';
   end if;
