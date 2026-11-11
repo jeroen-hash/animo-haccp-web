@@ -319,3 +319,5 @@ export function initFoodWasteUi() {
   if (document.getElementById("food-waste")?.classList.contains("active")) render();
 }
 
+
+if (typeof document !== "undefined") initFoodWasteUi();
