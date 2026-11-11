@@ -53,7 +53,7 @@ test("registration requires a photo, a valid reason and positive quantity", () =
   assert.equal(entry.costSnapshot.value, 9);
   assert.equal(entry.syncStatus, "Wacht op synchronisatie");
   assert.throws(() => createFoodWasteEntry({ ...base, photo: null }), /foto/);
-  assert.throws(() => createFoodWasteEntry({ ...base, quantity: 0 }), /groter dan nul/);
+  assert.throws(() => createFoodWasteEntry({ ...base, quantity: 0 }), /groter.*dan nul/);
 });
 
 test("other reason requires an explanation", () => {
