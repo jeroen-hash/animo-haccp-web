@@ -1184,7 +1184,7 @@ get('cloudSignupForm').addEventListener('submit',async e=>{
   if(password!==confirmPassword){setSignupMessage('De wachtwoorden zijn niet gelijk.');return}
   if(password.length<10){setSignupMessage('Gebruik een wachtwoord van minstens 10 tekens.');return}
   setSignupMessage('Account wordt veilig aangemaakt...','ok');
-  const {data:signupData,error:signupError}=await cloudClient.auth.signUp({email,password,options:{data:{full_name:fullName,animo_pending_business_registration:{business_name:businessName,enterprise_number:enterpriseNumber}}}});
+  const {data:signupData,error:signupError}=await cloudClient.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname,data:{full_name:fullName,animo_pending_business_registration:{business_name:businessName,enterprise_number:enterpriseNumber}}}});
   if(signupError){setSignupMessage(signupError.message);return}
   if(!signupData.session){setSignupMessage('Account aangemaakt. Bevestig eerst je e-mailadres. Daarna kan je op elk toestel aanmelden; jouw zaakregistratie wordt automatisch voltooid en je proefperiode van 14 dagen start.','ok');return}
   try{
