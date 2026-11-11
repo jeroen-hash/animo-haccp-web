@@ -39,7 +39,9 @@ test("photo bucket is private and constrained to image uploads up to 5 MB", () =
 });
 
 test("employees cannot directly delete or rewrite historical waste details", () => {
+  assert.match(migration, /revoke all on table public\.food_waste_entries from public, anon, authenticated/i);
   assert.match(migration, /grant update \(voided_at, void_reason\)/i);
+  assert.match(migration, /revoke all on function private\.prevent_food_waste_unvoid\(\) from public, anon/i);
   assert.doesNotMatch(migration, /create policy[\s\S]{0,200}for delete/i);
   assert.match(migration, /create policy "food waste owners managers void entries"/i);
 });
