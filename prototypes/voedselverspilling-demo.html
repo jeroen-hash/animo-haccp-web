@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#103e2a">
+<title>ANIMO HACCP — Voedselverspilling demo</title>
+<style>
+:root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#173b2b;background:#f3f7f4;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0}.top{background:#103e2a;color:#fff;padding:22px max(18px,calc((100% - 980px)/2));box-shadow:0 3px 14px #173b2b22}.brand{font-weight:900;letter-spacing:.06em;font-size:13px;color:#b8dfc7}.top h1{font-size:25px;margin:8px 0 4px}.top p{margin:0;color:#d5e7db;font-size:14px}.wrap{max-width:980px;margin:22px auto;padding:0 16px 40px}.notice{background:#fff7df;border:1px solid #f0d99b;color:#775514;padding:12px 14px;border-radius:12px;font-size:13px;margin-bottom:16px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}.stat,.panel{background:white;border:1px solid #e0e9e2;border-radius:16px;box-shadow:0 3px 12px #153e2b08}.stat{padding:14px}.stat span{display:block;color:#64796b;font-size:12px}.stat strong{display:block;font-size:23px;margin-top:5px}.panel{padding:18px;margin-bottom:16px}.panel h2{font-size:18px;margin:0 0 15px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.field{display:flex;flex-direction:column;gap:6px}.field.full{grid-column:1/-1}label{font-size:13px;font-weight:750}input,select,textarea{font:inherit;width:100%;padding:12px;border:1px solid #cbd9cf;border-radius:10px;background:#fff;color:#173b2b;min-height:46px}textarea{min-height:78px;resize:vertical}.camera{border:2px dashed #9db9a5;background:#f7fbf8;border-radius:14px;padding:16px;text-align:center}.camera input{border:0;padding:8px;min-height:auto}.preview{display:none;width:100%;max-height:240px;object-fit:contain;border-radius:10px;margin-top:10px;background:#eaf1ec}.row{display:flex;gap:9px;align-items:center}.row>*{flex:1}.btn{border:0;border-radius:11px;padding:13px 17px;font:inherit;font-weight:800;cursor:pointer;background:#147a46;color:white;min-height:46px}.btn.secondary{background:#e9f2ec;color:#175333}.btn:disabled{opacity:.5;cursor:not-allowed}.hint{font-size:12px;color:#718277;margin:4px 0 0}.actions{display:flex;gap:10px;justify-content:flex-end;margin-top:15px}.entry{display:grid;grid-template-columns:88px 1fr auto;gap:13px;align-items:center;padding:12px 0;border-top:1px solid #e8eee9}.thumb{width:88px;height:78px;object-fit:cover;border-radius:10px;background:#edf3ee}.entry h3{font-size:15px;margin:0 0 4px}.entry p{font-size:12px;color:#65786b;margin:3px 0}.value{text-align:right;font-weight:850;white-space:nowrap}.empty{padding:25px;text-align:center;color:#738477;font-size:14px}.tag{display:inline-block;padding:4px 8px;border-radius:99px;background:#edf5ef;color:#28613e;font-size:11px;font-weight:750}.muted{color:#718277;font-size:12px}.danger{color:#a53d2d}.footer{font-size:12px;color:#718277;text-align:center;padding:8px}
+@media(max-width:620px){.stats{grid-template-columns:1fr 1fr}.stats .stat:last-child{grid-column:1/-1}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}.entry{grid-template-columns:68px 1fr}.thumb{width:68px;height:68px}.value{grid-column:2;text-align:left}.actions{flex-direction:column}.actions .btn{width:100%}.top{padding:20px 18px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="brand">ANIMO HACCP</div><h1>Voedselverspilling</h1><p>Registreer verspilling met foto, gewicht en reden.</p></header>
+<main class="wrap">
+<div class="notice"><strong>Afzonderlijke demo.</strong> Deze proefversie gebruikt alleen gegevens en foto's die lokaal in deze browser worden opgeslagen. Ze is niet verbonden met je ANIMO-klantendatabase, voorraad of live synchronisatie.</div>
+<section class="stats" aria-label="Samenvatting">
+ <div class="stat"><span>Registraties</span><strong id="count">0</strong></div>
+ <div class="stat"><span>Totaal gewicht</span><strong id="weight">0 g</strong></div>
+ <div class="stat"><span>Geregistreerde waarde</span><strong id="cost">—</strong></div>
+</section>
+<section class="panel">
+<h2>Nieuwe verspilling registreren</h2>
+<form id="wasteForm">
+<div class="grid">
+ <div class="field full"><label for="photo">Foto van het product *</label><div class="camera"><div><strong>Maak een foto of kies een afbeelding</strong><p class="hint">Op een smartphone kan de camera openen.</p><input id="photo" type="file" accept="image/*" capture="environment" required></div><img id="preview" class="preview" alt="Voorbeeld van de gekozen productfoto"></div>
+ <div class="field"><label for="product">Productnaam *</label><input id="product" maxlength="100" placeholder="Bijv. kipfilet" required></div>
+ <div class="field"><label for="reason">Reden *</label><select id="reason" required><option value="">Kies een reden</option><option>Houdbaarheid verstreken</option><option>Product bedorven</option><option>Te veel bereid</option><option>Verkeerd bereid</option><option>Beschadigd product</option><option>Restjes van klanten</option><option>Temperatuurprobleem</option><option>Product gevallen/verontreinigd</option><option>Andere reden</option></select></div>
+ <div class="field"><label for="amount">Gewicht *</label><input id="amount" type="number" min="0.001" step="any" inputmode="decimal" placeholder="Bijv. 750" required></div>
+ <div class="field"><label for="unit">Eenheid *</label><select id="unit"><option value="g">Gram (g)</option><option value="kg">Kilogram (kg)</option></select></div>
+ <div class="field"><label for="price">Aankoopprijs (optioneel)</label><input id="price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Bijv. 12,00"></div>
+ <div class="field"><label for="priceUnit">Prijs per</label><select id="priceUnit"><option value="kg">Kilogram</option><option value="g">Gram</option></select></div>
+ <div class="field full"><label for="note">Opmerking (optioneel)</label><textarea id="note" maxlength="500" placeholder="Extra uitleg, lotnummer of houdbaarheidsdatum..."></textarea></div>
+</div>
+<p class="hint">De prijs is in deze demo handmatig. In de echte module wordt die, waar mogelijk, uit de gekoppelde voorraad gehaald.</p>
+<div class="actions"><button type="reset" class="btn secondary">Wissen</button><button id="save" type="submit" class="btn">Registratie bewaren</button></div>
+<p id="message" class="hint" role="status" aria-live="polite"></p>
+</form>
+</section>
+<section class="panel"><div class="row"><h2 style="margin:0">Recente registraties</h2><button id="clear" type="button" class="btn secondary" style="flex:0 0 auto;padding:9px 12px;font-size:12px">Demo leegmaken</button></div><div id="entries"><div class="empty">Nog geen verspilling geregistreerd.</div></div></section>
+<div class="footer">ANIMO HACCP · Testomgeving · Geen koppeling met productie</div>
+</main>
+<script>
+(()=>{'use strict';
+const DB='animo-waste-demo-v1',STORE='entries';let db,selectedPhoto=null;
+const $=id=>document.getElementById(id);
+function openDb(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB,1);req.onupgradeneeded=()=>{const d=req.result;if(!d.objectStoreNames.contains(STORE)){const s=d.createObjectStore(STORE,{keyPath:'id'});s.createIndex('createdAt','createdAt')}};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
+function all(){return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readonly'),r=tx.objectStore(STORE).getAll();r.onsuccess=()=>resolve(r.result.sort((a,b)=>b.createdAt.localeCompare(a.createdAt)));r.onerror=()=>reject(r.error)})}
+function put(item){return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(item);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
+function removeAll(){return new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).clear();tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
+function euro(v){return new Intl.NumberFormat('nl-BE',{style:'currency',currency:'EUR'}).format(v)}
+function grams(e){return e.unit==='kg'?e.amount*1000:e.amount}
+function value(e){if(e.price===null||!Number.isFinite(e.price))return null;const qkg=grams(e)/1000;return e.priceUnit==='g'?grams(e)*e.price:e.price*qkg}
+function safe(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+async function render(){const rows=await all();$('count').textContent=rows.length;const total=rows.reduce((n,e)=>n+grams(e),0);$('weight').textContent=total>=1000?(total/1000).toLocaleString('nl-BE',{maximumFractionDigits:2})+' kg':total.toLocaleString('nl-BE',{maximumFractionDigits:1})+' g';const priced=rows.map(value).filter(v=>v!==null);$('cost').textContent=priced.length?euro(priced.reduce((a,b)=>a+b,0)):'—';$('entries').innerHTML=rows.length?rows.map(e=>{const v=value(e);return '<article class="entry"><img class="thumb" src="'+URL.createObjectURL(e.photo)+'" alt="Foto van '+safe(e.product)+'"><div><h3>'+safe(e.product)+'</h3><p>'+grams(e).toLocaleString('nl-BE')+' g · '+safe(e.reason)+'</p><p>'+new Date(e.createdAt).toLocaleString('nl-BE')+' · '+safe(e.by)+'</p><span class="tag">Lokaal bewaard · demo</span></div><div class="value">'+(v===null?'<span class="muted">Waarde onbekend</span>':euro(v))+'</div></article>'}).join(''):'<div class="empty">Nog geen verspilling geregistreerd.</div>'}
+$('photo').addEventListener('change',()=>{const f=$('photo').files[0];selectedPhoto=f||null;const p=$('preview');if(f){p.src=URL.createObjectURL(f);p.style.display='block'}else{p.removeAttribute('src');p.style.display='none'}});
+$('wasteForm').addEventListener('submit',async ev=>{ev.preventDefault();const f=$('photo').files[0],amount=Number($('amount').value),priceRaw=$('price').value; if(!f){$('message').textContent='Voeg eerst een foto toe.';return}if(!Number.isFinite(amount)||amount<=0){$('message').textContent='Vul een gewicht groter dan nul in.';return}if(f.size>12*1024*1024){$('message').textContent='Deze foto is groter dan 12 MB. Kies een kleinere foto.';return}
+const btn=$('save');btn.disabled=true;try{const item={id:crypto.randomUUID(),product:$('product').value.trim(),reason:$('reason').value,amount,unit:$('unit').value,price:priceRaw===''?null:Number(priceRaw),priceUnit:$('priceUnit').value,note:$('note').value.trim(),photo:f,createdAt:new Date().toISOString(),by:'Demo-medewerker'};await put(item);$('wasteForm').reset();$('preview').style.display='none';selectedPhoto=null;$('message').textContent='Registratie lokaal bewaard in deze demo.';await render()}catch(err){$('message').textContent='Bewaren mislukt: '+err.message}finally{btn.disabled=false}});
+$('wasteForm').addEventListener('reset',()=>{selectedPhoto=null;$('preview').style.display='none';$('message').textContent=''});
+$('clear').addEventListener('click',async()=>{if(confirm('Alle lokale demo-registraties en fotos verwijderen?')){await removeAll();await render();$('message').textContent='Demo-opslag leeggemaakt.'}});
+(async()=>{try{db=await openDb();await render()}catch(e){$('message').textContent='Lokale demo-opslag is niet beschikbaar: '+e.message}})();
+})();
+</script>
+</body>
+</html>
