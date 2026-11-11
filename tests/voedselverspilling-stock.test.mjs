@@ -18,10 +18,10 @@ function stockItem(overrides = {}) {
 
 test("deducts using FEFO and records exact batch allocations", () => {
   const result = deductFoodWasteStock({
-    stockItem: stockItem(), quantity: 1500, inputUnit: "g", sourceId: "waste-1"
+    stockItem: stockItem(), quantity: 2500, inputUnit: "g", sourceId: "waste-1"
   });
   assert.equal(result.status, "deducted");
-  assert.equal(result.stockItem.quantity, 3.5);
+  assert.equal(result.stockItem.quantity, 2.5);
   assert.deepEqual(result.allocations.map((item) => [item.batchId, item.quantity]), [
     ["batch-sooner", 2], ["batch-later", 0.5]
   ]);
