@@ -64,17 +64,24 @@ function createFoodWasteEntry(input) {
   if (!photo || typeof photo.size !== "number" || photo.size <= 0) throw new Error("Voeg minstens één foto toe.");
   const quantity = Number(input.quantity);
   if (!Number.isFinite(quantity) || quantity <= 0) throw new Error("Het gewicht of aantal moet groter zijn dan nul.");
+  const inputUnit = normaliseWasteUnit(input.unit);
+  if (!["g", "kg", "ml", "cl", "l", "stuk"].includes(inputUnit)) throw new Error("Kies gram, kilogram, milliliter, centiliter, liter of stuks.");
 
   const stockItem = input.stockItem || null;
   let cost = { value: null, unitCost: null, stockQuantity: null, status: "Nog te bepalen" };
   if (stockItem && stockItem.unit) {
-    cost = calculateWasteCost({
-      quantity,
-      inputUnit: input.unit,
-      stockUnit: stockItem.unit,
-      purchasePrice: stockItem.purchasePrice,
-      purchaseQuantity: stockItem.purchaseQuantity
-    });
+    try {
+      cost = calculateWasteCost({
+        quantity,
+        inputUnit,
+        stockUnit: stockItem.unit,
+        purchasePrice: stockItem.purchasePrice,
+        purchaseQuantity: stockItem.purchaseQuantity
+      });
+    } catch (error) {
+      // A mismatched or custom stock unit must not block a valid waste report.
+      cost = { value: null, unitCost: null, stockQuantity: null, status: "Nog te bepalen" };
+    }
   }
 
   const clientId = input.clientId || globalThis.crypto?.randomUUID?.();
@@ -87,7 +94,7 @@ function createFoodWasteEntry(input) {
     productName,
     stockItemId: stockItem?.id || null,
     quantity,
-    inputUnit: normaliseWasteUnit(input.unit),
+    inputUnit,
     reason,
     note,
     recipeId: input.recipeId || null,
