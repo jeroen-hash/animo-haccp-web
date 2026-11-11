@@ -334,7 +334,12 @@ async function voidEntry(event) {
 
 async function retryPending() {
   const button = $("foodWasteRetry");
-  if (button) button.disabled = true;
+  // Geef op mobiel onmiddellijk zichtbare feedback zodra de tik aankomt.
+  status("Synchronisatie gestart…");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Bezig met synchroniseren…";
+  }
   try {
     if (!navigator.onLine || window.FAVVOfflineMode) throw new Error("Er is nog geen actieve online ANIMO-sessie. Probeer opnieuw zodra je verbinding hersteld is.");
     const result = await trySyncQueue();
@@ -347,7 +352,10 @@ async function retryPending() {
   } catch (error) {
     status(error.message || "Synchronisatie mislukt.", true);
   } finally {
-    if (button) button.disabled = false;
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Synchroniseer wachtende registraties";
+    }
   }
 }
 
@@ -355,7 +363,9 @@ export function initFoodWasteUi() {
   if (initialized || !ensureUi()) return;
   initialized = true;
   $("foodWasteForm").addEventListener("submit", saveRegistration);
-  $("foodWasteRetry").addEventListener("click", retryPending);
+  // Gebruik ook de directe onclick-koppeling; dit blijft betrouwbaar bij
+  // opnieuw opgebouwde mobiele pagina-elementen.
+  $("foodWasteRetry").onclick = retryPending;
   $("foodWasteStock").addEventListener("change", () => {
     const item = stockItems().find((entry) => String(entry.id) === $("foodWasteStock").value);
     if (!item) return;
