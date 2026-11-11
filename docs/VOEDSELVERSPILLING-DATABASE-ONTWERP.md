@@ -109,5 +109,24 @@ Deze punten zijn rechtstreeks nagekeken in het testproject `xwjcwravfeldndwlugai
 5. Het definitieve fotopad is `business_id/uploader_user_id/client_id.ext`. Zo kan Storage RLS de uploader controleren zonder een brede toegang voor alle medewerkers van dezelfde zaak. Medewerkers openen uitsluitend hun eigen foto's; eigenaar/manager mogen alle foto's binnen hun zaak openen.
 6. De testdatabase bevat momenteel geen bedrijfs-/klantrecords in de relevante tabellen. Toegangstests moeten daarom met tijdelijke testaccounts en testzaken worden opgezet, zonder echte klantgegevens.
 
-De CLI-workflow heeft op 11 november 2026 succesvol het officiële, lege migratiebestand `20261111220217_create_food_waste_entries.sql` gegenereerd. Het bestand is bewust nog leeg: er is geen DDL toegepast en de testdatabase is niet gewijzigd.
+De CLI-workflow heeft op 11 november 2026 het officiële migratiebestand `20261111220217_create_food_waste_entries.sql` aangemaakt. Daarna is op de featurebranch een eerste SQL-ontwerp toegevoegd met:
+
+- een eigen tabel, unieke offline client-ID, invoercontroles en kostprijsmomentopname;
+- RLS voor actieve leden met geldige zaaktoegang; medewerkers zien alleen eigen registraties, eigenaar/manager zien alle registraties;
+- beperkte UPDATE-rechten: alleen ongeldigmaking met reden, geen herschrijven van historische product- of kostprijsgegevens;
+- een private fotobucket van maximaal 5 MB met JPEG/PNG/WebP en aparte SELECT/INSERT/UPDATE Storage-policies;
+- expliciete Data API-grants voor authenticated, zonder anon-toegang;
+- geen voorraadmutaties, geen wijzigingen aan bestaande tabellen, functies of buckets.
+
+Een extra Node-test controleert de veiligheidsvoorwaarden van het migratiebestand statisch. Dat is **geen vervanging** voor een echte PostgreSQL-migratietest of RLS-/Storage-toegangstest.
+
+### Huidige implementatiestatus
+
+- SQL-migratie: geschreven op de featurebranch, nog niet toegepast.
+- Voedselverspillings-coretests: GitHub Actions geslaagd op commit `0cc995a`.
+- Migratie-veiligheidstest: toegevoegd aan de workflow; uitvoering op de nieuwste commit moet nog worden bevestigd.
+- De algemene PR-controles bevatten ook twee mislukte bestaande controles: onboarding Stripe-fee/payment safeguards en publieke verkooppagina/links. Die controleren andere onderdelen en zijn niet door deze migratie gewijzigd; ze moeten afzonderlijk worden nagekeken voordat PR #180 kan worden samengevoegd.
+- Supabase-testproject `xwjcwravfeldndwlugai`: niet gewijzigd. Live project `zimzsovvtdmrthrflkgm`: niet benaderd of gewijzigd.
+
+De volgende veilige stap is de migratie eerst in een geïsoleerde tijdelijke database of Supabase-branch te valideren, daarna de allow/deny-tests met tijdelijke accounts uit te voeren. Pas na geslaagde tests kan een expliciete toepassing op het ANIMO HACCP-testproject worden overwogen.
 
