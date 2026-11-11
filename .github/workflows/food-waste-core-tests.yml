@@ -16,6 +16,8 @@ on:
       - "voedselverspilling-core.mjs"
       - "tests/voedselverspilling-core.test.mjs"
       - ".github/workflows/food-waste-core-tests.yml"
+      - "supabase/migrations/20261111220217_create_food_waste_entries.sql"
+      - "tests/voedselverspilling-migration.test.mjs"
 
 permissions:
   contents: read
