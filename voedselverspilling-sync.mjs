@@ -142,6 +142,9 @@ export async function syncFoodWasteEntry(entry, supabase, {
       upsert: true
     });
   if (upload?.error) throw upload.error;
+  if (upload?.data?.path !== photoPath) {
+    throw new Error("De foto-upload is niet door de server bevestigd. De offline registratie blijft bewaard.");
+  }
 
   const insert = await supabase
     .from(FOOD_WASTE_TABLE)
