@@ -1,6 +1,6 @@
 # ANIMO HACCP — Databankontwerp Voedselverspilling
 
-Status: ontwerp voor geïsoleerde testimplementatie. Dit document is nadrukkelijk nog geen uitgevoerde Supabase-migratie.
+Status: database en private fotobucket zijn geïmplementeerd in uitsluitend het ANIMO HACCP-testproject (`xwjcwravfeldndwlugai`). De live database is niet benaderd of gewijzigd.
 
 ## Gekozen eerste-releasegedrag
 
@@ -78,15 +78,15 @@ Uniek: (business_id, client_id). Daarmee kan dezelfde offline registratie niet t
 
 Storage en Postgres vormen geen gedeelde transactie. Een mislukte database-insert na een geslaagde foto-upload kan tijdelijk een ongebruikte foto achterlaten. De retry hergebruikt hetzelfde pad; een latere gecontroleerde opruimtaak kan verweesde objecten verwijderen.
 
-## Nog uit te voeren vóór een echte koppeling
+## Voltooide databasevoorbereiding en resterende tests
 
-1. Genereer een officiële Supabase CLI-migratie in de repository met supabase migration new.
-2. Voeg tabel, indexen, grants, RLS-policies en private bucket/policies toe in die migratie.
-3. Pas uitsluitend toe op project ANIMO HACCP (test, ref xwjcwravfeldndwlugai).
-4. Test allow/deny voor anon, medewerker, manager, eigenaar en een gebruiker van een andere horecazaak.
-5. Test Storage upload, retry, signed download en cross-tenant weigering.
-6. Voer database-tests uit en controleer Supabase Security- en Performance-Advisors.
-7. Pas pas na review de frontend-integratie toe. Project animo-haccp-test (live, ref zimzsovvtdmrthrflkgm) blijft onaangeroerd.
+1. Officiële Supabase CLI-migraties zijn aangemaakt en toegepast op uitsluitend het testproject.
+2. De tabel, indexen, least-privilege grants, RLS-policies, one-way void-trigger en private Storage-bucket/policies zijn aanwezig.
+3. De wegwerpbare PostgreSQL 17-test heeft de migraties en allow/deny-regels doorlopen.
+4. De testprojectstructuur, grants, trigger en index zijn read-only gecontroleerd; de nieuwe tabel en bucket bevatten nul data.
+5. Een triggerprobe in het echte testproject is uitgevoerd in een tijdelijke transactie en teruggedraaid.
+6. Nog open: geauthenticeerde Storage API-upload, signed download, offline iPhone-retry en end-to-end tests met tijdelijke testaccounts.
+7. Daarna pas UI-integratie in een afzonderlijke testbuild. De live omgeving blijft onaangeroerd.
 
 ## Gecontroleerde Supabase-teststructuur (11 november 2026)
 
