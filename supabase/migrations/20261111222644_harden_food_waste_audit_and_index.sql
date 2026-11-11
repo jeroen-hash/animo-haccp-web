@@ -18,13 +18,12 @@ begin
   end if;
 
   if new.voided_at is null or nullif(btrim(new.void_reason), '') is null then
-    if new.voided_at is not null or new.void_reason is not null then
-      raise exception using
-        errcode = '23514',
-        message = 'Voiding requires both a timestamp and a reason.';
-    end if;
+    raise exception using
+      errcode = '23514',
+      message = 'Voiding requires both a timestamp and a reason.';
   end if;
 
+  new.voided_at := statement_timestamp();
   return new;
 end;
 $function$;
