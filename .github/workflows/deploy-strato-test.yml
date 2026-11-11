@@ -1,0 +1,90 @@
+name: Deploy ANIMO HACCP test naar STRATO
+
+on:
+  push:
+    branches:
+      - feature/voedselverspilling-module
+    paths:
+      - 'index.html'
+      - 'sw.js'
+      - '*.mjs'
+      - 'images/**'
+      - '.github/workflows/deploy-strato-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-test:
+    runs-on: ubuntu-latest
+    name: Publiceer uitsluitend de testomgeving
+    steps:
+      - name: Repository ophalen
+        uses: actions/checkout@v4
+
+      - name: Testconfiguratie controleren
+        run: |
+          set -e
+          test -f index.html
+          test -f sw.js
+          test -d images
+          grep -q 'https://xwjcwravfeldndwlugai.supabase.co' index.html
+          if grep -q "location.hostname==='app.animo-apps.com'" index.html; then
+            echo "De productiebezoeker-tracker is aanwezig maar wordt op het testdomein niet uitgevoerd."
+          fi
+          echo "Test-Supabaseconfiguratie bevestigd."
+
+      - name: Controleren of STRATO-geheimen bestaan
+        id: guard
+        env:
+          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
+          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
+          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+        run: |
+          if [ -z "$SFTP_HOST" ] || [ -z "$SFTP_USER" ] || [ -z "$SFTP_PASS" ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::STRATO SFTP-geheimen ontbreken; testpublicatie overgeslagen."
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Testbestanden voorbereiden
+        if: steps.guard.outputs.present == 'true'
+        run: |
+          set -e
+          rm -rf out
+          mkdir -p out/test/images
+          cp index.html sw.js out/test/
+          cp ./*.mjs out/test/
+          cp -r images/. out/test/images/
+          echo "Bestanden voor test.animo-apps.com:"
+          find out/test -maxdepth 2 -type f -print
+
+      - name: Uploaden naar uitsluitend /test
+        if: steps.guard.outputs.present == 'true'
+        env:
+          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
+          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
+          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+        run: |
+          set -e
+          sudo apt-get update -y
+          sudo apt-get install -y lftp
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          ssh-keyscan -T 15 -p 22 -t ed25519 "$SFTP_HOST" > "$RUNNER_TEMP/strato_known_hosts" 2>/dev/null
+          test -s "$RUNNER_TEMP/strato_known_hosts"
+          ACTUAL_FINGERPRINT="$(ssh-keygen -lf "$RUNNER_TEMP/strato_known_hosts" -E sha256 | awk '{print $2}')"
+          EXPECTED_FINGERPRINT="SHA256:1gx2w8Rtv3wCgi7Jh8myf/KVd72cRQbow03UP8P095Q"
+          if [ "$ACTUAL_FINGERPRINT" != "$EXPECTED_FINGERPRINT" ]; then
+            echo "::error::STRATO SSH-hostkey fingerprint komt niet overeen. Upload afgebroken."
+            exit 1
+          fi
+          chmod 600 "$RUNNER_TEMP/strato_known_hosts"
+          lftp -e "set sftp:connect-program 'ssh -a -x -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/strato_known_hosts'" -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<'LFTP'
+          set net:max-retries 3
+          set net:timeout 30
+          mirror -R --verbose out/test /test
+          bye
+          LFTP
