@@ -1,4 +1,4 @@
-name: Create food waste migration file
+name: Create food waste permissions migration
 
 on:
   workflow_dispatch:
@@ -25,22 +25,22 @@ jobs:
       - name: Install official Supabase CLI
         uses: supabase/setup-cli@v3
 
-      - name: Generate migration with Supabase CLI
+      - name: Generate permissions migration with Supabase CLI
         shell: bash
         run: |
           set -euo pipefail
           supabase --version
-          supabase migration new create_food_waste_entries
-          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_create_food_waste_entries.sql' -print -quit)"
+          supabase migration new tighten_food_waste_table_grants
+          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_tighten_food_waste_table_grants.sql' -print -quit)"
           test -n "$migration_file"
           test -f "$migration_file"
           echo "Generated: $migration_file"
 
-      - name: Commit generated empty migration
+      - name: Commit generated migration
         shell: bash
         run: |
           set -euo pipefail
-          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_create_food_waste_entries.sql' -print -quit)"
+          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_tighten_food_waste_table_grants.sql' -print -quit)"
           test -n "$migration_file"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -49,5 +49,5 @@ jobs:
             echo "No new migration file to commit."
             exit 0
           fi
-          git commit -m "chore(db): generate food waste migration scaffold"
+          git commit -m "chore(db): generate food waste grants migration scaffold"
           git push origin HEAD:feature/voedselverspilling-module
