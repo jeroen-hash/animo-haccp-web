@@ -261,6 +261,10 @@ async function saveRegistration(event) {
   try {
     busy = true;
     $("foodWasteSave").disabled = true;
+    // iOS Safari kan een File-object na IndexedDB-opslag teruggeven zonder bytes.
+    // Lees de afbeeldingsbytes expliciet uit en bewaar een gewone Blob in de wachtrij.
+    const photoData = new Blob([await photo.arrayBuffer()], { type: photo.type });
+    if (!photoData.size) throw new Error("De foto kon niet correct worden ingelezen. Kies de foto opnieuw.");
     const entry = createFoodWasteEntry({
       businessId: biz.id,
       userId: signedInUser.id,
@@ -270,7 +274,7 @@ async function saveRegistration(event) {
       unit: $("foodWasteUnit").value,
       reason: $("foodWasteReason").value,
       note: $("foodWasteNote").value,
-      photo,
+      photo: photoData,
       stockItem: selectedStock
     });
     await enqueueFoodWasteEntry(entry);
