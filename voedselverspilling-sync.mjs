@@ -85,17 +85,35 @@ function toDatabaseRow(entry, photoPath, userId) {
   };
 }
 
+function sameNullableNumber(left, right) {
+  if (left == null || right == null) return left == null && right == null;
+  return Number(left) === Number(right);
+}
+
 function matchesExistingEntry(existing, row) {
-  return Boolean(existing)
-    && existing.business_id === row.business_id
+  if (!existing) return false;
+  const existingTime = Date.parse(existing.client_created_at);
+  const requestedTime = Date.parse(row.client_created_at);
+
+  return existing.business_id === row.business_id
     && existing.client_id === row.client_id
     && existing.created_by === row.created_by
+    && existing.employee_name === row.employee_name
     && existing.product_name === row.product_name
+    && existing.stock_item_id === row.stock_item_id
+    && existing.recipe_id === row.recipe_id
     && Number(existing.quantity) === Number(row.quantity)
     && existing.input_unit === row.input_unit
     && existing.reason === row.reason
     && existing.note === row.note
-    && existing.photo_path === row.photo_path;
+    && existing.photo_path === row.photo_path
+    && existing.cost_unit === row.cost_unit
+    && existing.currency === row.currency
+    && sameNullableNumber(existing.unit_cost_snapshot, row.unit_cost_snapshot)
+    && sameNullableNumber(existing.cost_value_snapshot, row.cost_value_snapshot)
+    && existing.cost_status === row.cost_status
+    && Number.isFinite(existingTime)
+    && existingTime === requestedTime;
 }
 
 /**
