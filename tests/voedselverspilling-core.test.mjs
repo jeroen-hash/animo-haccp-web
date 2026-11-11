@@ -29,6 +29,7 @@ test("waste cost uses stock base unit and snapshots price", () => {
     purchasePrice: 12, purchaseQuantity: 1
   });
   assert.equal(result.stockQuantity, 0.75);
+  assert.equal(result.stockUnit, "kg");
   assert.equal(result.value, 9);
   assert.equal(result.currency, "EUR");
   assert.equal(result.status, "Berekend");
