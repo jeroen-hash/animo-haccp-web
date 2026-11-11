@@ -67,9 +67,9 @@ Voorbeeld: 750 g kipfilet aan €12/kg = €9,00 verspilde voorraadwaarde. Dit i
 
 Voor de technische implementatie moet eerst de bestaande voorraadbewegingen worden nagekeken.
 
-- Elke definitieve verspilling mag maximaal één voorraadbeweging veroorzaken.
+- **Versie 1 boekt geen voorraad af**: voedselverspilling is eerst rapportage-only. Zo vermijden we dubbele afboeking terwijl de bestaande voorraadflow ongewijzigd blijft. Een latere voorraadkoppeling wordt pas toegevoegd met een unieke client UUID en aparte tests.
 - Gebruik waar mogelijk het bestaande voorraadbewegingssysteem met een herkenbare categorie **Verspilling**.
-- Als de voorraad al via een andere bestaande flow wordt afgeboekt, mag de verspillingregistratie geen tweede afboeking uitvoeren.
+- De bestaande voorraadbewegingen blijven in versie 1 volledig onaangeroerd.
 - Bij offline synchronisatie moet de client UUID als idempotency key dienen, zodat opnieuw proberen nooit dubbel registreert of dubbel afboekt.
 - Historische voorraad- en kostprijsgegevens blijven intact.
 
