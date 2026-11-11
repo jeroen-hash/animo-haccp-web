@@ -909,7 +909,7 @@ async function saveCloudState(x){
   if(events.length)writeAuditEvents(events,user).catch(error=>console.error('Auditlog onverwachte fout',error));
   return true;
 }
-window.FAVVCloudSync={schedule(x){const snapshot=JSON.parse(JSON.stringify(x));queueOfflineSnapshot(snapshot).catch(error=>{console.error('Lokale wachtrij kon niet worden bijgewerkt',error);logPlatformError('offline-queue',error.message)});clearTimeout(saveTimer);saveTimer=setTimeout(()=>saveCloudState(snapshot),900)}};
+window.FAVVCloudSync={schedule(x){const snapshot=JSON.parse(JSON.stringify(x));queueOfflineSnapshot(snapshot).catch(error=>{console.error('Lokale wachtrij kon niet worden bijgewerkt',error);logPlatformError('offline-queue',error.message)});clearTimeout(saveTimer);saveTimer=setTimeout(()=>saveCloudState(snapshot),900)},saveNow(x){clearTimeout(saveTimer);return saveCloudState(JSON.parse(JSON.stringify(x)))}};
 window.FAVVInviteBusinessMember=async(payload)=>{if(!cloudClient||!cloudBusiness?.id)throw new Error('Supabase is niet verbonden met een actieve horecazaak.');const {data,error}=await cloudClient.functions.invoke('invite-business-member',{body:{...payload,businessId:cloudBusiness.id}});if(error){let message=error.message||'De uitnodiging kon niet worden verstuurd.';try{const context=await error.context?.json();if(context?.error)message=context.error}catch(e){}throw new Error(message)}if(data?.error)throw new Error(data.error);return data};
 window.FAVVListBusinessMembers=async()=>{if(!cloudClient)throw new Error('Supabase is niet verbonden.');const businessId=cloudBusiness?.id||window.FAVVCloudBusiness?.id||'';if(!businessId)throw new Error('De actieve horecazaak kon niet worden bepaald. Meld opnieuw aan.');const {data,error}=await cloudClient.rpc('list_business_members',{p_business_id:businessId});if(error)throw new Error(error.message||'De gebruikerslijst kon niet worden geladen.');return Array.isArray(data)?data:[]};
 window.FAVVGetSubscriptionStatus=async()=>{if(!cloudClient)throw new Error('Supabase is niet verbonden.');const {data,error}=await cloudClient.functions.invoke('subscription-status',{body:{businessId:cloudBusiness?.id||window.FAVVCloudBusiness?.id||''}});if(error){let message=error.message||'De abonnementsstatus kon niet worden opgehaald.';try{const context=await error.context?.json();if(context?.error)message=context.error}catch(e){}throw new Error(message)}if(data?.error)throw new Error(data.error);return data};
@@ -1269,6 +1269,19 @@ function migrateLegacyBusiness(){let list=loadBusinessRegistry();if(list.length)
 migrateLegacyBusiness();
 let state=load();let modalMode='',editId=null,activeTemperaturePointId=null;
 window.FAVVGetLocalState=()=>clone(state);
+window.FAVVApplyFoodWasteStockChange=(change)=>{
+  if(!change||!activeBusinessId||!change.stockItem?.id||!change.movement?.sourceType||!change.movement?.sourceId)throw new Error('De voorraadkoppeling kon niet veilig worden toegepast.');
+  normalizeStateCollections(state);
+  const product=state.stock.find(item=>String(item.id)===String(change.stockItem.id));
+  if(!product)return {status:'stock_item_missing'};
+  const duplicate=state.stockMovements.find(movement=>movement?.sourceType===change.movement.sourceType&&movement?.sourceId===change.movement.sourceId);
+  if(duplicate)return {status:'already_applied',movement:duplicate};
+  if(String(change.movement.productId)!==String(product.id))throw new Error('De voorraadbeweging verwijst naar een ander product.');
+  Object.assign(product,clone(change.stockItem));
+  state.stockMovements.unshift(clone(change.movement));
+  persist();
+  return {status:'applied'};
+};
 window.FAVVGetCurrentUser=()=>currentUser;
 window.FAVVNavigate=(page)=>navigate(page);
 window.FAVVCreateCleanBusinessState=()=>({cleaning:[],temperatures:[],dishes:[],reports:[],stock:[],stockMovements:[],deliveries:[],recipes:[],productions:[],temperatureActions:[],businessProfile:businessProfile?{businessName:businessProfile.businessName||'',enterpriseNumber:businessProfile.enterpriseNumber||'',businessType:businessProfile.businessType||'Horecazaak',address:businessProfile.address||'',phone:businessProfile.phone||''}:null});
