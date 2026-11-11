@@ -97,7 +97,7 @@ Deze punten zijn rechtstreeks nagekeken in het testproject `xwjcwravfeldndwlugai
 - `private.can_access_business(p_business_id uuid)` bestaat en is `STABLE SECURITY DEFINER`. De helper controleert actief lidmaatschap én toegang via lifetime-free, lopende proefperiode of actief abonnement. Hij controleert **niet** of iemand owner/manager is.
 - De bestaande `public.is_business_member(target_business uuid)` en `public.is_active_business_member(p_business_id uuid)` zijn eveneens SECURITY DEFINER-functies die actief lidmaatschap controleren.
 - `public.app_data` bevat de bestaande JSON-snapshot; er is geen aparte genormaliseerde stocktabel aangetroffen.
-- De bestaande Storage-buckets zijn privé. Er bestaat nog geen bucket `food-waste-photos`.
+- De bestaande Storage-buckets zijn privé. De nieuwe private bucket `food-waste-photos` is inmiddels uitsluitend in het testproject aangemaakt.
 - De bestaande Storage-policies voor onboarding gebruiken `storage.foldername(name)`, actieve membership en `private.can_access_business(...)` als patroon.
 
 ### Gevolgen voor de migratie
@@ -122,13 +122,21 @@ Een extra Node-test controleert de veiligheidsvoorwaarden van het migratiebestan
 
 ### Huidige implementatiestatus
 
-- SQL-migratie: geschreven op de featurebranch, nog niet toegepast.
-- Voedselverspillings-coretests: GitHub Actions geslaagd op commit `0cc995a`.
-- Migratie-veiligheidstest: toegevoegd aan de workflow; uitvoering op de nieuwste commit moet nog worden bevestigd.
-- Twee bestaande PR-controles falen op onderdelen buiten deze module: de onboarding-test verwacht 3 trial-CTA's maar vindt er 5; de publieke verkooppagina-test mist een link naar `verwerkersovereenkomst.html`. Deze pagina's en hun tests zijn niet door de voedselverspillingswijzigingen aangepast. Los dit apart op vóór PR #180 kan worden samengevoegd.
-- Supabase-testproject `xwjcwravfeldndwlugai`: niet gewijzigd. Live project `zimzsovvtdmrthrflkgm`: niet benaderd of gewijzigd.
+- Drie officiële Supabase CLI-migraties zijn aangemaakt en toegepast op uitsluitend het testproject:
+  - `20261111220217_create_food_waste_entries`
+  - `20261111222400_tighten_food_waste_table_grants`
+  - `20261111222644_harden_food_waste_audit_and_index`
+- De nieuwe tabel heeft RLS, tenantisolatie, unieke offline client-ID's en de afgesproken rolverdeling.
+- De private fotobucket bestaat met 5 MB limiet en JPEG/PNG/WebP.
+- De Supabase-defaults gaven authenticated aanvankelijk te brede tabelrechten. De tweede migratie trekt die in; live gecontroleerd: geen table-wide UPDATE, DELETE of TRUNCATE; alleen SELECT, INSERT en UPDATE op `voided_at`/`void_reason`.
+- De void-trigger maakt correcties éénmalig en onveranderlijk; de server bepaalt het tijdstip. De FK-index op `created_by` is toegevoegd.
+- De nieuwe tabel en bucket bevatten nog nul registraties en nul foto's.
+- GitHub Actions coretests en de disposable PostgreSQL 17 RLS/Storage-test zijn geslaagd. De PostgreSQL-test simuleert Supabase-structuur; ze vervangt nog geen volledige Supabase Auth- en Storage API-test.
+- Supabase Security Advisor: dezelfde bestaande baseline-aantallen als vóór de module; geen nieuwe food-waste security findings. Performance Advisor: de nieuwe `created_by` FK is nu geïndexeerd; de drie nieuwe indexen staan als ongebruikt omdat de tabel nog leeg is.
+- Twee bestaande PR-controles falen op onderdelen buiten deze module: de onboarding-test verwacht 3 trial-CTA's maar vindt er 5; de publieke verkooppagina-test mist een link naar `verwerkersovereenkomst.html`. Deze pagina's en hun tests zijn niet door de voedselverspillingswijzigingen aangepast.
+- Live project `zimzsovvtdmrthrflkgm`: niet benaderd of gewijzigd. De PR bevat geen wijziging aan `index.html` of bestaande app-code.
 
-De volgende veilige stap is de migratie eerst in een geïsoleerde tijdelijke database of Supabase-branch te valideren, daarna de allow/deny-tests met tijdelijke accounts uit te voeren. Pas na geslaagde tests kan een expliciete toepassing op het ANIMO HACCP-testproject worden overwogen.
+De volgende stap is de geïsoleerde app-interface en echte Storage/API-tests voorbereiden op het testproject. Pas na iPhone-regressietests en expliciete goedkeuring kan integratie in de bestaande app of een live release worden overwogen.
 
 ## Synchronisatieadapter toegevoegd (nog niet live gekoppeld)
 
@@ -140,5 +148,5 @@ De adapter en tests zijn voorbereid, maar niet aan de app gekoppeld en niet tege
 
 Er is een aparte GitHub Actions-workflow toegevoegd die de migratie uitvoert in een wegwerpbare PostgreSQL 17-container. De fixture bootst alleen de minimaal benodigde Auth-, business-membership- en Storage-structuur na. De SQL-assertions testen medewerker/eigenaar/manager, tenantisolatie, actieve membership, private fotopaden, retry-updates, beperkte correctierechten en het ontbreken van anon-/delete-toegang.
 
-Dit is een echte PostgreSQL-syntax- en RLS-policytest, maar nog geen volledige Supabase-platformtest: Supabase Auth JWT-verificatie, Storage API, signed URLs, Data API-instellingen, abonnementsfunctie en iPhone/browsergedrag worden hiermee niet nagebootst. De eerste PostgreSQL 17-run is geslaagd op commit `d235262`: de migratie is aangemaakt in de wegwerpdatabase en de allow/deny-assertions voor medewerker, manager, eigenaar, cross-tenant, Storage-upload, retry en beperkte correctierechten zijn allemaal doorlopen. Dit blijft een platformgesimuleerde test, geen Supabase-live-/testprojectwijziging.
+Dit is een echte PostgreSQL-syntax- en RLS-policytest, maar nog geen volledige Supabase-platformtest: Supabase Auth JWT-verificatie, Storage API, signed URLs, Data API-instellingen, abonnementsfunctie en iPhone/browsergedrag worden hiermee niet nagebootst. De meest recente PostgreSQL 17-run is geslaagd op commit `92d5f6f`: alle drie migraties zijn in de wegwerpdatabase uitgevoerd en de allow/deny-assertions voor medewerker, manager, eigenaar, cross-tenant, Storage-upload, retry, beperkte correctierechten en onomkeerbare ongeldigmaking zijn doorlopen. Daarnaast is de structuur in het echte testproject nagekeken; de tijdelijke triggerprobe is binnen een transactie uitgevoerd en teruggedraaid.
 
