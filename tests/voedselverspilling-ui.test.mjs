@@ -22,6 +22,8 @@ test("every waste registration requires a photo and supports the independent off
   assert.match(ui, /type="file" accept="image\/jpeg,image\/png,image\/webp"[^>]*required/);
   assert.match(ui, /enqueueFoodWasteEntry\(entry\)/);
   assert.match(ui, /syncFoodWasteQueue\(supabase\)/);
+  assert.match(ui, /foodWasteRetry/);
+  assert.match(ui, /async function retryPending\(\)/);
   assert.match(ui, /food-waste-photos/);
 });
 
