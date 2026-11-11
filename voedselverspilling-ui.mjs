@@ -177,7 +177,7 @@ async function loadEntries() {
   const totals = { g: 0, kg: 0, ml: 0, cl: 0, l: 0, stuk: 0 };
   for (const row of active) {
     const unit = String(row.input_unit || "").toLowerCase();
-    if (Object.hasOwn(totals, unit)) totals[unit] += Number(row.quantity || 0);
+    if (Object.prototype.hasOwnProperty.call(totals, unit)) totals[unit] += Number(row.quantity || 0);
   }
   const kg = totals.kg + totals.g / 1000;
   const litres = totals.l + totals.cl / 100 + totals.ml / 1000;
@@ -233,6 +233,10 @@ async function saveRegistration(event) {
   }
   const photo = $("foodWastePhoto").files?.[0];
   const selectedStock = stockItems().find((item) => String(item.id) === $("foodWasteStock").value) || null;
+  if (!photo || !["image/jpeg", "image/png", "image/webp"].includes(String(photo.type || "").toLowerCase()) || photo.size <= 0 || photo.size > 5 * 1024 * 1024) {
+    status("Kies een geldige JPEG-, PNG- of WebP-foto van maximaal 5 MB.", true);
+    return;
+  }
   try {
     busy = true;
     $("foodWasteSave").disabled = true;
@@ -307,6 +311,15 @@ export function initFoodWasteUi() {
   if (initialized || !ensureUi()) return;
   initialized = true;
   $("foodWasteForm").addEventListener("submit", saveRegistration);
+  $("foodWasteStock").addEventListener("change", () => {
+    const item = stockItems().find((entry) => String(entry.id) === $("foodWasteStock").value);
+    if (!item) return;
+    if (!$("foodWasteProduct").value.trim()) $("foodWasteProduct").value = item.name || "";
+    const unit = String(item.unit || "").trim().toLowerCase();
+    const aliases = { kilogram: "kg", kilo: "kg", gram: "g", liter: "l", litre: "l", milliliter: "ml", millilitre: "ml", centiliter: "cl", stuks: "stuk", st: "stuk", pcs: "stuk" };
+    const optionValue = aliases[unit] || unit;
+    if ([...$("foodWasteUnit").options].some((option) => option.value === optionValue)) $("foodWasteUnit").value = optionValue;
+  });
   $("foodWasteEntries").addEventListener("click", handlePhoto);
   $("foodWasteEntries").addEventListener("click", voidEntry);
   document.addEventListener("click", (event) => {
