@@ -126,13 +126,13 @@ function renderSales(data) {
   const economics = economicsByRecipe(data);
   const summary = buildDishSalesSummary(allRows,data.settings.mappings,economics);
   const totalPortions = summary.dishes.reduce((sum,row)=>sum+row.portions,0);
-  const known = summary.dishes.filter(row=>row.grossProfit!=null);
-  const revenue = known.reduce((sum,row)=>sum+row.revenueExclusive,0);
-  const profit = known.reduce((sum,row)=>sum+row.grossProfit,0);
+  const complete = summary.dishes.length>0 && summary.unmapped.length===0 && summary.dishes.every(row=>row.grossProfit!=null && row.revenueExclusive!=null);
+  const revenue = complete ? summary.dishes.reduce((sum,row)=>sum+row.revenueExclusive,0) : null;
+  const profit = complete ? summary.dishes.reduce((sum,row)=>sum+row.grossProfit,0) : null;
   $("mrSummary").innerHTML = [
     ["Verkochte porties",allRows.length?number(totalPortions):"—"],
-    ["Omzet excl. btw",known.length?money(revenue):"—"],
-    ["Brutowinst op ingrediënten",known.length?money(profit):"—"],
+    ["Omzet excl. btw",revenue!=null?money(revenue):"—"],
+    ["Brutowinst op ingrediënten",profit!=null?money(profit):"—"],
     ["Niet gekoppelde regels",summary.unmapped.length?number(summary.unmapped.length):"0"]
   ].map(([label,value])=>`<div class="mr-stat"><small>${label}</small><strong>${value}</strong></div>`).join("");
   $("mrSalesResults").innerHTML = summary.dishes.length ? `
@@ -143,7 +143,7 @@ function renderSales(data) {
   const menuItems = summary.dishes.map(row=>{
     const recipe=data.recipes.find(item=>item.id===row.dishId);
     const econ=economics[row.dishId];
-    return {dishId:row.dishId,name:recipe?.name||"Onbekend",portions:row.portions,grossProfitPerPortion:econ?.grossProfitPerPortion};
+    return {dishId:row.dishId,name:recipe?.name||"Onbekend",portions:row.portions,grossProfitPerPortion:row.grossProfitPerPortion};
   }).filter(item=>Number.isFinite(item.grossProfitPerPortion));
   const classified=classifyMenuItems(menuItems);
   const labels={star:"Ster",workhorse:"Werkpaard",puzzle:"Uitdaging",dog:"Aandachtspunt"};
@@ -193,7 +193,18 @@ function commitImport() {
   });
   const importedAt=new Date().toISOString();
   const importId="sales-"+importedAt+"-"+pendingImport.fingerprint.length;
-  const newRows=pendingImport.rows.map(row=>({...row,importId}));
+  const recipesById=new Map(data.recipes.map(recipe=>[recipe.id,recipe]));
+  const newRows=pendingImport.rows.map(row=>{
+    const dishId=mappings[normalizedName(row.product)]||null;
+    const recipe=dishId?recipesById.get(dishId):null;
+    return {
+      ...row,importId,dishId,
+      recipeVersion:recipe?(Number(recipe.version)||1):null,
+      ingredientCostPerPortionSnapshot:recipe
+        ? Number(recipe.ingredientCost)/Math.max(1,Number(recipe.yield)||1)
+        : null
+    };
+  });
   const next={
     ...data.settings,mappings,
     salesRows:[...data.settings.salesRows,...newRows],
