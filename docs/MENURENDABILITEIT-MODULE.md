@@ -88,7 +88,10 @@ Elk advies toont de gebruikte cijfers en reden. De uitbater beslist zelf.
 - Onvolledige btw- of kostgegevens leveren geen volledige brutowinsttotalen op. De ontbrekende regels worden niet stilzwijgend als nul behandeld.
 - De module heeft nog geen gevalideerde CSV/XLSX-formaten van concrete kassaleveranciers; XLSX en POS-API's zijn nog niet geïmplementeerd.
 - De nieuwe module is alleen in de featurebranch aanwezig; productie en live database zijn niet gewijzigd.
-- **Beveiligingsblokkade vóór test met echte verkoopgegevens:** in het geïnspecteerde TEST-project kunnen alle actieve zaakleden de bestaande `app_data`-snapshot lezen. De nieuwe verkoopregels mogen daarom niet in die snapshot blijven staan voor een release. Eerst moet een aparte tabel met RLS worden gebouwd die alleen eigenaar/manager van dezelfde zaak toegang geeft. Tot die tijd uitsluitend fictieve testgegevens gebruiken.
+- De aparte tabel `menu_profitability_data` is met twee migraties op het TEST-project aangemaakt. RLS laat alleen actieve eigenaars/managers met toegang tot dezelfde zaak lezen, invoegen en wijzigen; er is geen delete-recht voor `authenticated`.
+- SQL-transactietests op TEST bevestigden: eigenaar kan schrijven/lezen, manager kan wijzigen, medewerker krijgt 0 zichtbare rijen en een gebruiker ziet geen rij van een andere zaak. Alle testtransacties zijn teruggedraaid; er staat geen testdata in de tabel.
+- De RLS-tabel is nog niet met een echte tweede manageraccount via de browser getest. De app-UI moet nog op de testwebsite worden doorlopen.
+- De eerste versie bewaart POS-gegevens online in de aparte tabel; offline import/synchronisatie voor deze module is nog niet gebouwd. De bestaande offline HACCP-registraties blijven onaangeroerd.
 
 ## 8. Implementatievolgorde
 
