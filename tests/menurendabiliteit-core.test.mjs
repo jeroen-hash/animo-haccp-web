@@ -1,0 +1,96 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  parseEuroAmount, parseCsv, normalizeSalesCsv, salesTotalExcludingVat,
+  dishEconomics, buildDishSalesSummary, classifyMenuItems,
+  findDuplicateSalesLines, createCostSnapshot
+} from "../menurendabiliteit-core.mjs";
+
+test("Eurobedragen aanvaardt Belgische en internationale notatie", () => {
+  assert.equal(parseEuroAmount("€ 1.234,50"), 1234.5);
+  assert.equal(parseEuroAmount("1,25"), 1.25);
+  assert.equal(parseEuroAmount("1,234.50"), 1234.5);
+  assert.equal(parseEuroAmount("ongeldig"), null);
+});
+
+test("CSV parser verwerkt puntkomma, aanhalingstekens en komma in omschrijving", () => {
+  assert.deepEqual(parseCsv('Datum;Product;Aantal\n2026-11-01;"Pasta, groot";2'), [
+    ["Datum", "Product", "Aantal"], ["2026-11-01", "Pasta, groot", "2"]
+  ]);
+});
+
+test("verkoopimport normaliseert regels en meldt ongeldige regels", () => {
+  const result = normalizeSalesCsv("Datum;Product;Aantal;Totaal;BTW %\n2026-11-01;Pasta;2;30,00;12");
+  assert.equal(result.rows[0].totalInclusive, 30);
+  assert.equal(result.rows[0].vatRate, 12);
+  assert.equal(result.errors.length, 0);
+  assert.equal(normalizeSalesCsv("Datum;Product\n2026-11-01;Pasta").errors.length > 0, true);
+});
+
+test("omzet exclusief btw gebruikt btw-tarief expliciet", () => {
+  assert.equal(salesTotalExcludingVat(112, 12), 100);
+  assert.equal(salesTotalExcludingVat(121, 21), 100);
+  assert.equal(salesTotalExcludingVat(10, null), null);
+});
+
+test("gerechtmarge gebruikt receptkost per portie en verkoopprijs exclusief btw", () => {
+  const result = dishEconomics({
+    recipe: { id: "r1", yield: 5, version: 2 },
+    ingredientCost: 25,
+    sellingPriceInclusive: 11.2,
+    vatRate: 12
+  });
+  assert.equal(result.ingredientCostPerPortion, 5);
+  assert.equal(result.sellingPriceExclusive, 10);
+  assert.equal(result.grossProfitPerPortion, 5);
+  assert.equal(result.grossMarginPercent, 50);
+});
+
+test("geen verzonnen economie wanneer prijs, kost of btw ontbreekt", () => {
+  assert.equal(dishEconomics({ recipe: { yield: 1 }, ingredientCost: 4, sellingPriceInclusive: 0, vatRate: null }).status, "missing_vat_rate");
+  assert.equal(dishEconomics({ recipe: { yield: 1 }, ingredientCost: 4, sellingPriceInclusive: 5, vatRate: 6 }).status, "ok");
+  assert.equal(dishEconomics({ recipe: { yield: 1 }, ingredientCost: NaN, sellingPriceInclusive: 5, vatRate: 6 }).status, "missing_cost");
+});
+
+test("verkoopoverzicht rekent omzet, ingrediëntkost en brutowinst", () => {
+  const rows = [{ product: "Pasta", quantity: 2, totalInclusive: 22.4, vatRate: 12 }];
+  const result = buildDishSalesSummary(rows, { pasta: "r1" }, {
+    r1: { status: "ok", ingredientCostPerPortion: 5 }
+  });
+  assert.equal(result.dishes[0].portions, 2);
+  assert.equal(result.dishes[0].revenueExclusive, 20);
+  assert.equal(result.dishes[0].ingredientCost, 10);
+  assert.equal(result.dishes[0].grossProfit, 10);
+});
+
+test("menu-engineering classificeert op transparante mediaandrempels", () => {
+  const result = classifyMenuItems([
+    { id: "a", portions: 100, grossProfitPerPortion: 8 },
+    { id: "b", portions: 90, grossProfitPerPortion: 2 },
+    { id: "c", portions: 10, grossProfitPerPortion: 7 },
+    { id: "d", portions: 5, grossProfitPerPortion: 1 }
+  ]);
+  assert.deepEqual(result.map(x => x.classification), ["star", "workhorse", "puzzle", "dog"]);
+});
+
+test("dubbele transactieregels worden niet opnieuw geïmporteerd", () => {
+  const old = [{ transactionId: "T1", product: "Pasta", quantity: 1, totalInclusive: 10 }];
+  const incoming = [
+    { transactionId: "T1", product: "Pasta", quantity: 1, totalInclusive: 10 },
+    { transactionId: "T2", product: "Soep", quantity: 1, totalInclusive: 5 }
+  ];
+  const result = findDuplicateSalesLines(old, incoming);
+  assert.equal(result.duplicates.length, 1);
+  assert.equal(result.unique.length, 1);
+});
+
+test("kostprijsmomentopname bewaart receptversie en berekende kost", () => {
+  const snapshot = createCostSnapshot({
+    recipe: { id: "r1", name: "Pasta", version: 3, yield: 4 },
+    ingredientCost: 18,
+    capturedAt: "2026-11-01T12:00:00Z"
+  });
+  assert.equal(snapshot.recipeVersion, 3);
+  assert.equal(snapshot.ingredientCostPerPortion, 4.5);
+  assert.equal(snapshot.capturedAt, "2026-11-01T12:00:00Z");
+});
