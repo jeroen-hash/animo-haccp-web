@@ -84,7 +84,7 @@ Elk advies toont de gebruikte cijfers en reden. De uitbater beslist zelf.
 - Verkoopprijs, btw-tarief, POS-imports en historische verkoopregels worden opgeslagen in `public.menu_profitability_data`, een aparte tabel met RLS. Ze worden niet in de algemene `app_data`-snapshot opgeslagen.
 - CSV-import ondersteunt komma/puntkomma, aanhalingstekens, Belgische/internationale geldnotatie en ISO- of Belgische datums. De periodefilters werken op de genormaliseerde datum; validatie met echte kassabestanden blijft nodig.
 - Kassaproducten worden door eigenaar/manager handmatig aan recepten gekoppeld. Niet-gekoppelde regels tellen niet mee in de rendabiliteit.
-- Bij import wordt de receptversie en ingrediëntkost per portie als momentopname bij de verkoopregels opgeslagen. Latere recept- of inkoopprijswijzigingen herschrijven de historische kost niet.
+- Bij import kiest de module de bewaarde receptversie die bij de verkoopdatum hoort, wanneer die versiehistoriek beschikbaar is, en bewaart de ingrediëntkost per portie als momentopname. Op een datum waarop een receptversie werd aangepast is de kost bewust onbekend, omdat alleen een datum (geen verkooptijd) beschikbaar is. Historische inkoopprijzen van stock worden niet gereconstrueerd; de opgeslagen receptkost is dus een receptkostmomentopname, geen volledige historische nettokost.
 - Onvolledige btw- of kostgegevens leveren geen volledige brutowinsttotalen op. De ontbrekende regels worden niet stilzwijgend als nul behandeld.
 - De module heeft nog geen gevalideerde CSV/XLSX-formaten van concrete kassaleveranciers; XLSX en POS-API's zijn nog niet geïmplementeerd.
 - De nieuwe module is alleen in de featurebranch aanwezig; productie en live database zijn niet gewijzigd.
