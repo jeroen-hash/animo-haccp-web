@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   parseEuroAmount, parseCsv, normalizeSalesCsv, salesTotalExcludingVat,
   dishEconomics, buildDishSalesSummary, classifyMenuItems,
-  findDuplicateSalesLines, createCostSnapshot
+  findDuplicateSalesLines, salesImportFingerprint, createCostSnapshot
 } from "../menurendabiliteit-core.mjs";
 
 test("Eurobedragen aanvaardt Belgische en internationale notatie", () => {
