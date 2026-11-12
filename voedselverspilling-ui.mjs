@@ -267,8 +267,10 @@ async function loadEntries() {
   // Herstel voorraad ook wanneer een void-actie eerder offline/conflictgevoelig was.
   await reverseVoidedStockRows(rows);
   // Toon lokale wachtende registraties expliciet; ze staan nog niet in de serverlijst.
+  const pendingForBusiness = queued.filter((entry) => entry.businessId === biz.id);
+  const pendingClientIds = new Set(pendingForBusiness.map((entry) => entry.clientId));
   const serverClientIds = new Set(rows.map((row) => row.client_id));
-  const pendingHtml = queued.filter((entry) => entry.businessId === biz.id && !serverClientIds.has(entry.clientId)).map((entry) => `
+  const pendingHtml = pendingForBusiness.filter((entry) => !serverClientIds.has(entry.clientId)).map((entry) => `
     <article class="fw-entry">
       <div>
         <strong>${esc(entry.productName)} · ${esc(entry.quantity)} ${esc(entry.inputUnit)}</strong>
@@ -301,6 +303,7 @@ async function loadEntries() {
         <strong>${esc(row.product_name)} · ${esc(row.quantity)} ${esc(row.input_unit)}</strong>
         <small>${esc(row.reason)} · ${dateTime(row.client_created_at)} · Door ${esc(row.employee_name || "medewerker")}</small>
         <small>${row.cost_status === "calculated" ? "Geraamde kost: " + money(row.cost_value_snapshot) : "Kost nog niet bepaald"} · ${row.voided_at ? "Ongeldig verklaard: " + esc(row.void_reason || "") : "Actief"}</small>
+        ${pendingClientIds.has(row.client_id) ? '<small><span class="fw-badge">Synchronisatie wacht</span> De voorraadboeking wordt nog veilig opgeslagen.</small>' : ""}
         <small><a class="fw-photo" href="#" data-fw-photo="${esc(row.photo_path)}">Foto bekijken</a></small>
       </div>
       <div class="fw-actions">
