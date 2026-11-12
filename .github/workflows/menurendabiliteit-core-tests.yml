@@ -5,6 +5,8 @@ on:
     paths:
       - "menurendabiliteit-core.mjs"
       - "tests/menurendabiliteit-core.test.mjs"
+      - "tests/module-stock-integration.test.mjs"
+      - "voedselverspilling-stock.mjs"
       - ".github/workflows/menurendabiliteit-core-tests.yml"
   push:
     branches:
@@ -31,4 +33,4 @@ jobs:
       - name: Check module syntax
         run: node --check menurendabiliteit-core.mjs && node --check menurendabiliteit-ui.mjs
       - name: Run menu profitability tests
-        run: node --test tests/menurendabiliteit-core.test.mjs
+        run: node --test tests/menurendabiliteit-core.test.mjs tests/module-stock-integration.test.mjs
