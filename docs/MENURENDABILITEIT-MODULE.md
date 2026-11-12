@@ -1,6 +1,6 @@
 # ANIMO HACCP — Module 2: Menurendabiliteit
 
-Status: functionele en technische specificatie. Nog niet gekoppeld aan productiecode, kassasystemen of klantgegevens.
+Status: eerste implementatiefase op een geïsoleerde featurebranch. De berekeningskern, CSV-validatie, manager-only dashboard en import van kassaregels zijn toegevoegd aan de testcode. Nog niet vrijgegeven voor productie en nog niet verbonden met een kassasysteem-API.
 
 ## Doel
 
@@ -78,7 +78,7 @@ Elk advies toont de gebruikte cijfers en reden. De uitbater beslist zelf.
 9. Alleen bevoegde eigenaar/manager kan verkoopmappings en prijsinstellingen wijzigen.
 10. Data van verschillende horecazaken blijven strikt gescheiden.
 
-## 7. Implementatievolgorde
+## 7. Huidige implementatiestatus\n\n- De module gebruikt de bestaande `recipeCost`-functie uit ANIMO HACCP; er is geen tweede foodcostberekening toegevoegd.\n- Verkoopprijs en btw-tarief worden per recept bewaard in de bestaande bedrijfsgebonden snapshot.\n- CSV-import ondersteunt komma/puntkomma, Belgische bedragen en ISO- of Belgische datums; foutieve regels worden geweigerd.\n- Kassaproducten worden door eigenaar/manager handmatig aan recepten gekoppeld. Niet-gekoppelde regels tellen niet mee in de rendabiliteit.\n- Bij import wordt de receptversie en ingrediëntkost per portie als momentopname bij de verkoopregels opgeslagen. Latere recept- of inkoopprijswijzigingen herschrijven de historische kost niet.\n- Onvolledige btw- of kostgegevens leveren geen volledige brutowinsttotalen op.\n- De module heeft nog geen gevalideerde CSV/XLSX-formaten van concrete kassaleveranciers; XLSX en POS-API's zijn nog niet geïmplementeerd.\n- De nieuwe module is alleen in de featurebranch aanwezig; productie en live database zijn niet gewijzigd.\n\n## 8. Implementatievolgorde
 
 A. Lees bestaande recept-, foodcost-, menu- en btw-structuren uit.
 B. Definieer een genormaliseerd verkoopimportformaat en voorbeeldbestand.
