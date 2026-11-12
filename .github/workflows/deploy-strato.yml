@@ -70,8 +70,11 @@ jobs:
           if parsed.password:
               raise SystemExit("Remove the password from PRODUCTION_DATABASE_URL; use PRODUCTION_DATABASE_PASSWORD.")
           username = unquote(parsed.username or "")
+          database = unquote(parsed.path.lstrip("/"))
           if username != "postgres.zimzsovvtdmrthrflkgm":
               raise SystemExit("Production migration target guard failed: unexpected Supabase project username.")
+          if database != "postgres":
+              raise SystemExit("Production migration target guard failed: expected the postgres database.")
           if not parsed.hostname.endswith(".pooler.supabase.com"):
               raise SystemExit("Production migration target guard failed: expected the Supabase session pooler.")
           query = parse_qs(parsed.query, keep_blank_values=True)
