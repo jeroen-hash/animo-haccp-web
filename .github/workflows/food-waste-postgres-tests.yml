@@ -3,9 +3,9 @@ name: Food waste PostgreSQL security tests
 on:
   pull_request:
     paths:
-      - "supabase/migrations/20261111220217_create_food_waste_entries.sql"
-      - "supabase/migrations/20261111222400_tighten_food_waste_table_grants.sql"
-      - "supabase/migrations/20261111222644_harden_food_waste_audit_and_index.sql"
+      - "supabase/migrations/20261111222221_create_food_waste_entries.sql"
+      - "supabase/migrations/20261111222452_tighten_food_waste_table_grants.sql"
+      - "supabase/migrations/20261111223111_harden_food_waste_audit_and_index.sql"
       - "tests/food-waste-migration.setup.sql"
       - "tests/food-waste-migration.assertions.sql"
       - ".github/workflows/food-waste-postgres-tests.yml"
@@ -14,9 +14,9 @@ on:
       - "feature/voedselverspilling-module"
       - "feature/menurendabiliteit-module"
     paths:
-      - "supabase/migrations/20261111220217_create_food_waste_entries.sql"
-      - "supabase/migrations/20261111222400_tighten_food_waste_table_grants.sql"
-      - "supabase/migrations/20261111222644_harden_food_waste_audit_and_index.sql"
+      - "supabase/migrations/20261111222221_create_food_waste_entries.sql"
+      - "supabase/migrations/20261111222452_tighten_food_waste_table_grants.sql"
+      - "supabase/migrations/20261111223111_harden_food_waste_audit_and_index.sql"
       - "tests/food-waste-migration.setup.sql"
       - "tests/food-waste-migration.assertions.sql"
       - ".github/workflows/food-waste-postgres-tests.yml"
@@ -55,8 +55,8 @@ jobs:
           fi
           cat \
             tests/food-waste-migration.setup.sql \
-            supabase/migrations/20261111220217_create_food_waste_entries.sql \
-            supabase/migrations/20261111222400_tighten_food_waste_table_grants.sql \
-            supabase/migrations/20261111222644_harden_food_waste_audit_and_index.sql \
+            supabase/migrations/20261111222221_create_food_waste_entries.sql \
+            supabase/migrations/20261111222452_tighten_food_waste_table_grants.sql \
+            supabase/migrations/20261111223111_harden_food_waste_audit_and_index.sql \
             tests/food-waste-migration.assertions.sql \
             | docker exec -i "$CONTAINER_ID" psql -v ON_ERROR_STOP=1 -U postgres -d animo_food_waste_ci
