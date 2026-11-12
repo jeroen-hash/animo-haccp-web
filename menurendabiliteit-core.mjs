@@ -70,10 +70,10 @@ function headerIndex(headers, aliases) {
 function normalizeSalesDate(value) {
   const raw = String(value ?? "").trim();
   let year, month, day;
-  let match = raw.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);
+  let match = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
   if (match) [, year, month, day] = match;
   else {
-    match = raw.match(/^(\\d{1,2})[\\/. -](\\d{1,2})[\\/. -](\\d{4})$/);
+    match = raw.match(/^(\d{1,2})[\/. -](\d{1,2})[\/. -](\d{4})$/);
     if (!match) return null;
     [, day, month, year] = match;
   }
