@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
 const workerSource = readFileSync(new URL("../sw.js", import.meta.url), "utf8");
-const EXPECTED_CACHE = "animo-haccp-shell-v3";
+const EXPECTED_CACHE = "animo-haccp-shell-v4";
 
 function createWorkerHarness(cacheNames = []) {
   const listeners = new Map();
