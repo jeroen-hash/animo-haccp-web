@@ -1320,7 +1320,7 @@ window.FAVVApplyFoodWasteStockChange=(change)=>{
 window.FAVVApplyMenuSalesStockDeduction=async({importId,rows,dryRun=false}={})=>{
   if(cloudIsEmployee()||!['owner','manager'].includes(window.FAVVCloudRole))throw new Error('Alleen eigenaars en managers mogen kassaverkoop aan stock koppelen.');
   if(!importId||!Array.isArray(rows))throw new Error('De kassaverkoopimport is ongeldig.');
-  if(!navigator.onLine||window.FAVVOfflineMode||window.FAVVSyncConflict)throw new Error('Stock automatisch afboeken vereist een stabiele online verbinding zonder synchronisatieconflict. De verkoopimport blijft bewaard om later opnieuw te proberen.');
+  if(!navigator.onLine||window.FAVVOfflineMode||window.FAVVSyncConflict)throw new Error('Stock automatisch afboeken vereist een stabiele online verbinding zonder synchronisatieconflict. Er wordt nu niets geïmporteerd of afgeboekt; probeer opnieuw zodra de verbinding hersteld is.');
   const existing=state.stockMovements.find(m=>m?.sourceType==='menu_sales_import'&&m?.sourceId===importId);
   if(existing){
     if(dryRun)return {status:'already_applied'};
