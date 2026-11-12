@@ -45,6 +45,17 @@ function ensureUi() {
     const recipes = nav.querySelector('[data-page="recipes"]');
     nav.insertBefore(button, recipes?.nextSibling || null);
   }
+  // De mobiele navigatie is een aparte balk; voeg de module daar ook toe.
+  const mobileNav = document.querySelector(".mobile-nav");
+  if (mobileNav && !$("menuProfitabilityMobileNav")) {
+    const button = document.createElement("button");
+    button.id = "menuProfitabilityMobileNav";
+    button.className = "manager-only";
+    button.dataset.page = "menu-profitability";
+    button.innerHTML = '<b aria-hidden="true">◈</b>Menu rend.';
+    const recipes = mobileNav.querySelector('[data-page="recipes"]');
+    mobileNav.insertBefore(button, recipes?.nextSibling || null);
+  }
   if (!$("menu-profitability")) {
     const section = document.createElement("section");
     section.id = "menu-profitability";
@@ -263,6 +274,8 @@ function init() {
   window.FAVVSetMenuProfitabilityAccess=role=>{
     const allowed=role==="owner"||role==="manager";
     $("menuProfitabilityNav").style.display=allowed?"":"none";
+    const mobileButton=$("menuProfitabilityMobileNav");
+    if(mobileButton)mobileButton.style.display=allowed?"":"none";
     if(allowed)render();
   };
   const role=window.FAVVCloudRole||window.FAVVGetCurrentUser?.()?.cloudRole||window.FAVVGetCurrentUser?.()?.role||"";
