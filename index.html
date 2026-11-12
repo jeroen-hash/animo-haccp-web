@@ -2224,7 +2224,7 @@ setInterval(()=>{
 #animo-ai-widget{position:fixed;right:24px;bottom:24px;z-index:1500;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}#animo-ai-widget,#animo-ai-widget *{box-sizing:border-box}
 #animo-ai-launcher{width:62px;height:62px;border:0;border-radius:50%;background:linear-gradient(145deg,#18834b,#0e5633);color:#fff;box-shadow:0 12px 32px rgba(9,55,31,.32);display:grid;place-items:center;font-size:27px;cursor:pointer;transition:transform .2s,box-shadow .2s}
 #animo-ai-launcher:hover{transform:translateY(-3px);box-shadow:0 16px 38px rgba(9,55,31,.38)}
-#animo-ai-launcher>img{width:44px;height:44px;object-fit:contain;border-radius:12px;background:#fff}
+#animo-ai-launcher>img{display:block;width:50px;height:50px;padding:4px;object-fit:contain;object-position:center;border-radius:50%;background:transparent}
 .animo-ai-mark{width:48px;height:48px;flex:0 0 48px;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:12px;overflow:hidden}
 .animo-ai-mark img{display:block;width:100%;height:100%;object-fit:contain}
 #animo-ai-launcher .ai-launcher-label{position:absolute;right:72px;white-space:nowrap;background:#103e2a;color:#fff;padding:9px 13px;border-radius:10px;font-size:13px;font-weight:750;box-shadow:0 5px 18px #10251d22}
@@ -2238,7 +2238,7 @@ setInterval(()=>{
 .animo-ai-head button{width:34px;height:34px;border:0;border-radius:10px;background:#ffffff18;color:#fff;font-size:20px;cursor:pointer}
 #animo-ai-status{padding:8px 15px;background:#f2f8f4;border-bottom:1px solid #e4eee7;color:#42614e;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #animo-ai-messages{padding:16px;display:flex;flex:1 1 auto;min-height:0;overflow-y:auto;flex-direction:column;gap:12px;background:#fbfdfb;overscroll-behavior:contain}
-.animo-ai-msg{display:block;min-width:0;width:fit-content;max-width:94%;flex:0 1 auto;padding:12px 15px;border-radius:14px;font-size:14px;line-height:1.6;overflow-wrap:anywhere;word-break:normal;white-space:normal}.animo-ai-msg.bot{width:100%;max-width:100%}.animo-ai-msg.user{width:fit-content;max-width:min(88%,34rem);white-space:pre-wrap;text-align:left;line-height:1.55}.animo-ai-msg p{overflow-wrap:anywhere}.animo-ai-msg ul,.animo-ai-msg ol{padding-left:22px}.animo-ai-msg li{padding-left:2px}
+.animo-ai-msg{display:block;min-width:0;width:fit-content;max-width:min(92%,42rem);flex:0 1 auto;padding:12px 15px;border-radius:14px;font-size:14px;line-height:1.65;overflow-wrap:anywhere;word-break:normal;white-space:normal;text-align:left}.animo-ai-msg.bot{width:fit-content;max-width:min(94%,42rem)}.animo-ai-msg.user{width:fit-content;max-width:min(84%,34rem);white-space:pre-wrap;text-align:left;line-height:1.6}.animo-ai-msg p{overflow-wrap:anywhere}.animo-ai-msg ul,.animo-ai-msg ol{padding-left:22px}.animo-ai-msg li{padding-left:2px}
 .animo-ai-msg.bot{align-self:flex-start;background:#fff;border:1px solid #e4ece6;color:#24372b;border-top-left-radius:5px}
 .animo-ai-msg.user{align-self:flex-end;background:#e7f4eb;color:#174b2e;border:1px solid #d5eadc;border-top-right-radius:5px}
 .animo-ai-msg strong{font-weight:800}.animo-ai-msg p{margin:0 0 9px}.animo-ai-msg p:last-child{margin-bottom:0}.animo-ai-msg ul{margin:2px 0 9px;padding-left:21px}.animo-ai-msg li{margin:0 0 5px}.animo-ai-md-heading{display:block;margin:2px 0 7px;font-size:1.04em}.animo-ai-md-gap{height:5px}
