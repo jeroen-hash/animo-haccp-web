@@ -59,3 +59,13 @@ test("merges independent additions to a list but refuses ambiguous primitive-arr
   assert.deepEqual(result.conflicts, ["tags"]);
   assert.deepEqual(result.data.stockMovements.map(item => item.id), ["b", "a"]);
 });
+
+test("refuses ambiguous duplicate record IDs", () => {
+  const result = mergeSnapshots(
+    { stock: [{ id: "eggs", quantity: 20 }] },
+    { stock: [{ id: "eggs", quantity: 18 }, { id: "eggs", quantity: 17 }] },
+    { stock: [{ id: "eggs", quantity: 19 }] }
+  );
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.conflicts, ["stock"]);
+});
