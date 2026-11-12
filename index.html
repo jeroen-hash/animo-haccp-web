@@ -792,11 +792,11 @@ const OFFLINE_SESSION_KEY='animo-offline-session-v1';
 const OFFLINE_DB_NAME='animo-haccp-offline-v1';
 let offlineDbPromise=null;
 function openOfflineDb(){if(!('indexedDB' in window))return Promise.reject(new Error('IndexedDB niet beschikbaar'));if(!offlineDbPromise)offlineDbPromise=new Promise((resolve,reject)=>{const request=indexedDB.open(OFFLINE_DB_NAME,1);request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains('outbox'))db.createObjectStore('outbox',{keyPath:'businessId'})};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||new Error('Lokale wachtrij kon niet worden geopend'))});return offlineDbPromise}
-async function readOfflineSnapshot(businessId){let local=null,indexed=null;try{local=JSON.parse(localStorage.getItem('animo-offline-outbox:'+businessId)||'null')}catch(e){}try{const db=await openOfflineDb();indexed=await new Promise((resolve,reject)=>{const tx=db.transaction('outbox','readonly'),r=tx.objectStore('outbox').get(businessId);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error)})}catch(e){}if(!local)return indexed;if(!indexed)return local;return new Date(indexed.queuedAt||0)>new Date(local.queuedAt||0)?indexed:local}
+async function readOfflineSnapshot(businessId){let local=null,indexed=null;try{local=JSON.parse(localStorage.getItem('animo-offline-outbox:'+businessId)||'null')}catch(e){}try{const db=await openOfflineDb();indexed=await new Promise((resolve,reject)=>{const tx=db.transaction('outbox','readonly'),r=tx.objectStore('outbox').get(businessId);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error)})}catch(e){}if(!local)return indexed;if(!indexed)return local;return new Date(indexed.queuedAt||0)>=new Date(local.queuedAt||0)?indexed:local}
 let offlineQueueWrite=Promise.resolve();
-function queueOfflineSnapshot(snapshot,baseUpdatedAtOverride){if(!cloudBusiness?.id)return Promise.resolve(null);const id=cloudBusiness.id,key='animo-offline-outbox:'+id,dirtyKey='animo-offline-dirty:'+id;let previous=null;try{previous=JSON.parse(localStorage.getItem(key)||'null')}catch(e){}const baseUpdatedAt=previous?previous.baseUpdatedAt:(baseUpdatedAtOverride!==undefined?baseUpdatedAtOverride:cloudRowUpdatedAt);const item={businessId:id,data:JSON.parse(JSON.stringify(snapshot)),baseUpdatedAt,queuedAt:new Date().toISOString()};try{localStorage.setItem(key,JSON.stringify(item));localStorage.setItem(dirtyKey,JSON.stringify({baseUpdatedAt:item.baseUpdatedAt,queuedAt:item.queuedAt}))}catch(e){setStatus('Lokale opslag vol · controleer je toestelopslag');return Promise.reject(e)}offlineQueueWrite=offlineQueueWrite.catch(()=>{}).then(async()=>{try{const db=await openOfflineDb();await new Promise((resolve,reject)=>{const tx=db.transaction('outbox','readwrite');tx.objectStore('outbox').put(item);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){console.warn('IndexedDB wachtrij niet beschikbaar; lokale kopie blijft bewaard',e)}});return offlineQueueWrite.then(()=>item)}
+function queueOfflineSnapshot(snapshot,baseUpdatedAtOverride,baseDataOverride){if(!cloudBusiness?.id)return Promise.resolve(null);const id=cloudBusiness.id,key='animo-offline-outbox:'+id,dirtyKey='animo-offline-dirty:'+id;let previous=null;try{previous=JSON.parse(localStorage.getItem(key)||'null')}catch(e){}const baseUpdatedAt=baseUpdatedAtOverride!==undefined?baseUpdatedAtOverride:(previous?previous.baseUpdatedAt:cloudRowUpdatedAt);let baseData=baseDataOverride!==undefined?baseDataOverride:(previous?.baseData||((typeof lastAuditState!=='undefined'&&lastAuditState)||null));let item={businessId:id,data:JSON.parse(JSON.stringify(snapshot)),baseUpdatedAt,baseData:baseData?JSON.parse(JSON.stringify(baseData)):null,queuedAt:new Date().toISOString()};const fallbackItem={businessId:id,data:item.data,baseUpdatedAt,queuedAt:item.queuedAt};try{localStorage.setItem(key,JSON.stringify(fallbackItem));localStorage.setItem(dirtyKey,JSON.stringify({baseUpdatedAt:item.baseUpdatedAt,queuedAt:item.queuedAt}))}catch(e){setStatus('Lokale opslag vol · controleer je toestelopslag');return Promise.reject(e)}offlineQueueWrite=offlineQueueWrite.catch(()=>{}).then(async()=>{try{const db=await openOfflineDb();await new Promise((resolve,reject)=>{const tx=db.transaction('outbox','readwrite'),store=tx.objectStore('outbox'),request=store.get(id);request.onsuccess=()=>{const existing=request.result;if(baseDataOverride===undefined&&existing?.baseData)item={...item,baseData:existing.baseData};store.put(item)};tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){console.warn('IndexedDB wachtrij niet beschikbaar; lokale kopie blijft bewaard',e)}});return offlineQueueWrite.then(()=>item)}
 async function clearOfflineSnapshot(businessId,expectedQueuedAt){await offlineQueueWrite.catch(()=>{});const key='animo-offline-outbox:'+businessId,dirtyKey='animo-offline-dirty:'+businessId;let current=null;try{current=JSON.parse(localStorage.getItem(key)||'null')}catch(e){}if(expectedQueuedAt&&current?.queuedAt!==expectedQueuedAt)return;if(!expectedQueuedAt&&current)return;try{const db=await openOfflineDb();await new Promise((resolve,reject)=>{const tx=db.transaction('outbox','readwrite'),store=tx.objectStore('outbox'),req=store.get(businessId);req.onsuccess=()=>{if(!expectedQueuedAt||req.result?.queuedAt===expectedQueuedAt)store.delete(businessId)};tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){}let latest=null;try{latest=JSON.parse(localStorage.getItem(key)||'null')}catch(e){}if((expectedQueuedAt&&latest?.queuedAt===expectedQueuedAt)||(!expectedQueuedAt&&!latest)){localStorage.removeItem(key);localStorage.removeItem(dirtyKey)}}
-async function rebaseOfflineSnapshot(businessId,savedQueuedAt,newUpdatedAt){await offlineQueueWrite.catch(()=>{});const key='animo-offline-outbox:'+businessId;let item=null;try{item=JSON.parse(localStorage.getItem(key)||'null')}catch(e){}if(!item||item.queuedAt===savedQueuedAt)return;item.baseUpdatedAt=newUpdatedAt;localStorage.setItem(key,JSON.stringify(item));localStorage.setItem('animo-offline-dirty:'+businessId,JSON.stringify({baseUpdatedAt:newUpdatedAt,queuedAt:item.queuedAt}));offlineQueueWrite=offlineQueueWrite.catch(()=>{}).then(async()=>{try{const db=await openOfflineDb();await new Promise((resolve,reject)=>{const tx=db.transaction('outbox','readwrite');tx.objectStore('outbox').put(item);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){console.warn('Outbox kon niet worden herijkt; lokale kopie blijft bewaard',e)}});await offlineQueueWrite}
+async function rebaseOfflineSnapshot(businessId,savedQueuedAt,newUpdatedAt,newBaseData){await offlineQueueWrite.catch(()=>{});const key='animo-offline-outbox:'+businessId;let item=await readOfflineSnapshot(businessId);if(!item||item.queuedAt===savedQueuedAt)return;item.baseUpdatedAt=newUpdatedAt;if(newBaseData!==undefined)item.baseData=JSON.parse(JSON.stringify(newBaseData));const fallbackItem={businessId:item.businessId,data:item.data,baseUpdatedAt:newUpdatedAt,queuedAt:item.queuedAt};localStorage.setItem(key,JSON.stringify(fallbackItem));localStorage.setItem('animo-offline-dirty:'+businessId,JSON.stringify({baseUpdatedAt:newUpdatedAt,queuedAt:item.queuedAt}));offlineQueueWrite=offlineQueueWrite.catch(()=>{}).then(async()=>{try{const db=await openOfflineDb();await new Promise((resolve,reject)=>{const tx=db.transaction('outbox','readwrite');tx.objectStore('outbox').put(item);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){console.warn('Outbox kon niet worden herijkt; lokale kopie blijft bewaard',e)}});await offlineQueueWrite}
 function offlineNotice(message,kind='offline'){let el=document.getElementById('animoOfflineNotice');if(!el){el=document.createElement('div');el.id='animoOfflineNotice';el.style.cssText='position:fixed;z-index:9999;left:12px;right:12px;top:12px;padding:12px 15px;border-radius:12px;background:#fff6df;color:#6d4705;border:1px solid #e9c978;box-shadow:0 5px 22px rgba(0,0,0,.12);font:600 13px/1.45 system-ui,sans-serif';document.body.appendChild(el)}el.textContent=message;el.style.background=kind==='conflict'?'#fde8e5':'#fff6df';el.style.color=kind==='conflict'?'#9f241b':'#6d4705';el.hidden=false}
 function clearOfflineNotice(){const el=document.getElementById('animoOfflineNotice');if(el)el.hidden=true}
 function offlineAccessExpiry(subscription){if(subscription?.accessReason==='lifetime_free')return null;if(subscription?.accessReason==='subscription_active')return subscription.currentPeriodEnd||null;if(subscription?.accessReason==='trial_active')return subscription.trialEndsAt||null;return null}
@@ -889,27 +889,61 @@ async function writeAuditEvents(events,user){
 }
 async function saveCloudState(x){
   if(!cloudBusiness||!x)return false;
-  const snapshot=JSON.parse(JSON.stringify(x));
+  let snapshot=JSON.parse(JSON.stringify(x));
   if(window.FAVVSyncConflict){await queueOfflineSnapshot(snapshot);setStatus('Conflict · lokale gegevens veilig bewaard');return false;}
   if(!navigator.onLine||window.FAVVOfflineMode||!cloudClient){await queueOfflineSnapshot(snapshot);setStatus('Lokaal bewaard · wacht op internet');return false;}
   const {data:{user},error:userError}=await cloudClient.auth.getUser();
   if(userError||!user){await queueOfflineSnapshot(snapshot);setStatus('Cloudcontrole mislukt · lokaal bewaard');offlineNotice('Je wijzigingen zijn lokaal bewaard. De cloudcontrole is mislukt; probeer opnieuw zodra de verbinding stabiel is.');return false;}
-  const queuedItem=await queueOfflineSnapshot(snapshot);
-  const events=lastAuditState?buildAuditEvents(lastAuditState,snapshot):[];
-  const {data,error:resultError}=await cloudClient.rpc('save_app_data_if_unchanged',{p_business_id:cloudBusiness.id,p_data:snapshot,p_expected_updated_at:cloudRowUpdatedAt});
+  let queuedItem=await queueOfflineSnapshot(snapshot);
+  let events=lastAuditState?buildAuditEvents(lastAuditState,snapshot):[];
+  let saveResult=await cloudClient.rpc('save_app_data_if_unchanged',{p_business_id:cloudBusiness.id,p_data:snapshot,p_expected_updated_at:cloudRowUpdatedAt});
+  let data=saveResult.data;
+  let resultError=saveResult.error;
+  let mergeConflictPaths=[];
+  if(!resultError&&!data?.saved){
+    const baseData=queuedItem?.baseData||null;
+    const {data:remoteRow,error:remoteError}=await cloudClient.from('app_data').select('data,updated_at').eq('business_id',cloudBusiness.id).eq('data_type','full_state').maybeSingle();
+    if(!remoteError&&baseData&&remoteRow?.data&&remoteRow?.updated_at){
+      try{
+        const {mergeSnapshots}=await import('./snapshot-merge.mjs');
+        const merged=mergeSnapshots(baseData,snapshot,remoteRow.data);
+        if(merged.ok){
+          snapshot=merged.data;
+          queuedItem=await queueOfflineSnapshot(snapshot,remoteRow.updated_at,remoteRow.data);
+          events=buildAuditEvents(remoteRow.data,snapshot);
+          saveResult=await cloudClient.rpc('save_app_data_if_unchanged',{p_business_id:cloudBusiness.id,p_data:snapshot,p_expected_updated_at:remoteRow.updated_at});
+          data=saveResult.data;
+          resultError=saveResult.error;
+        }else{
+          mergeConflictPaths=merged.conflicts;
+        }
+      }catch(mergeError){
+        console.error('Veilige samenvoeging mislukt',mergeError);
+      }
+    }else if(remoteError){
+      console.error('Nieuwste cloudversie kon niet worden opgehaald',remoteError);
+    }
+  }
   if(resultError){await queueOfflineSnapshot(snapshot);setStatus('Cloud opslaan mislukt · lokaal bewaard');offlineNotice('Je wijzigingen zijn lokaal bewaard, maar konden nog niet naar de cloud. Ze blijven in de wachtrij tot synchronisatie lukt.');console.error(resultError);logPlatformError('cloud-sync',resultError.message,{code:resultError.code||null});return false;}
-  if(!data?.saved){await queueOfflineSnapshot(snapshot);window.FAVVSyncConflict=true;offlineNotice('SYNCHRONISATIECONFLICT · De cloudgegevens zijn intussen door iemand anders gewijzigd. Je lokale registraties zijn veilig bewaard en worden niet overschreven. Neem contact op met ANIMO om de versies samen te voegen.','conflict');setStatus('Conflict · lokale gegevens veilig bewaard');return false;}
+  if(!data?.saved){
+    await queueOfflineSnapshot(snapshot);
+    window.FAVVSyncConflict=true;
+    const detail=mergeConflictPaths.length?' Er zijn gelijktijdige wijzigingen aan: '+mergeConflictPaths.slice(0,5).join(', ')+'.':' De versies kunnen nog niet automatisch veilig worden samengevoegd.';
+    offlineNotice('SYNCHRONISATIECONFLICT · Je lokale gegevens zijn bewaard.'+detail+' Er wordt niets overschreven.','conflict');
+    setStatus('Conflict · lokale gegevens veilig bewaard');
+    return false;
+  }
   cloudRowUpdatedAt=data.updated_at||cloudRowUpdatedAt;
   try{const meta=JSON.parse(localStorage.getItem(OFFLINE_SESSION_KEY)||'null');if(meta&&meta.businessId===cloudBusiness.id){meta.cloudUpdatedAt=cloudRowUpdatedAt;localStorage.setItem(OFFLINE_SESSION_KEY,JSON.stringify(meta))}}catch(e){}
   await clearOfflineSnapshot(cloudBusiness.id,queuedItem?.queuedAt);
-  await rebaseOfflineSnapshot(cloudBusiness.id,queuedItem?.queuedAt,cloudRowUpdatedAt);
+  await rebaseOfflineSnapshot(cloudBusiness.id,queuedItem?.queuedAt,cloudRowUpdatedAt,snapshot);
   window.FAVVSyncConflict=false;window.FAVVOfflineMode=false;clearOfflineNotice();
   lastAuditState=snapshot;
   setStatus('Cloud bijgewerkt',true);
   if(events.length)writeAuditEvents(events,user).catch(error=>console.error('Auditlog onverwachte fout',error));
   return true;
 }
-window.FAVVCloudSync={schedule(x){const snapshot=JSON.parse(JSON.stringify(x));queueOfflineSnapshot(snapshot).catch(error=>{console.error('Lokale wachtrij kon niet worden bijgewerkt',error);logPlatformError('offline-queue',error.message)});clearTimeout(saveTimer);saveTimer=setTimeout(()=>saveCloudState(snapshot),900)}};
+window.FAVVCloudSync={schedule(x){const snapshot=JSON.parse(JSON.stringify(x));queueOfflineSnapshot(snapshot).catch(error=>{console.error('Lokale wachtrij kon niet worden bijgewerkt',error);logPlatformError('offline-queue',error.message)});clearTimeout(saveTimer);saveTimer=setTimeout(()=>saveCloudState(snapshot),900)},saveNow(x){clearTimeout(saveTimer);return saveCloudState(JSON.parse(JSON.stringify(x)))}};
 window.FAVVInviteBusinessMember=async(payload)=>{if(!cloudClient||!cloudBusiness?.id)throw new Error('Supabase is niet verbonden met een actieve horecazaak.');const {data,error}=await cloudClient.functions.invoke('invite-business-member',{body:{...payload,businessId:cloudBusiness.id}});if(error){let message=error.message||'De uitnodiging kon niet worden verstuurd.';try{const context=await error.context?.json();if(context?.error)message=context.error}catch(e){}throw new Error(message)}if(data?.error)throw new Error(data.error);return data};
 window.FAVVListBusinessMembers=async()=>{if(!cloudClient)throw new Error('Supabase is niet verbonden.');const businessId=cloudBusiness?.id||window.FAVVCloudBusiness?.id||'';if(!businessId)throw new Error('De actieve horecazaak kon niet worden bepaald. Meld opnieuw aan.');const {data,error}=await cloudClient.rpc('list_business_members',{p_business_id:businessId});if(error)throw new Error(error.message||'De gebruikerslijst kon niet worden geladen.');return Array.isArray(data)?data:[]};
 window.FAVVGetSubscriptionStatus=async()=>{if(!cloudClient)throw new Error('Supabase is niet verbonden.');const {data,error}=await cloudClient.functions.invoke('subscription-status',{body:{businessId:cloudBusiness?.id||window.FAVVCloudBusiness?.id||''}});if(error){let message=error.message||'De abonnementsstatus kon niet worden opgehaald.';try{const context=await error.context?.json();if(context?.error)message=context.error}catch(e){}throw new Error(message)}if(data?.error)throw new Error(data.error);return data};
@@ -944,7 +978,7 @@ async function prepareCloudSession(user,options={}){
     const cloudVersionData=r?.data?JSON.parse(JSON.stringify(r.data)):null;
     let pending=await readOfflineSnapshot(b.id);
     if(!pending){let dirty=null;try{dirty=JSON.parse(localStorage.getItem('animo-offline-dirty:'+b.id)||'null')}catch(e){}if(dirty){const local=window.FAVVGetLocalState?.();if(local){pending={businessId:b.id,data:local,baseUpdatedAt:dirty.baseUpdatedAt??null,queuedAt:dirty.queuedAt||new Date().toISOString()};await queueOfflineSnapshot(local,dirty.baseUpdatedAt??null)}}}
-    if(pending){try{localStorage.setItem('animo-offline-outbox:'+b.id,JSON.stringify(pending));localStorage.setItem('animo-offline-dirty:'+b.id,JSON.stringify({baseUpdatedAt:pending.baseUpdatedAt??null,queuedAt:pending.queuedAt||new Date().toISOString()}))}catch(e){console.warn('Offline wachtrij kon niet naar lokale fallback worden gekopieerd',e)}window.__favvPendingOutbox=pending;r={...(r||{}),data:pending.data};if((pending.baseUpdatedAt||null)!==(r?.updated_at||null)){window.FAVVSyncConflict=true;}}
+    if(pending){try{localStorage.setItem('animo-offline-outbox:'+b.id,JSON.stringify(pending));localStorage.setItem('animo-offline-dirty:'+b.id,JSON.stringify({baseUpdatedAt:pending.baseUpdatedAt??null,queuedAt:pending.queuedAt||new Date().toISOString()}))}catch(e){console.warn('Offline wachtrij kon niet naar lokale fallback worden gekopieerd',e)}window.__favvPendingOutbox=pending;r={...(r||{}),data:pending.data};if((pending.baseUpdatedAt||null)!==(r?.updated_at||null)){if(pending.baseData){window.FAVVSyncConflict=false;cloudRowUpdatedAt=pending.baseUpdatedAt||null;}else{window.FAVVSyncConflict=true;}}}
     get('cloudSessionText').textContent='Supabase actief voor '+(user.email||'testgebruiker')+' · zaak: '+b.name+(r?' · cloudgegevens gevonden':' · eerste cloudkopie wordt gemaakt');
     window.__favvCloudRow=r;
     lastAuditState=cloudVersionData;
@@ -1184,7 +1218,7 @@ get('cloudSignupForm').addEventListener('submit',async e=>{
   if(password!==confirmPassword){setSignupMessage('De wachtwoorden zijn niet gelijk.');return}
   if(password.length<10){setSignupMessage('Gebruik een wachtwoord van minstens 10 tekens.');return}
   setSignupMessage('Account wordt veilig aangemaakt...','ok');
-  const {data:signupData,error:signupError}=await cloudClient.auth.signUp({email,password,options:{data:{full_name:fullName,animo_pending_business_registration:{business_name:businessName,enterprise_number:enterpriseNumber}}}});
+  const {data:signupData,error:signupError}=await cloudClient.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname,data:{full_name:fullName,animo_pending_business_registration:{business_name:businessName,enterprise_number:enterpriseNumber}}}});
   if(signupError){setSignupMessage(signupError.message);return}
   if(!signupData.session){setSignupMessage('Account aangemaakt. Bevestig eerst je e-mailadres. Daarna kan je op elk toestel aanmelden; jouw zaakregistratie wordt automatisch voltooid en je proefperiode van 14 dagen start.','ok');return}
   try{
@@ -1234,6 +1268,7 @@ async function finishPendingBusinessRegistration(){
 }
 get('cloudForgetConfig').addEventListener('click',()=>{if(!confirm('Lokale Supabase-instellingen wissen?'))return;localStorage.removeItem(CONFIG_KEY);cloudClient=null;get('cloudUrl').value='';get('cloudKey').value='';setStatus('Lokale veilige modus');showSetup()});
 const config=validConfig(PUBLIC_SUPABASE_CONFIG)?PUBLIC_SUPABASE_CONFIG:readConfig();if(validConfig(config)){localStorage.setItem(CONFIG_KEY,JSON.stringify(config));initClient(config)}else{get('cloudSetup').classList.add('cloud-hidden');get('cloudLoginForm').classList.add('cloud-hidden');get('cloudSignupForm').classList.add('cloud-hidden');get('cloudSessionBox').classList.add('cloud-hidden');hidePasswordSetup();setStatus('Configuratie ontbreekt');const card=document.querySelector('.cloud-card');card.insertAdjacentHTML('beforeend','<div class="cloud-message error show">De publieke appconfiguratie is nog niet voltooid.</div>')}
+window.FAVVGetSupabaseClient=()=>cloudClient;
 })();
 </script>
 <script>
@@ -1268,6 +1303,85 @@ function migrateLegacyBusiness(){let list=loadBusinessRegistry();if(list.length)
 migrateLegacyBusiness();
 let state=load();let modalMode='',editId=null,activeTemperaturePointId=null;
 window.FAVVGetLocalState=()=>clone(state);
+window.FAVVApplyFoodWasteStockChange=(change)=>{
+  if(!change||!activeBusinessId||!change.stockItem?.id||!change.movement?.sourceType||!change.movement?.sourceId)throw new Error('De voorraadkoppeling kon niet veilig worden toegepast.');
+  normalizeStateCollections(state);
+  const product=state.stock.find(item=>String(item.id)===String(change.stockItem.id));
+  if(!product)return {status:'stock_item_missing'};
+  const duplicate=state.stockMovements.find(movement=>movement?.sourceType===change.movement.sourceType&&movement?.sourceId===change.movement.sourceId);
+  if(duplicate)return {status:'already_applied',movement:duplicate};
+  if(String(change.movement.productId)!==String(product.id))throw new Error('De voorraadbeweging verwijst naar een ander product.');
+  Object.assign(product,clone(change.stockItem));
+  state.stockMovements.unshift(clone(change.movement));
+  persist();
+  return {status:'applied'};
+};
+
+window.FAVVApplyMenuSalesStockDeduction=async({importId,rows,dryRun=false}={})=>{
+  if(cloudIsEmployee()||!['owner','manager'].includes(window.FAVVCloudRole))throw new Error('Alleen eigenaars en managers mogen kassaverkoop aan stock koppelen.');
+  if(!importId||!Array.isArray(rows))throw new Error('De kassaverkoopimport is ongeldig.');
+  if(!navigator.onLine||window.FAVVOfflineMode||window.FAVVSyncConflict)throw new Error('Stock automatisch afboeken vereist een stabiele online verbinding zonder synchronisatieconflict. Er wordt nu niets geïmporteerd of afgeboekt; probeer opnieuw zodra de verbinding hersteld is.');
+  const existing=state.stockMovements.find(m=>m?.sourceType==='menu_sales_import'&&m?.sourceId===importId);
+  if(existing){
+    if(dryRun)return {status:'already_applied'};
+    const synced=await window.FAVVCloudSync?.saveNow?.(state);
+    return {status:synced?'already_applied':'pending_sync'};
+  }
+  const plan=window.FAVVBuildMenuSalesStockPlan?.(rows);
+  if(!plan)throw new Error('Het stockplan kon niet worden berekend.');
+  if(dryRun)return plan;
+  if(plan.status!=='ready')return plan;
+  const snapshots=state.stock.map(product=>({product,batches:clone(product.batches||[]),quantity:product.quantity,expiryDate:product.expiryDate}));
+  const movementsSnapshot=clone(state.stockMovements);
+  for(const requirement of plan.requirements){
+    const product=stockById(requirement.stockId);
+    if(!product||!consumeBatches(product,requirement.required,'Kassaverkoop · import '+importId)){
+      snapshots.forEach(snapshot=>{snapshot.product.batches=snapshot.batches;snapshot.product.quantity=snapshot.quantity;snapshot.product.expiryDate=snapshot.expiryDate});
+      state.stockMovements=movementsSnapshot;
+      throw new Error('De voorraad veranderde tijdens de import. Er is geen stockafboeking uitgevoerd. Controleer de voorraad en probeer opnieuw.');
+    }
+    const movement=state.stockMovements[0];
+    if(movement){movement.sourceType='menu_sales_import';movement.sourceId=importId;}
+  }
+  persist();
+  const synced=await window.FAVVCloudSync?.saveNow?.(state);
+  return {status:synced?'applied':'pending_sync',plan};
+};
+window.FAVVBuildMenuSalesStockPlan=(rows)=>{
+  const recipes=state.recipes.map(recipe=>({...recipe,ingredients:Array.isArray(recipe.ingredients)?recipe.ingredients:[]}));
+  const stock=state.stock.map(product=>({...product,batches:Array.isArray(product.batches)?product.batches:[]}));
+  return window.__FAVVBuildMenuSalesStockPlanCore?.(rows,recipes,stock)||null;
+};
+
+window.FAVVGetCurrentUser=()=>currentUser;
+window.FAVVGetMenuProfitabilityData=async()=>{
+  if(cloudIsEmployee())throw new Error('Menurendabiliteit is alleen beschikbaar voor eigenaars en managers.');
+  const business=window.FAVVCloudBusiness;
+  const client=window.FAVVGetSupabaseClient?.();
+  if(!business?.id||!client)throw new Error('De zaakgegevens zijn nog niet geladen. Probeer opnieuw zodra je bent aangemeld.');
+  const {data,error}=await client.from('menu_profitability_data').select('payload,updated_at').eq('business_id',business.id).maybeSingle();
+  if(error)throw error;
+  const settings=data?.payload&&typeof data.payload==='object'&&!Array.isArray(data.payload)
+    ?clone(data.payload)
+    :{pricesByRecipe:{},salesImports:[],salesRows:[],mappings:{}};
+  return {recipes:state.recipes.map(recipe=>({...clone(recipe),ingredientCost:recipeCost(recipe),ingredientCostComplete:Array.isArray(recipe.ingredients)&&recipe.ingredients.length>0&&recipe.ingredients.every(ingredient=>!!stockById(ingredient.stockId))})),settings,updatedAt:data?.updated_at||null};
+};
+window.FAVVSaveMenuProfitability=async(value,expectedUpdatedAt=null)=>{
+  if(cloudIsEmployee()||!['owner','manager'].includes(window.FAVVCloudRole))throw new Error('Alleen eigenaars en managers mogen deze instellingen wijzigen.');
+  if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Ongeldige menurendabiliteitsgegevens.');
+  const business=window.FAVVCloudBusiness;
+  const client=window.FAVVGetSupabaseClient?.();
+  if(!business?.id||!client)throw new Error('De zaakgegevens zijn nog niet geladen.');
+  const {data,error}=await client.rpc('save_menu_profitability_data',{
+    p_business_id:business.id,
+    p_payload:clone(value),
+    p_expected_updated_at:expectedUpdatedAt
+  });
+  if(error)throw error;
+  if(typeof data!=='string'||!data)throw new Error('De server bevestigde de opslag niet. Laad de gegevens opnieuw.');
+  return data;
+};
+window.FAVVNavigate=(page)=>navigate(page);
 window.FAVVCreateCleanBusinessState=()=>({cleaning:[],temperatures:[],dishes:[],reports:[],stock:[],stockMovements:[],deliveries:[],recipes:[],productions:[],temperatureActions:[],businessProfile:businessProfile?{businessName:businessProfile.businessName||'',enterpriseNumber:businessProfile.enterpriseNumber||'',businessType:businessProfile.businessType||'Horecazaak',address:businessProfile.address||'',phone:businessProfile.phone||''}:null});
 window.FAVVApplyCloudState=(x)=>{if(!x||!Array.isArray(x.cleaning)||!Array.isArray(x.temperatures)||!Array.isArray(x.dishes))throw new Error('Ongeldige cloudgegevens');state=normalizeStateCollections(clone(x));state.stock=normalizeStockBatchData(state.stock);if(x.businessProfile&&businessProfile){businessProfile={...businessProfile,...x.businessProfile,id:businessProfile.id,businessName:window.FAVVCloudBusiness?.name||x.businessProfile.businessName||businessProfile.businessName,enterpriseNumber:window.FAVVCloudBusiness?.enterprise_number||x.businessProfile.enterpriseNumber||businessProfile.enterpriseNumber};saveBusiness();updateBusinessUI()}localStorage.setItem(businessKey('favv-professional-v1'),JSON.stringify(state));renderDashboard();return true};
 window.FAVVStartCleanBusinessState=()=>{state=window.FAVVCreateCleanBusinessState();localStorage.setItem(businessKey('favv-professional-v1'),JSON.stringify(state));renderDashboard();return clone(state)};
@@ -1289,8 +1403,8 @@ window.FAVVStartSupabaseSession=function(user,business){
   window.FAVVApplyCloudRole?.(role);updateBusinessUI();applyPriceVisibility();
   document.querySelectorAll('.user').forEach(el=>el.textContent=currentUser.name.split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase());navigate('dashboard');
 };
-window.FAVVApplyCloudRole=function(role){window.FAVVCloudRole=role;const employee=role==='employee';document.querySelectorAll('[data-page="management"],[data-page="subscription"],#management').forEach(el=>el.classList.toggle('cloud-employee-hidden',employee));if(employee&&document.querySelector('.page.active:is(#management,#subscription)'))navigate('dashboard');const roleEl=$('sidebarRole');if(employee&&roleEl)roleEl.textContent='Medewerker'};
-function navigate(page){const subscription=loadSubscription();if(window.FAVVCloudBusiness&&currentUser&&page!=='subscription'&&subscription.accessAllowed===false){page='subscription'}if(cloudIsEmployee()&&(page==='management'||page==='invoices')){toast('Medewerkers hebben geen toegang tot '+(page==='management'?'Beheer':'Facturen'));return}if(page==='management'&&currentUser?.role!=='manager'){toast('Alleen managers hebben toegang tot Beheer');return}document.querySelectorAll('.page').forEach(el=>el.classList.toggle('active',el.id===page));document.querySelectorAll('[data-page]').forEach(el=>el.classList.toggle('active',el.dataset.page===page));if(page==='cleaning')renderCleaning();if(page==='temperatures')renderTemperatures();if(page==='actions')renderTemperatureActions();if(page==='allergens')renderDishes();if(page==='stock')renderStock();if(page==='invoices')renderInvoices();if(page==='recipes')renderRecipes();if(page==='reports')renderReport();if(page==='subscription'){renderSubscription();window.refreshSubscriptionStatus()}if(page==='management')renderUsers();window.scrollTo(0,0)}
+window.FAVVApplyCloudRole=function(role){window.FAVVCloudRole=role;window.FAVVSetMenuProfitabilityAccess?.(role);const employee=role==='employee';document.querySelectorAll('[data-page="management"],[data-page="subscription"],#management').forEach(el=>el.classList.toggle('cloud-employee-hidden',employee));if(employee&&document.querySelector('.page.active:is(#management,#subscription)'))navigate('dashboard');const roleEl=$('sidebarRole');if(employee&&roleEl)roleEl.textContent='Medewerker'};
+function navigate(page){const subscription=loadSubscription();if(window.FAVVCloudBusiness&&currentUser&&page!=='subscription'&&subscription.accessAllowed===false){page='subscription'}if(cloudIsEmployee()&&(page==='management'||page==='invoices')){toast('Medewerkers hebben geen toegang tot '+(page==='management'?'Beheer':'Facturen'));return}if(page==='management'&&currentUser?.role!=='manager'){toast('Alleen managers hebben toegang tot Beheer');return}if(page==='menu-profitability'&&cloudIsEmployee()){toast('Alleen eigenaars en managers hebben toegang tot Menurendabiliteit');return}document.querySelectorAll('.page').forEach(el=>el.classList.toggle('active',el.id===page));document.querySelectorAll('[data-page]').forEach(el=>el.classList.toggle('active',el.dataset.page===page));if(page==='cleaning')renderCleaning();if(page==='temperatures')renderTemperatures();if(page==='actions')renderTemperatureActions();if(page==='allergens')renderDishes();if(page==='stock')renderStock();if(page==='invoices')renderInvoices();if(page==='recipes')renderRecipes();if(page==='menu-profitability')window.FAVVRenderMenuProfitability?.();if(page==='reports')renderReport();if(page==='subscription'){renderSubscription();window.refreshSubscriptionStatus()}if(page==='management')renderUsers();window.scrollTo(0,0)}
 function renderDashboard(){const done=state.cleaning.filter(x=>x.done).length,total=state.cleaning.length,p=total?Math.round(done/total*100):0;$('dashScore').textContent=p+'%';$('dashProgress').style.width=p+'%';$('dashCleaning').textContent=total;$('dashTemps').textContent=state.temperatures.length;$('dashDishes').textContent=state.dishes.length;$('dashStock').textContent=state.stock.length;$('dashRecipes').textContent=state.recipes.length;syncTemperatureActions()}
 function renderCleaning(){const q=$('cleaningSearch').value.trim().toLowerCase();const rows=state.cleaning.filter(x=>x.name.toLowerCase().includes(q));$('cleaningList').innerHTML=rows.length?rows.map(x=>`<div class="item"><div class="item-main"><input type="checkbox" data-action="toggle-cleaning" data-id="${x.id}" ${x.done?'checked':''} aria-label="${esc(x.name)} voltooid"><div><div class="item-title">${esc(x.name)}</div><div class="item-sub"><strong>Frequentie:</strong> ${esc(x.frequency)}</div><div class="item-sub"><strong>Materiaal:</strong> ${esc(x.material||'Niet ingevuld')}</div><div class="item-sub"><strong>Product:</strong> ${esc(x.product||'Niet ingevuld')}</div></div></div><div class="actions"><button class="btn secondary small" data-action="edit-cleaning" data-id="${x.id}">Bewerken</button><button class="btn danger small" data-action="delete-cleaning" data-id="${x.id}">Verwijderen</button></div></div>`).join(''):'<div class="empty">Geen taken gevonden.</div>';const done=state.cleaning.filter(x=>x.done).length,total=state.cleaning.length;$('cleaningProgressText').textContent=done+' / '+total;$('cleaningProgress').style.width=(total?done/total*100:0)+'%'}
 function tempOk(x){const value=Number(x.value),min=x.min===''||x.min==null?null:Number(x.min),max=x.max===''||x.max==null?null:Number(x.max);if(min!=null&&Number.isFinite(min)&&value<min)return false;if(max!=null&&Number.isFinite(max)&&value>max)return false;if(min!=null||max!=null)return true;return x.type==='Koeling'?value>=0&&value<=7:x.type==='Diepvries'?value<=-18:true}
@@ -2084,6 +2198,8 @@ setInterval(()=>{
 },60000);
 })();
 </script>
+<script type="module" src="./voedselverspilling-ui.mjs"></script>
+<script type="module" src="./menurendabiliteit-ui.mjs"></script>
 <!-- ANIMO_ALL_DOMAIN_VISIT_TRACKER: privacyvriendelijke telling van app-paginaweergaven -->
 <script id="animo-all-domain-visit-tracker">
 (function(){

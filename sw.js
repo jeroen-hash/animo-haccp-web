@@ -1,5 +1,5 @@
 'use strict';
-const CACHE='animo-haccp-shell-v3';
+const CACHE='animo-haccp-shell-v6';
 const SHELL=['./','./index.html'];
 const SUPABASE_SDK='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
 self.addEventListener('install',event=>{

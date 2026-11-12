@@ -1,0 +1,56 @@
+name: Food waste core tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "snapshot-merge.mjs"
+      - "tests/snapshot-merge.test.mjs"
+      - "voedselverspilling-core.mjs"
+      - "voedselverspilling-stock.mjs"
+      - "tests/voedselverspilling-stock.test.mjs"
+      - "tests/voedselverspilling-core.test.mjs"
+      - ".github/workflows/food-waste-core-tests.yml"
+      - "supabase/migrations/20261111220217_create_food_waste_entries.sql"
+      - "tests/voedselverspilling-migration.test.mjs"
+      - "voedselverspilling-sync.mjs"
+      - "voedselverspilling-ui.mjs"
+      - "index.html"
+      - "tests/voedselverspilling-sync.test.mjs"
+      - "tests/voedselverspilling-ui.test.mjs"
+      - "prototypes/voedselverspilling-demo.html"
+      - "tests/voedselverspilling-demo.test.mjs"
+  push:
+    branches:
+      - "feature/voedselverspilling-module"
+    paths:
+      - "voedselverspilling-core.mjs"
+      - "voedselverspilling-stock.mjs"
+      - "tests/voedselverspilling-stock.test.mjs"
+      - "tests/voedselverspilling-core.test.mjs"
+      - ".github/workflows/food-waste-core-tests.yml"
+      - "supabase/migrations/20261111220217_create_food_waste_entries.sql"
+      - "tests/voedselverspilling-migration.test.mjs"
+      - "voedselverspilling-sync.mjs"
+      - "voedselverspilling-ui.mjs"
+      - "index.html"
+      - "tests/voedselverspilling-sync.test.mjs"
+      - "tests/voedselverspilling-ui.test.mjs"
+      - "prototypes/voedselverspilling-demo.html"
+      - "tests/voedselverspilling-demo.test.mjs"
+
+permissions:
+  contents: read
+
+jobs:
+  node-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run food waste core tests
+        run: node --check voedselverspilling-ui.mjs && node --check voedselverspilling-stock.mjs && node --test tests/snapshot-merge.test.mjs tests/voedselverspilling-stock.test.mjs tests/voedselverspilling-core.test.mjs tests/voedselverspilling-migration.test.mjs tests/voedselverspilling-sync.test.mjs tests/voedselverspilling-demo.test.mjs tests/voedselverspilling-ui.test.mjs

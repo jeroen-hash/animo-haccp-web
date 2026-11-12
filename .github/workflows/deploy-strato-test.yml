@@ -1,0 +1,130 @@
+name: Deploy ANIMO HACCP test naar STRATO
+
+on:
+  push:
+    branches:
+      - feature/voedselverspilling-module
+      - feature/menurendabiliteit-module
+    paths:
+      - 'index.html'
+      - 'sw.js'
+      - '*.mjs'
+      - 'images/**'
+      - '.github/workflows/deploy-strato-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-test:
+    runs-on: ubuntu-latest
+    name: Publiceer uitsluitend de testomgeving
+    steps:
+      - name: Repository ophalen
+        uses: actions/checkout@v4
+
+      - name: Controleren of STRATO-geheimen bestaan
+        id: guard
+        env:
+          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
+          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
+          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+        run: |
+          if [ -z "$SFTP_HOST" ] || [ -z "$SFTP_USER" ] || [ -z "$SFTP_PASS" ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::STRATO SFTP-geheimen ontbreken; testpublicatie overgeslagen."
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Testbestanden voorbereiden
+        if: steps.guard.outputs.present == 'true'
+        run: |
+          set -e
+          rm -rf out
+          mkdir -p out/test/images
+          cp index.html sw.js out/test/
+          cp ./*.mjs out/test/
+          cp -r images/. out/test/images/
+          echo "Bestanden voor test.animo-apps.com:"
+          find out/test -maxdepth 2 -type f -print
+
+      - name: Testconfiguratie uitsluitend in testbuild injecteren
+        if: steps.guard.outputs.present == 'true'
+        run: |
+          set -euo pipefail
+          test -f index.html
+          test -f sw.js
+          test -d images
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const file = 'out/test/index.html';
+          const source = readFileSync(file, 'utf8');
+          const productionConfig = "const PUBLIC_SUPABASE_CONFIG={url:'https://zimzsovvtdmrthrflkgm.supabase.co',key:'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k'};;";
+          const testConfig = "const PUBLIC_SUPABASE_CONFIG={url:'https://xwjcwravfeldndwlugai.supabase.co',key:'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI'};;";
+          const productionUrl = 'https://zimzsovvtdmrthrflkgm.supabase.co';
+          const testUrl = 'https://xwjcwravfeldndwlugai.supabase.co';
+          const productionKey = 'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k';
+          const testKey = 'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI';
+          if (!source.includes(productionConfig)) throw new Error('Productieconfiguratie niet exact gevonden; testdeploy afgebroken.');
+          let testBuild = source.replace(productionConfig, testConfig);
+          // Ook eventuele losse productie-endpoints (zoals bezoekregistratie) uitsluitend in de testkopie omzetten.
+          testBuild = testBuild.split(productionUrl).join(testUrl);
+          testBuild = testBuild.split(productionKey).join(testKey);
+          writeFileSync(file, testBuild);
+          const built = readFileSync(file, 'utf8');
+          if (!built.includes(testUrl) || !built.includes(testKey) || built.includes(productionUrl) || built.includes(productionKey)) {
+            throw new Error('Testbuild bevat nog productieconfiguratie of mist de testconfiguratie.');
+          }
+          NODE
+          echo "Broncode behoudt productieconfiguratie; alleen out/test/index.html gebruikt de testdatabase."
+
+      - name: Release- en back-upworkflow controleren
+        run: |
+          set -euo pipefail
+          grep -Fq 'cp ./*.mjs out/app/' .github/workflows/deploy-strato.yml
+          grep -Fq 'mirror -R --verbose out/app /app' .github/workflows/deploy-strato.yml
+          grep -Fq 'supabase/setup-cli@v3' .github/workflows/deploy-strato.yml
+          grep -Fq 'supabase db push --dry-run --yes --remote=' .github/workflows/deploy-strato.yml
+          grep -Fq 'supabase db push --yes --remote=' .github/workflows/deploy-strato.yml
+          grep -Fq 'supabase migration list --remote=' .github/workflows/deploy-strato.yml
+          grep -Fq '20261107014218 hide_inactive_members_from_direct_membership_reads' .github/workflows/deploy-strato.yml
+          grep -Fq 'Temporary history-alignment placeholder' .github/workflows/deploy-strato.yml
+          grep -Fq 'postgres.zimzsovvtdmrthrflkgm' .github/workflows/deploy-strato.yml
+          grep -Fq 'database != "postgres"' .github/workflows/deploy-strato.yml
+          grep -Fq 'actions/checkout@v4' .github/workflows/backup-supabase-database.yml
+          for migration in 20261111222221 20261111222452 20261111223111 20261112155500 20261112155729 20261112163255 20261112174321; do
+            grep -Fq "$migration" .github/workflows/deploy-strato.yml
+          done
+          node --test tests/database-backup-retention.test.mjs tests/service-worker-cache.test.mjs
+
+      - name: Uploaden naar uitsluitend /test
+        if: steps.guard.outputs.present == 'true'
+        env:
+          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
+          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
+          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+        run: |
+          set -e
+          sudo apt-get update -y
+          sudo apt-get install -y lftp
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          ssh-keyscan -T 15 -p 22 -t ed25519 "$SFTP_HOST" > "$RUNNER_TEMP/strato_known_hosts" 2>/dev/null
+          test -s "$RUNNER_TEMP/strato_known_hosts"
+          ACTUAL_FINGERPRINT="$(ssh-keygen -lf "$RUNNER_TEMP/strato_known_hosts" -E sha256 | awk '{print $2}')"
+          EXPECTED_FINGERPRINT="SHA256:1gx2w8Rtv3wCgi7Jh8myf/KVd72cRQbow03UP8P095Q"
+          if [ "$ACTUAL_FINGERPRINT" != "$EXPECTED_FINGERPRINT" ]; then
+            echo "::error::STRATO SSH-hostkey fingerprint komt niet overeen. Upload afgebroken."
+            exit 1
+          fi
+          chmod 600 "$RUNNER_TEMP/strato_known_hosts"
+          lftp -e "set sftp:connect-program 'ssh -a -x -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/strato_known_hosts'" -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<'LFTP'
+          set net:max-retries 3
+          set net:timeout 30
+          mirror -R --verbose out/test /test
+          bye
+          LFTP
+
+# Trigger test-only publication for the latest menu profitability branch revision.
