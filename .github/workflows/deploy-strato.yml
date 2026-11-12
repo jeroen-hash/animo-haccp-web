@@ -85,6 +85,70 @@ jobs:
           PY
           )"
           echo "::add-mask::$ANIMO_PRODUCTION_DB_URL"
+          echo "Controleer eerst de bestaande productiemigratiehistoriek."
+          supabase migration list --remote="$ANIMO_PRODUCTION_DB_URL" | tee "$RUNNER_TEMP/animo-remote-migration-history.txt"
+          while IFS=' ' read -r version migration_name; do
+            [ -n "$version" ] || continue
+            grep -Fq "$version" "$RUNNER_TEMP/animo-remote-migration-history.txt" || {
+              echo "::error::Verwachte bestaande productiemigratie ontbreekt: $version. Geen placeholder of nieuwe migratie wordt toegepast."
+              exit 1
+            }
+          done <<'REMOTE_MIGRATIONS'
+          20261106001055 start_trial_for_new_businesses
+          20261106001128 harden_security_definer_function_grants
+          20261106162137 scope_business_member_list
+          20261106171810 enforce_subscription_access_for_business_data
+          20261106172309 move_subscription_gate_to_private_schema
+          20261106192207 add_admin_website_analytics
+          20261106193712 add_safe_app_data_compare_and_swap
+          20261106200126 ensure_monotonic_app_data_sync_version
+          20261106222804 restrict_business_entitlement_updates
+          20261106222938 index_foreign_keys_and_optimize_rls_policies
+          20261106223037 gate_member_directory_by_subscription
+          20261106223128 secure_business_onboarding_intake_access
+          20261106223137 fix_onboarding_intake_upsert_qualification
+          20261106230040 restrict_subscription_row_reads
+          20261107014131 revoke_anon_access_internal_tables
+          20261107014218 hide_inactive_members_from_direct_membership_reads
+          20261107014559 enforce_subscription_access_for_onboarding_storage
+          20261107102332 add_onboarding_invoice_reporting
+          20261107102603 add_onboarding_invoice_reporting
+          20261108150151 add_site_host_to_website_visit_events
+          REMOTE_MIGRATIONS
+          # Temporary no-op files align the isolated release bundle with migrations
+          # already recorded on production. The preflight above proves every version
+          # exists remotely; these files are skipped and are never committed.
+          while IFS=' ' read -r version migration_name; do
+            [ -n "$version" ] || continue
+            placeholder="supabase/migrations/${version}_${migration_name}.sql"
+            if [ ! -f "$placeholder" ]; then
+              cat > "$placeholder" <<'SQL'
+          -- Already applied on production before this isolated module release.
+          -- Temporary history-alignment placeholder; db push must skip this version.
+          select 1;
+          SQL
+            fi
+          done <<'REMOTE_MIGRATIONS'
+          20261106001055 start_trial_for_new_businesses
+          20261106001128 harden_security_definer_function_grants
+          20261106162137 scope_business_member_list
+          20261106171810 enforce_subscription_access_for_business_data
+          20261106172309 move_subscription_gate_to_private_schema
+          20261106192207 add_admin_website_analytics
+          20261106193712 add_safe_app_data_compare_and_swap
+          20261106200126 ensure_monotonic_app_data_sync_version
+          20261106222804 restrict_business_entitlement_updates
+          20261106222938 index_foreign_keys_and_optimize_rls_policies
+          20261106223037 gate_member_directory_by_subscription
+          20261106223128 secure_business_onboarding_intake_access
+          20261106223137 fix_onboarding_intake_upsert_qualification
+          20261106230040 restrict_subscription_row_reads
+          20261107014131 revoke_anon_access_internal_tables
+          20261107014559 enforce_subscription_access_for_onboarding_storage
+          20261107102332 add_onboarding_invoice_reporting
+          20261107102603 add_onboarding_invoice_reporting
+          20261108150151 add_site_host_to_website_visit_events
+          REMOTE_MIGRATIONS
           echo "Controleer welke uitsluitend modulemigraties klaarstaan voor productie..."
           supabase db push --dry-run --yes --remote="$ANIMO_PRODUCTION_DB_URL"
           echo "Pas de zeven modulemigraties toe; alle andere bestaande productiemigraties blijven buiten deze geïsoleerde release."
