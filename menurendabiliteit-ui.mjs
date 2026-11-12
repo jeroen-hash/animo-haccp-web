@@ -76,7 +76,7 @@ function ensureUi() {
       </div>
       <div class="card mr-card">
         <div class="mr-section-head"><div><h2>Kassaverkoop importeren</h2><p>Importeer een CSV-export. Je koppelt kassaproducten zelf aan je ANIMO-recepten.</p></div></div>
-        <div class="mr-import-guide"><strong>Benodigde kolommen:</strong> Datum, Product, Aantal en Totaal of Eenheidsprijs. Optioneel: BTW % en Transactie-ID. Gebruik CSV met komma of puntkomma als scheidingsteken.</div>
+        <div class="mr-import-guide"><strong>Benodigde kolommen:</strong> Datum, Product, Aantal en Totaal inclusief btw of Eenheidsprijs inclusief btw. Optioneel: BTW % en Transactie-ID. Gebruik CSV met komma of puntkomma als scheidingsteken. Creditnota's en negatieve retourregels worden in deze eerste versie nog niet ondersteund.</div>
         <div class="mr-import-row"><input id="mrSalesFile" type="file" accept=".csv,text/csv"><button class="btn" type="button" data-mr-action="preview-import">Bestand controleren</button></div>
         <div id="mrImportStatus" class="mr-status" role="status"></div>
         <div id="mrImportPreview"></div>
