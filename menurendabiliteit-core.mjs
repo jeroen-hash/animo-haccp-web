@@ -165,7 +165,7 @@ export function buildDishSalesSummary(salesRows, mappings, economicsByDish = {})
   const totals = new Map();
   const unmapped = [];
   for (const row of salesRows || []) {
-    const dishId = row.dishId || mappings?.[String(row.product).trim().toLowerCase()];
+    const dishId = row.dishId || (!row.importId ? mappings?.[String(row.product).trim().toLowerCase()] : null);
     if (!dishId) { unmapped.push(row); continue; }
     const economics = economicsByDish?.[dishId];
     const snapshotCost = row.ingredientCostPerPortionSnapshot != null && Number.isFinite(Number(row.ingredientCostPerPortionSnapshot))
