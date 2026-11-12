@@ -273,6 +273,40 @@ export function findDuplicateSalesLines(existingRows, incomingRows) {
   return { unique, duplicates };
 }
 
+export function recipeCostSnapshotForDate(recipe, saleDate, currentIngredientCost, currentCostComplete = true) {
+  const date = normalizeSalesDate(saleDate);
+  if (!recipe || !date) return null;
+  const createdDate = String(recipe.createdAt || "").slice(0, 10);
+  const currentStartDate = String(recipe.updatedAt || recipe.createdAt || "").slice(0, 10);
+  if (createdDate && date < createdDate) return null;
+
+  const versions = Array.isArray(recipe.versions)
+    ? recipe.versions.filter(version => version && version.savedAt)
+      .slice().sort((a, b) => String(a.savedAt).localeCompare(String(b.savedAt)))
+    : [];
+
+  if (currentStartDate && date > currentStartDate) {
+    const yieldCount = Number(recipe.yield);
+    const cost = Number(currentIngredientCost);
+    if (!currentCostComplete || !Number.isFinite(yieldCount) || yieldCount <= 0 || !Number.isFinite(cost) || cost < 0) return null;
+    return { recipeVersion: Number(recipe.version) || 1, ingredientCostPerPortion: cost / yieldCount, source: "current_recipe" };
+  }
+
+  if (currentStartDate && date === currentStartDate) return null;
+  if (versions.some(version => String(version.savedAt).slice(0, 10) === date)) return null;
+
+  const previousVersion = versions.find(version => String(version.savedAt).slice(0, 10) > date);
+  if (!previousVersion) return null;
+  const yieldCount = Number(previousVersion.yield);
+  const cost = Number(previousVersion.cost);
+  if (!Number.isFinite(yieldCount) || yieldCount <= 0 || !Number.isFinite(cost) || cost < 0) return null;
+  return {
+    recipeVersion: Number(previousVersion.version) || null,
+    ingredientCostPerPortion: cost / yieldCount,
+    source: "saved_recipe_version"
+  };
+}
+
 export function createCostSnapshot({ recipe, ingredientCost, capturedAt = new Date().toISOString() }) {
   if (!recipe || !Number.isFinite(Number(ingredientCost)) || Number(ingredientCost) < 0) throw new Error("Ongeldige receptkostsnapshot.");
   return {
