@@ -35,6 +35,67 @@ jobs:
             echo "present=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Supabase CLI installeren
+        if: steps.guard.outputs.present == 'true'
+        uses: supabase/setup-cli@v3
+
+      - name: Alleen de zeven ANIMO-modulemigraties naar productie toepassen
+        if: steps.guard.outputs.present == 'true'
+        shell: bash
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          DATABASE_PASSWORD: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$DATABASE_URL"
+          test -n "$DATABASE_PASSWORD"
+          release_dir="$RUNNER_TEMP/animo-module-release"
+          mkdir -p "$release_dir"
+          cd "$release_dir"
+          supabase init
+          mkdir -p supabase/migrations
+          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261111222221_create_food_waste_entries.sql supabase/migrations/
+          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261111222452_tighten_food_waste_table_grants.sql supabase/migrations/
+          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261111223111_harden_food_waste_audit_and_index.sql supabase/migrations/
+          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261112155500_create_menu_profitability_private_data.sql supabase/migrations/
+          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261112155729_allow_manager_updates_menu_profitability_data.sql supabase/migrations/
+          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261112163255_add_atomic_menu_profitability_manager_save.sql supabase/migrations/
+          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261112174321_correct_food_waste_comment_and_index_menu_profitability_creator.sql supabase/migrations/
+          ANIMO_PRODUCTION_DB_URL="$(python3 - <<'PY'
+          import os
+          from urllib.parse import quote, unquote, urlsplit, urlunsplit
+          parsed = urlsplit(os.environ["DATABASE_URL"])
+          if parsed.scheme not in ("postgres", "postgresql") or not parsed.hostname:
+              raise SystemExit("Production database URL is not a PostgreSQL URI.")
+          if parsed.password:
+              raise SystemExit("Remove the password from PRODUCTION_DATABASE_URL; use PRODUCTION_DATABASE_PASSWORD.")
+          username = unquote(parsed.username or "")
+          if username != "postgres.zimzsovvtdmrthrflkgm":
+              raise SystemExit("Production migration target guard failed: unexpected Supabase project username.")
+          if not parsed.hostname.endswith(".pooler.supabase.com"):
+              raise SystemExit("Production migration target guard failed: expected the Supabase session pooler.")
+          if "sslmode=require" not in parsed.query:
+              raise SystemExit("Production database connection must require SSL.")
+          netloc = f"{quote(username, safe='')}:{quote(os.environ['DATABASE_PASSWORD'], safe='')}@{parsed.hostname}"
+          if parsed.port:
+              netloc += f":{parsed.port}"
+          print(urlunsplit((parsed.scheme, netloc, parsed.path, parsed.query, parsed.fragment)))
+          PY
+          )"
+          echo "::add-mask::$ANIMO_PRODUCTION_DB_URL"
+          echo "Controleer welke uitsluitend modulemigraties klaarstaan voor productie..."
+          supabase db push --dry-run --yes --remote="$ANIMO_PRODUCTION_DB_URL"
+          echo "Pas de zeven modulemigraties toe; alle andere bestaande productiemigraties blijven buiten deze geïsoleerde release."
+          supabase db push --yes --remote="$ANIMO_PRODUCTION_DB_URL"
+          supabase migration list --remote="$ANIMO_PRODUCTION_DB_URL" | tee "$RUNNER_TEMP/animo-module-migration-list.txt"
+          for version in 20261111222221 20261111222452 20261111223111 20261112155500 20261112155729 20261112163255 20261112174321; do
+            grep -Fq "$version" "$RUNNER_TEMP/animo-module-migration-list.txt" || {
+              echo "::error::Productiemigratie ontbreekt na db push: $version"
+              exit 1
+            }
+          done
+          unset DATABASE_URL DATABASE_PASSWORD ANIMO_PRODUCTION_DB_URL
+
       - name: Mappen voor landing en app klaarzetten
         if: steps.guard.outputs.present == 'true'
         run: |
