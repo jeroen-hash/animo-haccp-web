@@ -144,6 +144,7 @@ jobs:
           20261106223137 fix_onboarding_intake_upsert_qualification
           20261106230040 restrict_subscription_row_reads
           20261107014131 revoke_anon_access_internal_tables
+          20261107014218 hide_inactive_members_from_direct_membership_reads
           20261107014559 enforce_subscription_access_for_onboarding_storage
           20261107102332 add_onboarding_invoice_reporting
           20261107102603 add_onboarding_invoice_reporting
