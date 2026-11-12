@@ -1,6 +1,6 @@
 # ANIMO HACCP — Module 2: Menurendabiliteit
 
-Status: eerste implementatiefase op een geïsoleerde featurebranch. De berekeningskern, CSV-validatie, manager-only dashboard en import van kassaregels zijn toegevoegd aan de testcode. Nog niet vrijgegeven voor productie en nog niet verbonden met een kassasysteem-API.
+Status: eerste werkende implementatiefase op een geïsoleerde featurebranch. De berekeningskern, manager-only dashboard, receptprijsinstellingen en CSV-verkoopimport zijn toegevoegd. De core-tests zijn groen. De gebruikersinterface is nog niet handmatig in de testwebsite doorlopen; nog niet vrijgegeven voor productie.
 
 ## Doel
 
@@ -25,9 +25,9 @@ Belangrijk: gebruik verkoopprijs exclusief btw voor margeanalyse. Maak duidelijk
 Zonder betrouwbare verkoopgegevens mag ANIMO geen verkochte aantallen of werkelijke winstbijdrage suggereren.
 
 Eerste versie:
-- Handmatige import van kassaverkooprapporten (CSV/XLSX) met voorbeeldsjablonen.
+- Eerste versie: CSV-import van kassaverkooprapporten. XLSX-import volgt pas na validatie van concrete kassa-exportbestanden.
 - Mapping van kassaproducten naar ANIMO-gerechten.
-- Validatie van datum, product, aantal, prijs, btw en eventuele kortingen.
+- Validatie van aanwezige datumtekst, product, aantal, prijs en btw-veld; concrete kassadatums en kortingskolommen moeten nog per kassaleverancier worden gevalideerd.
 - Dubbele imports detecteren met bronbestand, periode en unieke transactiereferentie indien aanwezig.
 - Importresultaat tonen: geïmporteerd, niet gekoppeld, waarschuwingen en fouten.
 - Handmatige correctie van productmapping door eigenaar/manager.
@@ -82,10 +82,10 @@ Elk advies toont de gebruikte cijfers en reden. De uitbater beslist zelf.
 
 - De module gebruikt de bestaande `recipeCost`-functie uit ANIMO HACCP; er is geen tweede foodcostberekening toegevoegd.
 - Verkoopprijs en btw-tarief worden per recept bewaard in de bestaande bedrijfsgebonden snapshot.
-- CSV-import ondersteunt komma/puntkomma, Belgische bedragen en ISO- of Belgische datums; foutieve regels worden geweigerd.
+- CSV-import ondersteunt komma/puntkomma, aanhalingstekens en Belgische/internationale geldnotatie. Datumwaarden worden momenteel als tekst bewaard; datumformaten en periodefilters moeten nog worden getest met echte kassabestanden.
 - Kassaproducten worden door eigenaar/manager handmatig aan recepten gekoppeld. Niet-gekoppelde regels tellen niet mee in de rendabiliteit.
 - Bij import wordt de receptversie en ingrediëntkost per portie als momentopname bij de verkoopregels opgeslagen. Latere recept- of inkoopprijswijzigingen herschrijven de historische kost niet.
-- Onvolledige btw- of kostgegevens leveren geen volledige brutowinsttotalen op.
+- Onvolledige btw- of kostgegevens leveren geen volledige brutowinsttotalen op. De ontbrekende regels worden niet stilzwijgend als nul behandeld.
 - De module heeft nog geen gevalideerde CSV/XLSX-formaten van concrete kassaleveranciers; XLSX en POS-API's zijn nog niet geïmplementeerd.
 - De nieuwe module is alleen in de featurebranch aanwezig; productie en live database zijn niet gewijzigd.
 
@@ -94,6 +94,6 @@ Elk advies toont de gebruikte cijfers en reden. De uitbater beslist zelf.
 A. Lees bestaande recept-, foodcost-, menu- en btw-structuren uit.
 B. Definieer een genormaliseerd verkoopimportformaat en voorbeeldbestand.
 C. Bouw analyse op fictieve data in testomgeving.
-D. Test prijsberekening, btw, receptversies, dubbele imports en rapporttotalen.
+D. Test prijsberekening, btw, receptversies, dubbele imports en rapporttotalen; voer daarna een volledige handmatige test uit in de ANIMO-testwebsite.
 E. Voeg POS-koppelingen pas toe na keuze en validatie van providers.
 F. Geen productie-release zonder review en expliciete goedkeuring.
