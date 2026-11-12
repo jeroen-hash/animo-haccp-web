@@ -20,7 +20,8 @@ const number = value => new Intl.NumberFormat("nl-BE",{maximumFractionDigits:2})
 const normalizedName = value => String(value||"").trim().toLocaleLowerCase("nl-BE");
 const emptySettings = () => ({pricesByRecipe:{},salesImports:[],salesRows:[],mappings:{}});
 
-window.__FAVVBuildMenuSalesStockPlanCore=buildSalesStockDeductionPlan;\nasync function appData() {
+window.__FAVVBuildMenuSalesStockPlanCore=buildSalesStockDeductionPlan;
+async function appData() {
   const data = await window.FAVVGetMenuProfitabilityData?.();
   if (!data) throw new Error("Menurendabiliteit kon de gegevens niet laden.");
   const settings = {...emptySettings(),...(data.settings||{})};
@@ -170,7 +171,7 @@ function renderSales(data) {
     <p class="mr-footnote">Drempels zijn de mediaan van de getoonde gerechten: populariteit ${number(classified[0].popularityThreshold)} porties en brutowinst ${money(classified[0].profitThreshold)} per portie.</p>`
     : '<div class="mr-empty">De menu-matrix verschijnt zodra er gekoppelde verkoopregels en geldige prijzen beschikbaar zijn.</div>';
   $("mrHistory").innerHTML = data.settings.salesImports.length ? `
-    <div class="card mr-card"><h2>Geïmporteerde kassabestanden</h2>${data.settings.salesImports.slice().reverse().map(item=>`<div class="mr-history-row"><span><strong>${esc(item.fileName)}</strong><small>${number(item.rowCount)} regels · ${new Date(item.importedAt).toLocaleString("nl-BE")}</small></span><span class="mr-tag">${item.stockDeductionStatus==="applied"?"Stock afgeboekt":item.stockDeductionStatus==="pending_sync"?"Stock wacht op synchronisatie":"Geïmporteerd"}</span>${item.stockDeductionStatus==="pending_sync"?`<button class="btn secondary small" type="button" data-mr-action="retry-stock" data-id="${esc(item.importId)}">Stock opnieuw synchroniseren</button>`:""}</div>`).join("")}</div>` : "";
+    <div class="card mr-card"><h2>Geïmporteerde kassabestanden</h2>${data.settings.salesImports.slice().reverse().map(item=>`<div class="mr-history-row"><span><strong>${esc(item.fileName)}</strong><small>${number(item.rowCount)} regels · ${new Date(item.importedAt).toLocaleString("nl-BE")}</small></span><span class="mr-tag">${item.stockDeductionStatus==="applied"?"Stock afgeboekt":["pending_sync","pending"].includes(item.stockDeductionStatus)?"Stock wacht op synchronisatie":"Geïmporteerd"}</span>${item.stockDeductionStatus==="pending_sync"?`<button class="btn secondary small" type="button" data-mr-action="retry-stock" data-id="${esc(item.importId)}">Stock opnieuw synchroniseren</button>`:""}</div>`).join("")}</div>` : "";
 }
 async function render() {
   if (!ensureUi()) return;
@@ -295,7 +296,8 @@ function clickHandler(event) {
   const showError=error=>{ $("mrImportStatus").textContent=error?.message||"De actie is mislukt."; };
   if(button.dataset.mrAction==="save-price")savePrice(button.dataset.id).catch(showError);
   if(button.dataset.mrAction==="preview-import")previewImport().catch(showError);
-  if(button.dataset.mrAction==="commit-import")commitImport().catch(showError);\n  if(button.dataset.mrAction==="retry-stock")retryStockDeduction(button.dataset.id).catch(showError);
+  if(button.dataset.mrAction==="commit-import")commitImport().catch(showError);
+  if(button.dataset.mrAction==="retry-stock")retryStockDeduction(button.dataset.id).catch(showError);
   if(button.dataset.mrAction==="refresh")render();
 }
 function init() {
