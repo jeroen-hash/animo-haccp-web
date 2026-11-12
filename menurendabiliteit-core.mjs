@@ -239,6 +239,61 @@ function median(values) {
   return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
 }
 
+
+/**
+ * Build an all-or-nothing stock plan for mapped POS sales.
+ * Recipe ingredient quantities use the same stock units as manual production.
+ */
+export function buildSalesStockDeductionPlan(salesRows, recipes, stock) {
+  const recipeById = new Map((recipes || []).map(recipe => [String(recipe.id), recipe]));
+  const stockById = new Map((stock || []).map(item => [String(item.id), item]));
+  const requirements = new Map();
+  const errors = [];
+  let mappedRows = 0;
+  let unmappedRows = 0;
+
+  for (const row of salesRows || []) {
+    if (!row?.dishId) { unmappedRows++; continue; }
+    mappedRows++;
+    const recipe = recipeById.get(String(row.dishId));
+    const portions = Number(row.quantity);
+    const yieldCount = Number(recipe?.yield);
+    if (!recipe || !Number.isFinite(portions) || portions <= 0 ||
+        !Number.isFinite(yieldCount) || yieldCount <= 0 ||
+        !Array.isArray(recipe.ingredients) || recipe.ingredients.length === 0) {
+      errors.push({ product: row.product || "", reason: "missing_or_invalid_recipe" });
+      continue;
+    }
+    for (const ingredient of recipe.ingredients) {
+      const stockId = String(ingredient.stockId || "");
+      const product = stockById.get(stockId);
+      const quantity = Number(ingredient.quantity);
+      if (!product || !Number.isFinite(quantity) || quantity <= 0) {
+        errors.push({ product: row.product || recipe.name, stockId, reason: "missing_stock_item_or_quantity" });
+        continue;
+      }
+      const need = quantity * portions / yieldCount;
+      const current = requirements.get(stockId) || { stockId, name: product.name, unit: product.unit || "", required: 0, available: 0 };
+      current.required += need;
+      requirements.set(stockId, current);
+    }
+  }
+
+  const result = [...requirements.values()].map(item => {
+    const product = stockById.get(item.stockId);
+    const batches = Array.isArray(product?.batches) ? product.batches.filter(batch => Number(batch.quantity) > 0) : [];
+    const available = batches.length
+      ? batches.reduce((sum, batch) => sum + Number(batch.quantity || 0), 0)
+      : Math.max(0, Number(product?.quantity) || 0);
+    return { ...item, available, shortage: Math.max(0, item.required - available) };
+  });
+  const shortages = result.filter(item => item.shortage > 0.000001);
+  return {
+    status: errors.length ? "invalid_recipe" : !mappedRows ? "no_mapped_sales" : shortages.length ? "insufficient_stock" : "ready",
+    mappedRows, unmappedRows, errors, shortages, requirements: result
+  };
+}
+
 export function salesImportFingerprint(fileName, rows) {
   const dates = (rows || []).map(row => String(row.date)).sort();
   const period = dates.length ? dates[0] + "__" + dates[dates.length - 1] : "empty";
