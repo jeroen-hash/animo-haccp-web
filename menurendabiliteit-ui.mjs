@@ -4,7 +4,8 @@ import {
   salesImportFingerprint,
   findDuplicateSalesLines,
   buildDishSalesSummary,
-  classifyMenuItems
+  classifyMenuItems,
+  recipeCostSnapshotForDate
 } from "./menurendabiliteit-core.mjs";
 
 let pendingImport = null;
@@ -223,12 +224,14 @@ async function commitImport() {
   const newRows=pendingImport.rows.map(row=>{
     const dishId=mappings[normalizedName(row.product)]||null;
     const recipe=dishId?recipesById.get(dishId):null;
+    const snapshot=recipe?recipeCostSnapshotForDate(
+      recipe,row.date,recipe.ingredientCost,recipe.ingredientCostComplete!==false
+    ):null;
     return {
       ...row,importId,dishId,
-      recipeVersion:recipe?(Number(recipe.version)||1):null,
-      ingredientCostPerPortionSnapshot:recipe&&recipe.ingredientCostComplete!==false
-        ? Number(recipe.ingredientCost)/Math.max(1,Number(recipe.yield)||1)
-        : null
+      recipeVersion:snapshot?.recipeVersion??null,
+      ingredientCostPerPortionSnapshot:snapshot?.ingredientCostPerPortion??null,
+      costSnapshotSource:snapshot?.source??null
     };
   });
   const next={
