@@ -5,20 +5,25 @@ import { initFoodWasteUi } from "../voedselverspilling-ui.mjs";
 
 const ui = await readFile(new URL("../voedselverspilling-ui.mjs", import.meta.url), "utf8");
 const app = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const testDeploy = await readFile(new URL("../.github/workflows/deploy-strato-test.yml", import.meta.url), "utf8");
 
 test("food waste UI module loads without touching the DOM at import time", () => {
   assert.equal(typeof initFoodWasteUi, "function");
 });
 
-test("food waste UI is wired into the feature preview and uses the isolated test project", () => {
+test("food waste UI is wired in while source and test deployment keep separate Supabase projects", () => {
   assert.match(app, /FAVVGetSupabaseClient=\(\)=>cloudClient/);
   assert.match(app, /FAVVGetCurrentUser=\(\)=>currentUser/);
   assert.match(app, /<script type="module" src="\.\/voedselverspilling-ui\.mjs"><\/script>/);
   assert.match(ui, /const mobileNav = document\.querySelector\("\.mobile-nav"\)/);
   assert.match(ui, /foodWasteMobileNav/);
   assert.match(app, /class="mobile-nav"/);
-  assert.match(app, /PUBLIC_SUPABASE_CONFIG=\{url:'https:\/\/xwjcwravfeldndwlugai\.supabase\.co'/);
-  assert.doesNotMatch(app, /PUBLIC_SUPABASE_CONFIG=\{url:'https:\/\/zimzsovvtdmrthrflkgm\.supabase\.co'/);
+  assert.match(app, /PUBLIC_SUPABASE_CONFIG=\{url:'https:\/\/zimzsovvtdmrthrflkgm\.supabase\.co'/);
+  assert.doesNotMatch(app, /PUBLIC_SUPABASE_CONFIG=\{url:'https:\/\/xwjcwravfeldndwlugai\.supabase\.co'/);
+  assert.match(testDeploy, /const productionConfig = "const PUBLIC_SUPABASE_CONFIG=\{url:'https:\/\/zimzsovvtdmrthrflkgm\.supabase\.co'/);
+  assert.match(testDeploy, /const testConfig = "const PUBLIC_SUPABASE_CONFIG=\{url:'https:\/\/xwjcwravfeldndwlugai\.supabase\.co'/);
+  assert.ok(testDeploy.indexOf("Testbestanden voorbereiden") < testDeploy.indexOf("Testconfiguratie uitsluitend in testbuild injecteren"));
+  assert.match(testDeploy, /mirror -R --verbose out\/test \/test/);
 });
 
 test("every waste registration requires a photo and supports the independent offline queue", () => {
