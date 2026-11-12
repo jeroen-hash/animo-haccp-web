@@ -18,9 +18,9 @@ const number = value => new Intl.NumberFormat("nl-BE",{maximumFractionDigits:2})
 const normalizedName = value => String(value||"").trim().toLocaleLowerCase("nl-BE");
 const emptySettings = () => ({pricesByRecipe:{},salesImports:[],salesRows:[],mappings:{}});
 
-function appData() {
-  const data = window.FAVVGetMenuProfitabilityData?.();
-  if (!data) return {recipes:[],settings:emptySettings()};
+async function appData() {
+  const data = await window.FAVVGetMenuProfitabilityData?.();
+  if (!data) throw new Error("Menurendabiliteit kon de gegevens niet laden.");
   const settings = {...emptySettings(),...(data.settings||{})};
   settings.pricesByRecipe = settings.pricesByRecipe || {};
   settings.salesImports = Array.isArray(settings.salesImports) ? settings.salesImports : [];
@@ -28,8 +28,9 @@ function appData() {
   settings.mappings = settings.mappings || {};
   return {...data,settings};
 }
-function saveSettings(settings) {
-  if (window.FAVVSaveMenuProfitability?.(settings) !== true) throw new Error("Instellingen konden niet worden bewaard.");
+async function saveSettings(settings) {
+  const saved = await window.FAVVSaveMenuProfitability?.(settings);
+  if (saved !== true) throw new Error("Instellingen konden niet worden bewaard.");
 }
 function ensureUi() {
   const nav = document.querySelector(".nav");
@@ -158,11 +159,19 @@ function renderSales(data) {
   $("mrHistory").innerHTML = data.settings.salesImports.length ? `
     <div class="card mr-card"><h2>Geïmporteerde kassabestanden</h2>${data.settings.salesImports.slice().reverse().map(item=>`<div class="mr-history-row"><span><strong>${esc(item.fileName)}</strong><small>${number(item.rowCount)} regels · ${new Date(item.importedAt).toLocaleString("nl-BE")}</small></span><span class="mr-tag">Geïmporteerd</span></div>`).join("")}</div>` : "";
 }
-function render() {
+async function render() {
   if (!ensureUi()) return;
-  const data=appData();
-  renderPrices(data);
-  renderSales(data);
+  $("mrImportStatus").textContent = "Gegevens laden…";
+  try {
+    const data = await appData();
+    renderPrices(data);
+    renderSales(data);
+    $("mrImportStatus").textContent = "";
+  } catch (error) {
+    $("mrDishPrices").innerHTML = '<div class="mr-empty">De gegevens zijn niet geladen.</div>';
+    $("mrSalesResults").innerHTML = '<div class="mr-empty">Geen toegang tot de verkoopgegevens.</div>';
+    $("mrImportStatus").textContent = error?.message || "De gegevens konden niet worden geladen.";
+  }
 }
 async function previewImport() {
   const file=$("mrSalesFile")?.files?.[0];
@@ -189,9 +198,9 @@ async function previewImport() {
     ${products.map(product=>`<label class="mr-map-row"><span>${esc(product)}</span><select data-mr-map="${esc(normalizedName(product))}"><option value="">Niet koppelen</option>${data.recipes.map(recipe=>`<option value="${esc(recipe.id)}" ${data.settings.mappings[normalizedName(product)]===recipe.id?"selected":""}>${esc(recipe.name)}</option>`).join("")}</select></label>`).join("")}
     <button class="btn" type="button" data-mr-action="commit-import">Import bevestigen</button></div>`;
 }
-function commitImport() {
+async function commitImport() {
   if(!pendingImport)return;
-  const data=appData();
+  const data=await appData();
   const mappings={...data.settings.mappings};
   document.querySelectorAll("[data-mr-map]").forEach(select=>{
     if(select.value)mappings[select.dataset.mrMap]=select.value;
@@ -216,15 +225,15 @@ function commitImport() {
     salesRows:[...data.settings.salesRows,...newRows],
     salesImports:[...data.settings.salesImports,{fingerprint:pendingImport.fingerprint,fileName:pendingImport.fileName,rowCount:newRows.length,importedAt,importId}]
   };
-  saveSettings(next);
+  await saveSettings(next);
   $("mrImportStatus").textContent=`${newRows.length} verkoopregels geïmporteerd. Niet gekoppelde regels blijven zichtbaar als niet gekoppeld.`;
   $("mrImportPreview").innerHTML="";
   $("mrSalesFile").value="";
   pendingImport=null;
-  render();
+  await render();
 }
-function savePrice(recipeId) {
-  const data=appData();
+async function savePrice(recipeId) {
+  const data=await appData();
   const priceInput=document.querySelector(`[data-mr-price="${CSS.escape(recipeId)}"]`);
   const vatInput=document.querySelector(`[data-mr-vat="${CSS.escape(recipeId)}"]`);
   const price=priceInput?.value===""?null:Number(priceInput?.value);
@@ -234,30 +243,30 @@ function savePrice(recipeId) {
     return;
   }
   const pricesByRecipe={...data.settings.pricesByRecipe,[recipeId]:{sellingPriceInclusive:price,vatRate:vat,updatedAt:new Date().toISOString()}};
-  saveSettings({...data.settings,pricesByRecipe});
-  render();
+  await saveSettings({...data.settings,pricesByRecipe});
+  await render();
 }
 function clickHandler(event) {
   const button=event.target.closest("[data-mr-action]");
   if(!button)return;
-  try {
-    if(button.dataset.mrAction==="save-price")savePrice(button.dataset.id);
-    if(button.dataset.mrAction==="preview-import")previewImport().catch(error=>$("mrImportStatus").textContent=error.message||"CSV kon niet worden gelezen.");
-    if(button.dataset.mrAction==="commit-import")commitImport();
-    if(button.dataset.mrAction==="refresh")render();
-  } catch(error) {
-    $("mrImportStatus").textContent=error.message||"De actie is mislukt.";
-  }
+  const showError=error=>{ $("mrImportStatus").textContent=error?.message||"De actie is mislukt."; };
+  if(button.dataset.mrAction==="save-price")savePrice(button.dataset.id).catch(showError);
+  if(button.dataset.mrAction==="preview-import")previewImport().catch(showError);
+  if(button.dataset.mrAction==="commit-import")commitImport().catch(showError);
+  if(button.dataset.mrAction==="refresh")render();
 }
 function init() {
   if(initialized||!ensureUi())return;
   initialized=true;
   document.addEventListener("click",clickHandler);
-  window.FAVVRenderMenuProfitability=render;
-  window.FAVVSetMenuProfitabilityAccess=role=>{ $("menuProfitabilityNav").style.display=(role==="owner"||role==="manager")?"":"none"; };
+  window.FAVVRenderMenuProfitability=()=>render();
+  window.FAVVSetMenuProfitabilityAccess=role=>{
+    const allowed=role==="owner"||role==="manager";
+    $("menuProfitabilityNav").style.display=allowed?"":"none";
+    if(allowed)render();
+  };
   const role=window.FAVVCloudRole||window.FAVVGetCurrentUser?.()?.cloudRole||window.FAVVGetCurrentUser?.()?.role||"";
   window.FAVVSetMenuProfitabilityAccess(role);
-  render();
 }
 document.addEventListener("DOMContentLoaded",init,{once:true});
 if(document.readyState==="interactive"||document.readyState==="complete")init();
