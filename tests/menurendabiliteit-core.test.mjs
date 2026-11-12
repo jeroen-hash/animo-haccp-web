@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   parseEuroAmount, parseCsv, normalizeSalesCsv, salesTotalExcludingVat,
   dishEconomics, buildDishSalesSummary, classifyMenuItems,
-  findDuplicateSalesLines, salesImportFingerprint, recipeCostSnapshotForDate, createCostSnapshot
+  findDuplicateSalesLines, salesImportFingerprint, recipeCostSnapshotForDate, createCostSnapshot, buildSalesStockDeductionPlan
 } from "../menurendabiliteit-core.mjs";
 
 test("Eurobedragen aanvaardt Belgische en internationale notatie", () => {
@@ -146,4 +146,35 @@ test("kostprijsmomentopname bewaart receptversie en berekende kost", () => {
   assert.equal(snapshot.recipeVersion, 3);
   assert.equal(snapshot.ingredientCostPerPortion, 4.5);
   assert.equal(snapshot.capturedAt, "2026-11-01T12:00:00Z");
+});
+
+test("kassaverkoop maakt een geaggregeerd stockplan op basis van receptyield", () => {
+  const plan = buildSalesStockDeductionPlan(
+    [{ dishId: "r1", product: "Pasta", quantity: 5 }],
+    [{ id: "r1", name: "Pasta", yield: 2, ingredients: [{ stockId: "s1", quantity: 0.4 }, { stockId: "s2", quantity: 2 }] }],
+    [{ id: "s1", name: "Bloem", unit: "kg", quantity: 3 }, { id: "s2", name: "Eieren", unit: "stuks", quantity: 10 }]
+  );
+  assert.equal(plan.status, "ready");
+  assert.equal(plan.requirements.find(item => item.stockId === "s1").required, 1);
+  assert.equal(plan.requirements.find(item => item.stockId === "s2").required, 5);
+});
+
+test("kassaverkoop blokkeert volledige afboeking bij onvoldoende stock", () => {
+  const plan = buildSalesStockDeductionPlan(
+    [{ dishId: "r1", product: "Pasta", quantity: 5 }],
+    [{ id: "r1", name: "Pasta", yield: 1, ingredients: [{ stockId: "s1", quantity: 2 }] }],
+    [{ id: "s1", name: "Bloem", unit: "kg", quantity: 4 }]
+  );
+  assert.equal(plan.status, "insufficient_stock");
+  assert.equal(plan.shortages[0].shortage, 6);
+});
+
+test("niet gekoppelde kassaproducten boeken geen stock af", () => {
+  const plan = buildSalesStockDeductionPlan(
+    [{ product: "Frisdrank", quantity: 2 }],
+    [],
+    []
+  );
+  assert.equal(plan.status, "no_mapped_sales");
+  assert.equal(plan.unmappedRows, 1);
 });
