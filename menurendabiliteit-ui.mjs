@@ -251,7 +251,7 @@ async function commitImport() {
     salesRows:[...data.settings.salesRows,...newRows],
     salesImports:[...data.settings.salesImports,importRecord]
   };
-  const savedUpdatedAt = await saveSettings(next,data.updatedAt);
+  await saveSettings(next,data.updatedAt);
   let stockMessage="";
   if(mappedRows.length){
     const result=await window.FAVVApplyMenuSalesStockDeduction({importId,rows:mappedRows});
