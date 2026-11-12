@@ -246,3 +246,67 @@ begin
     raise exception 'Missing index for created_by foreign key';
   end if;
 END; $block$ LANGUAGE plpgsql;
+
+
+-- Menu profitability is private to active owners/managers of the same business.
+DO $block$
+declare
+  n integer;
+  rpc_security_definer boolean;
+  table_comment text;
+begin
+  if not exists (
+    select 1 from pg_class c
+    join pg_namespace nsp on nsp.oid = c.relnamespace
+    where nsp.nspname = 'public' and c.relname = 'menu_profitability_data'
+      and c.relrowsecurity is true
+  ) then raise exception 'Menu profitability table must have RLS enabled'; end if;
+
+  select count(*) into n from pg_policies
+  where schemaname = 'public' and tablename = 'menu_profitability_data';
+  if n <> 3 then raise exception 'Expected three menu profitability RLS policies, got %', n; end if;
+
+  select p.prosecdef into rpc_security_definer
+  from pg_proc p
+  join pg_namespace ns on ns.oid = p.pronamespace
+  where ns.nspname = 'public' and p.proname = 'save_menu_profitability_data';
+  if rpc_security_definer is distinct from false then
+    raise exception 'Menu save RPC must use invoker security and remain subject to RLS';
+  end if;
+
+  if has_function_privilege('anon', 'public.save_menu_profitability_data(uuid,jsonb,timestamp with time zone)', 'EXECUTE') then
+    raise exception 'anon unexpectedly can execute menu save RPC';
+  end if;
+  if not has_function_privilege('authenticated', 'public.save_menu_profitability_data(uuid,jsonb,timestamp with time zone)', 'EXECUTE') then
+    raise exception 'authenticated is missing menu save RPC permission';
+  end if;
+
+  select obj_description('public.food_waste_entries'::regclass, 'pg_class') into table_comment;
+  if table_comment not like '%Linked stock products are deducted automatically%' then
+    raise exception 'Food waste table comment is not aligned with stock deduction behavior';
+  end if;
+
+  if not exists (
+    select 1 from pg_indexes
+    where schemaname = 'public' and tablename = 'menu_profitability_data'
+      and indexname = 'menu_profitability_data_created_by_idx'
+  ) then raise exception 'Missing menu created_by foreign key index'; end if;
+END; $block$ LANGUAGE plpgsql;
+
+-- Manager can save private menu data; an employee in the same business cannot read it.
+set role authenticated;
+set request.jwt.claim.sub = '22222222-2222-4222-8222-222222222222';
+insert into public.menu_profitability_data (business_id, payload)
+values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '{"menu":"private"}'::jsonb);
+
+reset role;
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-4111-8111-111111111111';
+DO $block$
+declare n integer;
+begin
+  select count(*) into n from public.menu_profitability_data
+  where business_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  if n <> 0 then raise exception 'Employee unexpectedly read manager-only menu data'; end if;
+END; $block$ LANGUAGE plpgsql;
+reset role;
