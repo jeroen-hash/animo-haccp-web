@@ -63,8 +63,15 @@ const HEADER_ALIASES = {
   transactionId: ["transactie", "transactie-id", "ticket", "bonnummer", "bon", "transaction id", "referentie"]
 };
 
+function normalizeHeader(value) {
+  return String(value ?? "").toLowerCase().normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ").trim();
+}
+
 function headerIndex(headers, aliases) {
-  return headers.findIndex(header => aliases.includes(String(header).trim().toLowerCase()));
+  const accepted = new Set(aliases.map(normalizeHeader));
+  return headers.findIndex(header => accepted.has(normalizeHeader(header)));
 }
 
 function normalizeSalesDate(value) {
