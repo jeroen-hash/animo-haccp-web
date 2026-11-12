@@ -180,7 +180,7 @@ async function previewImport() {
   const parsed=normalizeSalesCsv(await file.text());
   if(parsed.errors.length){$("mrImportStatus").textContent=parsed.errors.join(" ");$("mrImportPreview").innerHTML="";pendingImport=null;return;}
   if(parsed.rows.length>5000){$("mrImportStatus").textContent="Dit bestand bevat meer dan 5.000 verkoopregels. Splits het bestand in kleinere periodes.";return;}
-  const data=appData();
+  const data=await appData();
   if(data.settings.salesRows.length+parsed.rows.length>5000){$("mrImportStatus").textContent="De veilige limiet van 5.000 verkoopregels in deze eerste versie is bereikt. De import wordt niet toegevoegd om de appgegevens niet te zwaar te maken.";return;}
   const fingerprint=salesImportFingerprint(file.name,parsed.rows);
   if(data.settings.salesImports.some(item=>item.fingerprint===fingerprint)){
