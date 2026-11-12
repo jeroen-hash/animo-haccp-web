@@ -164,10 +164,12 @@ function render() {
 async function previewImport() {
   const file=$("mrSalesFile")?.files?.[0];
   if(!file){$("mrImportStatus").textContent="Kies eerst een CSV-bestand.";return;}
-  if(file.size>5*1024*1024){$("mrImportStatus").textContent="Het CSV-bestand is groter dan 5 MB.";return;}
+  if(file.size>1024*1024){$("mrImportStatus").textContent="Het CSV-bestand is groter dan 1 MB. Exporteer een kortere periode of splits het kassabestand.";return;}
   const parsed=normalizeSalesCsv(await file.text());
   if(parsed.errors.length){$("mrImportStatus").textContent=parsed.errors.join(" ");$("mrImportPreview").innerHTML="";pendingImport=null;return;}
+  if(parsed.rows.length>10000){$("mrImportStatus").textContent="Dit bestand bevat meer dan 10.000 verkoopregels. Splits het bestand in kleinere periodes.";return;}
   const data=appData();
+  if(data.settings.salesRows.length+parsed.rows.length>25000){$("mrImportStatus").textContent="De lokale verkoopgeschiedenis bereikt de veilige limiet van 25.000 regels. Exporteer of archiveer eerst oudere gegevens.";return;}
   const fingerprint=salesImportFingerprint(file.name,parsed.rows);
   if(data.settings.salesImports.some(item=>item.fingerprint===fingerprint)){
     $("mrImportStatus").textContent="Dit bestand lijkt al geïmporteerd. Er zijn geen regels toegevoegd.";
@@ -249,8 +251,9 @@ function init() {
   initialized=true;
   document.addEventListener("click",clickHandler);
   window.FAVVRenderMenuProfitability=render;
-  const role=window.FAVVCloudRole||window.FAVVGetCurrentUser?.()?.cloudRole||"";
-  if(role==="owner"||role==="manager")$("menuProfitabilityNav").style.display="";
+  window.FAVVSetMenuProfitabilityAccess=role=>{ $("menuProfitabilityNav").style.display=(role==="owner"||role==="manager")?"":"none"; };
+  const role=window.FAVVCloudRole||window.FAVVGetCurrentUser?.()?.cloudRole||window.FAVVGetCurrentUser?.()?.role||"";
+  window.FAVVSetMenuProfitabilityAccess(role);
   render();
 }
 document.addEventListener("DOMContentLoaded",init,{once:true});
