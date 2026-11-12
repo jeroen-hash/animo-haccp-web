@@ -2,6 +2,11 @@ name: Create menu profitability RLS migration scaffold
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - feature/voedselverspilling-module
+    paths:
+      - ".github/workflows/create-menu-profitability-migration.yml"
   push:
     branches:
       - feature/menurendabiliteit-module
@@ -13,7 +18,7 @@ permissions:
 
 jobs:
   create-migration:
-    if: github.ref == 'refs/heads/feature/menurendabiliteit-module'
+    if: (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/menurendabiliteit-module') || github.ref == 'refs/heads/feature/menurendabiliteit-module'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout menu profitability branch
