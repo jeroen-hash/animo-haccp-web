@@ -1966,6 +1966,92 @@ thead th:last-child{border-top-right-radius:7px}
 }
 </style>
 
+
+<style id="animo-ai-widget-styles">
+#animo-ai-widget{position:fixed;right:24px;bottom:24px;z-index:1500;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+#animo-ai-launcher{width:62px;height:62px;border:0;border-radius:50%;background:linear-gradient(145deg,#18834b,#0e5633);color:#fff;box-shadow:0 12px 32px rgba(9,55,31,.32);display:grid;place-items:center;font-size:27px;cursor:pointer;transition:transform .2s,box-shadow .2s}
+#animo-ai-launcher:hover{transform:translateY(-3px);box-shadow:0 16px 38px rgba(9,55,31,.38)}
+#animo-ai-launcher .ai-launcher-label{position:absolute;right:72px;white-space:nowrap;background:#103e2a;color:#fff;padding:9px 13px;border-radius:10px;font-size:13px;font-weight:750;box-shadow:0 5px 18px #10251d22}
+#animo-ai-panel{position:absolute;right:0;bottom:76px;width:min(410px,calc(100vw - 32px));height:min(620px,calc(100dvh - 120px));min-height:420px;background:#fff;border:1px solid #dce8e0;border-radius:20px;box-shadow:0 24px 80px rgba(8,38,22,.24);display:none;overflow:hidden;flex-direction:column}
+#animo-ai-panel.open{display:flex;animation:animoAiIn .18s ease-out}
+@keyframes animoAiIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+.animo-ai-head{display:flex;align-items:center;gap:11px;padding:16px 17px;background:linear-gradient(120deg,#103e2a,#176a40);color:#fff;flex:0 0 auto}
+.animo-ai-mark{width:39px;height:39px;border-radius:13px;background:#ffffff1c;border:1px solid #ffffff35;display:grid;place-items:center;font-size:21px}
+.animo-ai-headcopy{flex:1;min-width:0}.animo-ai-headcopy strong{display:block;font-size:15px;letter-spacing:.1px}.animo-ai-headcopy small{display:block;margin-top:3px;color:#d6eadc;font-size:11px}
+.animo-ai-online{display:inline-block;width:7px;height:7px;border-radius:50%;background:#8de2aa;margin-right:5px}
+.animo-ai-head button{width:34px;height:34px;border:0;border-radius:10px;background:#ffffff18;color:#fff;font-size:20px;cursor:pointer}
+#animo-ai-status{padding:8px 15px;background:#f2f8f4;border-bottom:1px solid #e4eee7;color:#42614e;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#animo-ai-messages{padding:16px;display:flex;flex:1 1 auto;min-height:0;overflow-y:auto;flex-direction:column;gap:12px;background:#fbfdfb;overscroll-behavior:contain}
+.animo-ai-msg{max-width:91%;padding:11px 13px;border-radius:14px;font-size:13px;line-height:1.55;overflow-wrap:anywhere;white-space:pre-wrap}
+.animo-ai-msg.bot{align-self:flex-start;background:#fff;border:1px solid #e4ece6;color:#24372b;border-top-left-radius:5px}
+.animo-ai-msg.user{align-self:flex-end;background:#e7f4eb;color:#174b2e;border:1px solid #d5eadc;border-top-right-radius:5px}
+.animo-ai-msg strong{font-weight:800}
+#animo-ai-prompts{padding:9px 13px 4px;display:flex;gap:7px;overflow-x:auto;background:#fff;flex:0 0 auto}
+#animo-ai-prompts button{flex:0 0 auto;border:1px solid #d9e8de;border-radius:999px;background:#fff;color:#28583a;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer}
+#animo-ai-prompts button:hover{background:#edf7f0}
+#animo-ai-form{display:flex;gap:8px;padding:11px 12px max(12px,env(safe-area-inset-bottom));border-top:1px solid #e8eee9;background:#fff;flex:0 0 auto}
+#animo-ai-input{min-width:0;flex:1;border:1px solid #d5e0d8;border-radius:12px;padding:12px 13px;font-size:14px;outline:none;background:#fbfdfb}
+#animo-ai-input:focus{border-color:#278351;box-shadow:0 0 0 3px #dff1e5}
+#animo-ai-send{border:0;border-radius:12px;padding:0 15px;background:#147a46;color:#fff;font-weight:800;cursor:pointer}
+#animo-ai-send:disabled{opacity:.55;cursor:wait}
+.animo-ai-footnote{padding:0 14px 9px;background:#fff;color:#8a968d;font-size:10px;text-align:center}
+@media(max-width:700px){
+ #animo-ai-widget{right:15px;bottom:calc(84px + env(safe-area-inset-bottom))}
+ #animo-ai-launcher{width:56px;height:56px}
+ #animo-ai-launcher .ai-launcher-label{display:none}
+ #animo-ai-panel{position:fixed;inset:0;width:100%;height:100dvh;min-height:0;max-height:none;border:0;border-radius:0;bottom:auto;right:auto;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+ #animo-ai-widget.panel-open #animo-ai-launcher{display:none}
+ .animo-ai-head{padding:13px 15px}
+ #animo-ai-messages{padding:15px}
+ #animo-ai-form{padding-bottom:max(12px,env(safe-area-inset-bottom))}
+}
+@media(prefers-reduced-motion:reduce){#animo-ai-panel.open{animation:none}#animo-ai-launcher{transition:none}}
+</style>
+<div id="animo-ai-widget">
+<section id="animo-ai-panel" role="dialog" aria-label="ANIMO AI-chat" aria-modal="false">
+<header class="animo-ai-head"><div class="animo-ai-mark">✳</div><div class="animo-ai-headcopy"><strong>ANIMO AI</strong><small><span class="animo-ai-online"></span>Je horeca-assistent</small></div><button type="button" id="animo-ai-close" aria-label="Chat minimaliseren">−</button></header>
+<div id="animo-ai-status" role="status">Beveiligde HACCP-sessie wordt gecontroleerd…</div>
+<div id="animo-ai-messages" aria-live="polite"><div class="animo-ai-msg bot">Dag! Ik ben ANIMO AI. Stel me gerust een vraag over HACCP, voedselveiligheid, temperaturen, allergenen, stock of recepten.</div></div>
+<div id="animo-ai-prompts"><button type="button">Temperatuurafwijking</button><button type="button">Allergenen</button><button type="button">Foodcost</button><button type="button">Dagelijkse checklist</button></div>
+<form id="animo-ai-form"><input id="animo-ai-input" maxlength="2000" autocomplete="off" placeholder="Stel je vraag…" aria-label="Stel je vraag aan ANIMO AI" required><button id="animo-ai-send" type="submit">Verstuur</button></form>
+<div class="animo-ai-footnote">AI kan fouten maken. Controleer kritieke voedselveiligheidsbeslissingen.</div>
+</section>
+<button id="animo-ai-launcher" type="button" aria-label="Open ANIMO AI" aria-expanded="false"><span>✳</span><span class="ai-launcher-label">Vraag het aan ANIMO AI</span></button>
+</div>
+<script id="animo-ai-widget-script">
+(function(){
+'use strict';
+const root=document.getElementById('animo-ai-widget'),panel=document.getElementById('animo-ai-panel');if(!root||!panel)return;
+const launcher=document.getElementById('animo-ai-launcher'),close=document.getElementById('animo-ai-close'),status=document.getElementById('animo-ai-status'),messages=document.getElementById('animo-ai-messages'),form=document.getElementById('animo-ai-form'),input=document.getElementById('animo-ai-input'),send=document.getElementById('animo-ai-send');
+const history=[];let busy=false,session=null,businessId='';
+const prompts=['Wat doe ik bij een temperatuurafwijking?','Waar moet ik op letten bij allergenen?','Help me mijn foodcost berekenen','Maak een dagelijkse HACCP-checklist'];
+function open(){panel.classList.add('open');root.classList.add('panel-open');launcher.setAttribute('aria-expanded','true');refreshSession();setTimeout(()=>input.focus(),100)}
+function minimize(){panel.classList.remove('open');root.classList.remove('panel-open');launcher.setAttribute('aria-expanded','false')}
+launcher.addEventListener('click',open);close.addEventListener('click',minimize);
+function addMessage(role,text){const node=document.createElement('div');node.className='animo-ai-msg '+(role==='user'?'user':'bot');node.textContent=String(text);messages.append(node);messages.scrollTop=messages.scrollHeight}
+async function refreshSession(){
+try{const client=window.FAVVGetSupabaseClient?.();if(!client){status.textContent='Meld je eerst aan bij ANIMO HACCP om ANIMO AI te gebruiken.';session=null;businessId='';return false}
+const result=await client.auth.getSession();if(result.error||!result.data?.session){status.textContent='Geen actieve HACCP-sessie. Meld je aan bij ANIMO HACCP.';session=null;businessId='';return false}
+session=result.data.session;const business=window.FAVVCloudBusiness;businessId=business?.id||'';
+if(!businessId){status.textContent='Je horecazaak wordt nog geladen. Probeer zo meteen opnieuw.';return false}
+status.textContent='Verbonden met '+(business.name||'je horecazaak')+' · beveiligde alleen-lezen toegang';return true;
+}catch(error){status.textContent='De beveiligde HACCP-sessie kon niet worden gecontroleerd.';session=null;businessId='';return false}}
+async function ask(question){
+const q=String(question||'').trim();if(!q||busy)return;const ok=await refreshSession();if(!ok){addMessage('assistant','Open ANIMO AI opnieuw zodra je in ANIMO HACCP bent aangemeld en je horecazaak geladen is.');return}
+busy=true;send.disabled=true;input.disabled=true;input.value='';history.push({role:'user',content:q});if(history.length>8)history.splice(0,history.length-8);
+addMessage('user',q);const pending=document.createElement('div');pending.className='animo-ai-msg bot';pending.textContent='ANIMO AI denkt na…';messages.append(pending);messages.scrollTop=messages.scrollHeight;
+try{const response=await fetch('/ai/api/chat.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history,haccp_access_token:session.access_token,business_id:businessId})});
+const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'ANIMO AI is tijdelijk niet bereikbaar.');
+pending.remove();history.push({role:'assistant',content:data.reply});if(history.length>8)history.splice(0,history.length-8);addMessage('assistant',data.reply);
+}catch(error){pending.remove();addMessage('assistant',error.message||'Er ging iets mis. Probeer opnieuw.');history.pop()}
+finally{busy=false;send.disabled=false;input.disabled=false;input.focus()}}
+form.addEventListener('submit',e=>{e.preventDefault();ask(input.value)});
+document.querySelectorAll('#animo-ai-prompts button').forEach((button,i)=>button.addEventListener('click',()=>ask(prompts[i])));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&panel.classList.contains('open'))minimize()});
+window.addEventListener('favv:business-ready',refreshSession);
+})();
+</script>
+
 </body></html>`}
 function openPrint(title,body){const w=window.open('','_blank');if(!w){alert('Sta pop-ups toe om het PDF-venster te openen.');return}w.document.open();w.document.write(htmlDoc(title,body));w.document.close()}
 function allergenTags(items){return items.length?`<div class="allergen-tags">${items.map(a=>`<span class="tag">${esc(a)}</span>`).join('')}</div>`:'<span class="none">Geen allergenen aangeduid</span>'}
