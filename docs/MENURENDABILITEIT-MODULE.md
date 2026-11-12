@@ -101,3 +101,13 @@ C. Bouw analyse op fictieve data in testomgeving.
 D. Test prijsberekening, btw, receptversies, dubbele imports en rapporttotalen; voer daarna een volledige handmatige test uit in de ANIMO-testwebsite.
 E. Voeg POS-koppelingen pas toe na keuze en validatie van providers.
 F. Geen productie-release zonder review en expliciete goedkeuring.
+
+
+## 9. Kassaverkoop en automatische stockafboeking (testbranch)
+- Bij het bevestigen van een kassaverkoopimport worden gekoppelde kassaproducten omgerekend naar receptingrediënten op basis van de receptyield.
+- De stockplanning groepeert verbruik per stockproduct en controleert alle tekorten vóór de eerste afboeking. Een onvolledig of ongeldig gekoppeld recept blokkeert de stockafboeking; niet-gekoppelde kassaproducten worden niet afgeboekt.
+- De afboeking gebruikt de bestaande FEFO-batchverwerking via `consumeBatches`, zodat voorraadbatches en stockbewegingen dezelfde logica volgen als handmatige bereidingen.
+- Stockbewegingen krijgen `sourceType=menu_sales_import` en het kassabestand-import-ID als `sourceId`. Een herhaling van dezelfde import kan daardoor geen tweede stockafboeking uitvoeren.
+- De verkoopimport wordt eerst als `pending` geregistreerd. Na succesvolle cloudsynchronisatie wordt de status `applied`; bij een tijdelijke syncfout blijft de import zichtbaar als `pending_sync` met een knop om de stockafboeking opnieuw te synchroniseren. Een bestaande marker wordt bij een retry herkend.
+- Automatische stockafboeking vereist online verbinding en geen bestaand synchronisatieconflict. Er wordt niet offline afgeschreven.
+- Dit is uitsluitend featurebranchcode voor TEST. Volledige end-to-endtests met echte testrecepten en batches, RLS/tenant-controle en mobiele test blijven vereist. Geen productie-release.
