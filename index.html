@@ -1327,7 +1327,7 @@ window.FAVVGetMenuProfitabilityData=async()=>{
   const settings=data?.payload&&typeof data.payload==='object'&&!Array.isArray(data.payload)
     ?clone(data.payload)
     :{pricesByRecipe:{},salesImports:[],salesRows:[],mappings:{}};
-  return {recipes:state.recipes.map(recipe=>({...clone(recipe),ingredientCost:recipeCost(recipe)})),settings};
+  return {recipes:state.recipes.map(recipe=>({...clone(recipe),ingredientCost:recipeCost(recipe),ingredientCostComplete:Array.isArray(recipe.ingredients)&&recipe.ingredients.length>0&&recipe.ingredients.every(ingredient=>!!stockById(ingredient.stockId))})),settings};
 };
 window.FAVVSaveMenuProfitability=async(value)=>{
   if(cloudIsEmployee())throw new Error('Alleen eigenaars en managers mogen deze instellingen wijzigen.');
