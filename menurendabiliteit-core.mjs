@@ -150,7 +150,7 @@ export function buildDishSalesSummary(salesRows, mappings, economicsByDish = {})
     const dishId = row.dishId || mappings?.[String(row.product).trim().toLowerCase()];
     if (!dishId) { unmapped.push(row); continue; }
     const economics = economicsByDish?.[dishId];
-    const snapshotCost = Number.isFinite(Number(row.ingredientCostPerPortionSnapshot))
+    const snapshotCost = row.ingredientCostPerPortionSnapshot != null && Number.isFinite(Number(row.ingredientCostPerPortionSnapshot))
       ? Number(row.ingredientCostPerPortionSnapshot)
       : economics?.status === "ok" ? economics.ingredientCostPerPortion : null;
     const revenueExclusive = row.vatRate == null ? null : salesTotalExcludingVat(row.totalInclusive, row.vatRate);
