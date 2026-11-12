@@ -30,9 +30,14 @@ test("every waste registration requires a photo and supports the independent off
   assert.match(ui, /food-waste-photos/);
 });
 
-test("food waste remains reporting-only and does not alter stock or the full app snapshot", () => {
-  assert.match(ui, /Voedselverspilling vermindert de stock niet automatisch/);
-  assert.doesNotMatch(ui, /stockMovements|FAVVCloudSync|app_data|localStorage\.setItem/);
+test("linked waste registrations use idempotent batch deduction and void reversal", () => {
+  assert.match(ui, /deductFoodWasteStock/);
+  assert.match(ui, /reverseFoodWasteStock/);
+  assert.match(ui, /FAVVApplyFoodWasteStockChange/);
+  assert.match(ui, /beforeServerInsert: syncStockBeforeWasteRow/);
+  assert.match(ui, /await reverseVoidedStockRows\(rows\)/);
+  assert.match(app, /FAVVApplyFoodWasteStockChange=/);
+  assert.match(app, /saveNow\(x\)/);
   assert.doesNotMatch(ui, /\.from\(["']stock["']\)/);
 });
 
