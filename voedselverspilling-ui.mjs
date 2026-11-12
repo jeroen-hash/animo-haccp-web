@@ -267,7 +267,8 @@ async function loadEntries() {
   // Herstel voorraad ook wanneer een void-actie eerder offline/conflictgevoelig was.
   await reverseVoidedStockRows(rows);
   // Toon lokale wachtende registraties expliciet; ze staan nog niet in de serverlijst.
-  const pendingHtml = queued.filter((entry) => entry.businessId === biz.id).map((entry) => `
+  const serverClientIds = new Set(rows.map((row) => row.client_id));
+  const pendingHtml = queued.filter((entry) => entry.businessId === biz.id && !serverClientIds.has(entry.clientId)).map((entry) => `
     <article class="fw-entry">
       <div>
         <strong>${esc(entry.productName)} · ${esc(entry.quantity)} ${esc(entry.inputUnit)}</strong>
