@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   parseEuroAmount, parseCsv, normalizeSalesCsv, salesTotalExcludingVat,
   dishEconomics, buildDishSalesSummary, classifyMenuItems,
-  findDuplicateSalesLines, salesImportFingerprint, createCostSnapshot
+  findDuplicateSalesLines, salesImportFingerprint, recipeCostSnapshotForDate, createCostSnapshot
 } from "../menurendabiliteit-core.mjs";
 
 test("Eurobedragen aanvaardt Belgische en internationale notatie", () => {
@@ -117,6 +117,22 @@ test("later gewijzigde productmapping vult geen historische kost in voor oude ni
   ], { pasta: "r1" }, { r1: { status: "ok", ingredientCostPerPortion: 9 } });
   assert.equal(result.unmapped.length, 1);
   assert.equal(result.dishes.length, 0);
+});
+
+test("verkoopregels gebruiken de bewaarde receptversie op de verkoopdatum", () => {
+  const recipe = {
+    id: "r1", version: 2, yield: 5, createdAt: "2026-01-01T08:00:00Z",
+    updatedAt: "2026-02-01T10:00:00Z",
+    versions: [{ version: 1, yield: 4, cost: 20, savedAt: "2026-02-01T10:00:00Z" }]
+  };
+  const historical = recipeCostSnapshotForDate(recipe, "2026-01-15", 30, true);
+  assert.equal(historical.recipeVersion, 1);
+  assert.equal(historical.ingredientCostPerPortion, 5);
+  assert.equal(historical.source, "saved_recipe_version");
+  const current = recipeCostSnapshotForDate(recipe, "2026-02-02", 30, true);
+  assert.equal(current.recipeVersion, 2);
+  assert.equal(current.ingredientCostPerPortion, 6);
+  assert.equal(recipeCostSnapshotForDate(recipe, "2026-02-01", 30, true), null);
 });
 
 test("kostprijsmomentopname bewaart receptversie en berekende kost", () => {
