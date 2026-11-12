@@ -102,6 +102,14 @@ test("historische verkoop gebruikt vastgelegde receptkost, niet de huidige recep
   assert.equal(result.dishes[0].grossProfit, 7);
 });
 
+test("later gewijzigde productmapping vult geen historische kost in voor oude niet-gekoppelde imports", () => {
+  const result = buildDishSalesSummary([
+    { importId: "old-import", product: "Pasta", quantity: 1, totalInclusive: 11.2, vatRate: 12, ingredientCostPerPortionSnapshot: null }
+  ], { pasta: "r1" }, { r1: { status: "ok", ingredientCostPerPortion: 9 } });
+  assert.equal(result.unmapped.length, 1);
+  assert.equal(result.dishes.length, 0);
+});
+
 test("kostprijsmomentopname bewaart receptversie en berekende kost", () => {
   const snapshot = createCostSnapshot({
     recipe: { id: "r1", name: "Pasta", version: 3, yield: 4 },
