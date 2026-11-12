@@ -84,6 +84,16 @@ test("dubbele transactieregels worden niet opnieuw geïmporteerd", () => {
   assert.equal(result.unique.length, 1);
 });
 
+test("onvolledige btw-data levert geen misleidende omzet of brutowinst op", () => {
+  const result = buildDishSalesSummary([
+    { product: "Pasta", quantity: 1, totalInclusive: 11.2, vatRate: 12 },
+    { product: "Pasta", quantity: 1, totalInclusive: 11.2, vatRate: null }
+  ], { pasta: "r1" }, { r1: { status: "ok", ingredientCostPerPortion: 5 } });
+  assert.equal(result.dishes[0].revenueExclusive, null);
+  assert.equal(result.dishes[0].grossProfit, null);
+  assert.equal(result.dishes[0].missingVatRows, 1);
+});
+
 test("kostprijsmomentopname bewaart receptversie en berekende kost", () => {
   const snapshot = createCostSnapshot({
     recipe: { id: "r1", name: "Pasta", version: 3, yield: 4 },
