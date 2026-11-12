@@ -91,6 +91,8 @@ jobs:
           for f in onboarding-*.js; do
             if [ -f "$f" ]; then cp "$f" "out/app/$f"; fi
           done
+          # App-modules (food waste, menu profitability and shared helpers).
+          cp ./*.mjs out/app/
 
           echo "== Te uploaden: landing =="
           ls -la out/landing
@@ -132,7 +134,9 @@ jobs:
           set net:max-retries 3
           set net:timeout 30
           mirror -R --verbose out/landing /landing
-          # De bestaande app blijft onaangeroerd; alleen de publieke landingspagina wordt bijgewerkt.
+          # Publiceer de app afzonderlijk op de documentroot van app.animo-apps.com.
+          # Geen --delete: bestaande bestanden worden niet automatisch verwijderd.
+          mirror -R --verbose out/app /app
           bye
           LFTP
 
