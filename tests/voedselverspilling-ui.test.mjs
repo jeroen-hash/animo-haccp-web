@@ -47,3 +47,11 @@ test("employee and manager views rely on the database row-level security policie
   assert.match(ui, /data-fw-void/);
   assert.match(ui, /void_reason: reason\.trim\(\)/);
 });
+
+
+test("temporary offline and fetch failures show a calm local-queue message instead of a technical error", () => {
+  assert.match(ui, /if \(!navigator\.onLine \|\| window\.FAVVOfflineMode\)/);
+  assert.match(ui, /load failed\|failed to fetch\|networkerror\|network request failed/i);
+  assert.match(ui, /Lokale registraties zijn veilig bewaard/);
+  assert.match(ui, /bestaande serverregistraties worden opnieuw geladen zodra de verbinding hersteld is/);
+});
