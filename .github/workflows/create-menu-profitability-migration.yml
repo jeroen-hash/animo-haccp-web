@@ -1,0 +1,55 @@
+name: Create menu profitability RLS migration scaffold
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/menurendabiliteit-module
+    paths:
+      - ".github/workflows/create-menu-profitability-migration.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  create-migration:
+    if: github.ref == 'refs/heads/feature/menurendabiliteit-module'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout menu profitability branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/menurendabiliteit-module
+          fetch-depth: 0
+
+      - name: Install official Supabase CLI
+        uses: supabase/setup-cli@v3
+
+      - name: Generate migration scaffold with Supabase CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase --version
+          supabase migration new create_menu_profitability_private_data
+          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_create_menu_profitability_private_data.sql' -print -quit)"
+          test -n "$migration_file"
+          test -f "$migration_file"
+          echo "Generated: $migration_file"
+
+      - name: Commit generated migration scaffold
+        shell: bash
+        run: |
+          set -euo pipefail
+          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_create_menu_profitability_private_data.sql' -print -quit)"
+          test -n "$migration_file"
+          git fetch origin feature/menurendabiliteit-module
+          git rebase origin/feature/menurendabiliteit-module
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$migration_file"
+          if git diff --cached --quiet; then
+            echo "No new migration file to commit."
+            exit 0
+          fi
+          git commit -m "chore(db): generate menu profitability RLS migration scaffold"
+          git push origin HEAD:feature/menurendabiliteit-module
