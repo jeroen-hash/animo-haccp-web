@@ -1,6 +1,6 @@
 # ANIMO HACCP — Module 2: Menurendabiliteit
 
-Status: eerste implementatiefase op een geïsoleerde featurebranch. De berekeningskern en UI zijn toegevoegd; 15/15 coretests en syntaxcontrole van beide modules zijn geslaagd. De databasebeveiliging is op TEST aangelegd en met SQL-transactietests gecontroleerd. De UI is nog niet handmatig in de testwebsite doorlopen; geen productie-release.
+Status: eerste implementatiefase op een geïsoleerde featurebranch. De berekeningskern en UI zijn toegevoegd; 18/18 coretests en syntaxcontrole van beide modules zijn geslaagd. De databasebeveiliging is op TEST aangelegd en met SQL-transactietests gecontroleerd. De UI is nog niet handmatig in de testwebsite doorlopen; geen productie-release.
 
 ## Doel
 
