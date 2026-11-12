@@ -29,6 +29,6 @@ jobs:
         with:
           node-version: "22"
       - name: Check module syntax
-        run: node --check menurendabiliteit-core.mjs
+        run: node --check menurendabiliteit-core.mjs && node --check menurendabiliteit-ui.mjs
       - name: Run menu profitability tests
         run: node --test tests/menurendabiliteit-core.test.mjs
