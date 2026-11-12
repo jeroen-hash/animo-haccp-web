@@ -246,7 +246,13 @@ export function salesImportFingerprint(fileName, rows) {
     row.date, String(row.product).trim().toLowerCase(), row.quantity,
     row.totalInclusive, row.vatRate ?? "", row.transactionId ?? ""
   ].join("~")).sort().join(";");
-  return [period, (rows || []).length, contentSignature].join("|");
+  // Store a compact deterministic signature, not the full contents of the imported file.
+  let hash = 14695981039346656037n;
+  const prime = 1099511628211n;
+  for (let index = 0; index < contentSignature.length; index++) {
+    hash = BigInt.asUintN(64, (hash ^ BigInt(contentSignature.charCodeAt(index))) * prime);
+  }
+  return [period, (rows || []).length, hash.toString(16)].join("|");
 }
 
 export function findDuplicateSalesLines(existingRows, incomingRows) {
