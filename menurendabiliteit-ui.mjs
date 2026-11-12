@@ -8,6 +8,7 @@ import {
 } from "./menurendabiliteit-core.mjs";
 
 let pendingImport = null;
+let initialized = false;
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
@@ -244,7 +245,8 @@ function clickHandler(event) {
   }
 }
 function init() {
-  if(!ensureUi())return;
+  if(initialized||!ensureUi())return;
+  initialized=true;
   document.addEventListener("click",clickHandler);
   window.FAVVRenderMenuProfitability=render;
   const role=window.FAVVCloudRole||window.FAVVGetCurrentUser?.()?.cloudRole||"";
