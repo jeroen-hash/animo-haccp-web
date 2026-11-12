@@ -1,6 +1,6 @@
 # ANIMO HACCP — Module 2: Menurendabiliteit
 
-Status: eerste werkende implementatiefase op een geïsoleerde featurebranch. De berekeningskern, manager-only dashboard, receptprijsinstellingen en CSV-verkoopimport zijn toegevoegd. De core-tests zijn groen. De gebruikersinterface is nog niet handmatig in de testwebsite doorlopen; nog niet vrijgegeven voor productie.
+Status: eerste implementatiefase op een geïsoleerde featurebranch. De berekeningskern, manager-only dashboard, receptprijsinstellingen en CSV-verkoopimport zijn toegevoegd. De databasebeveiliging is op TEST aangelegd en met SQL-transactietests gecontroleerd. De UI is nog niet handmatig in de testwebsite doorlopen; geen productie-release.
 
 ## Doel
 
@@ -28,7 +28,7 @@ Eerste versie:
 - Eerste versie: CSV-import van kassaverkooprapporten. XLSX-import volgt pas na validatie van concrete kassa-exportbestanden.
 - Mapping van kassaproducten naar ANIMO-gerechten.
 - Validatie van aanwezige datumtekst, product, aantal, prijs en btw-veld; concrete kassadatums en kortingskolommen moeten nog per kassaleverancier worden gevalideerd.
-- Dubbele imports detecteren met bronbestand, periode en unieke transactiereferentie indien aanwezig.
+- Dubbele imports detecteren met een compacte inhoudsfingerprint; herkenbare dubbele transacties worden op transactie-ID overgeslagen indien aanwezig.
 - Importresultaat tonen: geïmporteerd, niet gekoppeld, waarschuwingen en fouten.
 - Handmatige correctie van productmapping door eigenaar/manager.
 
@@ -81,7 +81,7 @@ Elk advies toont de gebruikte cijfers en reden. De uitbater beslist zelf.
 ## 7. Huidige implementatiestatus
 
 - De module gebruikt de bestaande `recipeCost`-functie uit ANIMO HACCP; er is geen tweede foodcostberekening toegevoegd.
-- Verkoopprijs en btw-tarief worden per recept bewaard in de bestaande bedrijfsgebonden snapshot.
+- Verkoopprijs, btw-tarief, POS-imports en historische verkoopregels worden opgeslagen in `public.menu_profitability_data`, een aparte tabel met RLS. Ze worden niet in de algemene `app_data`-snapshot opgeslagen.
 - CSV-import ondersteunt komma/puntkomma, aanhalingstekens, Belgische/internationale geldnotatie en ISO- of Belgische datums. De periodefilters werken op de genormaliseerde datum; validatie met echte kassabestanden blijft nodig.
 - Kassaproducten worden door eigenaar/manager handmatig aan recepten gekoppeld. Niet-gekoppelde regels tellen niet mee in de rendabiliteit.
 - Bij import wordt de receptversie en ingrediëntkost per portie als momentopname bij de verkoopregels opgeslagen. Latere recept- of inkoopprijswijzigingen herschrijven de historische kost niet.
