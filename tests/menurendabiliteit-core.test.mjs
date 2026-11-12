@@ -84,6 +84,14 @@ test("dubbele transactieregels worden niet opnieuw geïmporteerd", () => {
   assert.equal(result.unique.length, 1);
 });
 
+test("bestandsfingerprint blijft compact en is onafhankelijk van de bestandsnaam", () => {
+  const rows = [{ date: "2026-11-01", product: "Pasta", quantity: 1, totalInclusive: 10, vatRate: 12 }];
+  const first = salesImportFingerprint("kassa-a.csv", rows);
+  const second = salesImportFingerprint("kassa-b.csv", rows);
+  assert.equal(first, second);
+  assert.ok(first.length < 80);
+});
+
 test("onvolledige btw-data levert geen misleidende omzet of brutowinst op", () => {
   const result = buildDishSalesSummary([
     { product: "Pasta", quantity: 1, totalInclusive: 11.2, vatRate: 12 },
