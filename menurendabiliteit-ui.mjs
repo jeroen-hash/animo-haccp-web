@@ -257,7 +257,7 @@ async function commitImport() {
     const refreshed=await appData();
     const imports=refreshed.settings.salesImports.map(item=>item.importId===importId?{...item,stockDeductionStatus:result.status==="applied"||result.status==="already_applied"?"applied":"pending_sync",stockDeductedAt:result.status==="applied"||result.status==="already_applied"?new Date().toISOString():null}:item);
     await saveSettings({...refreshed.settings,salesImports:imports});
-    stockMessage=result.status==="applied"||result.status==="already_applied"?" Stock automatisch afgeboekt.":" Stockafboeking wacht nog op cloudsynchronisatie; importeer het bestand niet opnieuw.";
+    stockMessage=result.status==="applied"||result.status==="already_applied"?" Stock automatisch afgeboekt.":" Stockafboeking wacht nog op cloudsynchronisatie; importeer het bestand niet opnieuw."; if(importRecord.unmappedRows)stockMessage+=` Let op: ${importRecord.unmappedRows} kassaregel(s) zijn niet gekoppeld en hebben dus geen stock afgeboekt.`;
   }else stockMessage=" Geen stock afgeboekt: er waren geen gekoppelde recepten.";
   $("mrImportStatus").textContent=`${newRows.length} verkoopregels geïmporteerd.${stockMessage}`;
   $("mrImportPreview").innerHTML="";
