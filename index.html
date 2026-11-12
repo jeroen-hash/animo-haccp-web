@@ -1359,7 +1359,7 @@ window.FAVVGetMenuProfitabilityData=async()=>{
   const business=window.FAVVCloudBusiness;
   const client=window.FAVVGetSupabaseClient?.();
   if(!business?.id||!client)throw new Error('De zaakgegevens zijn nog niet geladen. Probeer opnieuw zodra je bent aangemeld.');
-  const {data,error}=await client.from('menu_profitability_data').select('payload').eq('business_id',business.id).maybeSingle();
+  const {data,error}=await client.from('menu_profitability_data').select('payload,updated_at').eq('business_id',business.id).maybeSingle();
   if(error)throw error;
   const settings=data?.payload&&typeof data.payload==='object'&&!Array.isArray(data.payload)
     ?clone(data.payload)
