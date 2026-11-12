@@ -66,3 +66,14 @@ test("a previously created but unsaved void reversal retries cloud persistence",
   assert.match(ui, /if \(existingReversal\) \{[\s\S]*?saveNow\?\.\(state\)/);
   assert.match(ui, /nog niet door de cloud bevestigd/);
 });
+
+test("cloud sync stores a merge base and only auto-merges non-overlapping concurrent changes", () => {
+  assert.match(app, /baseData:baseData\?JSON\.parse\(JSON\.stringify\(baseData\)\):null/);
+  assert.match(app, /store\.put\(item\)/);
+  assert.match(app, /pending\.baseData/);
+  assert.match(app, /import\('\.\/snapshot-merge\.mjs'\)/);
+  assert.match(app, /if\(merged\.ok\)/);
+  assert.match(app, /mergeConflictPaths=merged\.conflicts/);
+  assert.match(app, /p_expected_updated_at:remoteRow\.updated_at/);
+  assert.match(app, /Er wordt niets overschreven/);
+});
