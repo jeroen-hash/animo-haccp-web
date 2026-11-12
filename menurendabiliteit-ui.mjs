@@ -31,9 +31,10 @@ async function appData() {
   settings.mappings = settings.mappings || {};
   return {...data,settings};
 }
-async function saveSettings(settings) {
-  const saved = await window.FAVVSaveMenuProfitability?.(settings);
-  if (saved !== true) throw new Error("Instellingen konden niet worden bewaard.");
+async function saveSettings(settings, expectedUpdatedAt) {
+  const saved = await window.FAVVSaveMenuProfitability?.(settings, expectedUpdatedAt);
+  if (typeof saved !== "string" || !saved) throw new Error("Instellingen konden niet worden bewaard. Mogelijk heeft een andere manager tegelijk wijzigingen opgeslagen. Laad de gegevens opnieuw en probeer opnieuw.");
+  return saved;
 }
 function ensureUi() {
   const nav = document.querySelector(".nav");
@@ -250,13 +251,13 @@ async function commitImport() {
     salesRows:[...data.settings.salesRows,...newRows],
     salesImports:[...data.settings.salesImports,importRecord]
   };
-  await saveSettings(next);
+  const savedUpdatedAt = await saveSettings(next,data.updatedAt);
   let stockMessage="";
   if(mappedRows.length){
     const result=await window.FAVVApplyMenuSalesStockDeduction({importId,rows:mappedRows});
     const refreshed=await appData();
     const imports=refreshed.settings.salesImports.map(item=>item.importId===importId?{...item,stockDeductionStatus:result.status==="applied"||result.status==="already_applied"?"applied":"pending_sync",stockDeductedAt:result.status==="applied"||result.status==="already_applied"?new Date().toISOString():null}:item);
-    await saveSettings({...refreshed.settings,salesImports:imports});
+    await saveSettings({...refreshed.settings,salesImports:imports},refreshed.updatedAt);
     stockMessage=result.status==="applied"||result.status==="already_applied"?" Stock automatisch afgeboekt.":" Stockafboeking wacht nog op cloudsynchronisatie; importeer het bestand niet opnieuw."; if(importRecord.unmappedRows)stockMessage+=` Let op: ${importRecord.unmappedRows} kassaregel(s) zijn niet gekoppeld en hebben dus geen stock afgeboekt.`;
   }else stockMessage=" Geen stock afgeboekt: er waren geen gekoppelde recepten.";
   $("mrImportStatus").textContent=`${newRows.length} verkoopregels geïmporteerd.${stockMessage}`;
@@ -273,7 +274,7 @@ async function retryStockDeduction(importId) {
   const result=await window.FAVVApplyMenuSalesStockDeduction({importId,rows});
   if(!["applied","already_applied"].includes(result.status))throw new Error("Stockafboeking is nog niet gesynchroniseerd. Controleer de verbinding.");
   const latest=await appData();
-  await saveSettings({...latest.settings,salesImports:latest.settings.salesImports.map(item=>item.importId===importId?{...item,stockDeductionStatus:"applied",stockDeductedAt:new Date().toISOString()}:item)});
+  await saveSettings({...latest.settings,salesImports:latest.settings.salesImports.map(item=>item.importId===importId?{...item,stockDeductionStatus:"applied",stockDeductedAt:new Date().toISOString()}:item)},latest.updatedAt);
   await render();
 }
 async function savePrice(recipeId) {
@@ -287,7 +288,7 @@ async function savePrice(recipeId) {
     return;
   }
   const pricesByRecipe={...data.settings.pricesByRecipe,[recipeId]:{sellingPriceInclusive:price,vatRate:vat,updatedAt:new Date().toISOString()}};
-  await saveSettings({...data.settings,pricesByRecipe});
+  await saveSettings({...data.settings,pricesByRecipe},data.updatedAt);
   await render();
 }
 function clickHandler(event) {
