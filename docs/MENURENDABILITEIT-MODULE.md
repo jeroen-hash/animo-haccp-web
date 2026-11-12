@@ -87,7 +87,7 @@ Elk advies toont de gebruikte cijfers en reden. De uitbater beslist zelf.
 - Bij import wordt de receptversie en ingrediëntkost per portie als momentopname bij de verkoopregels opgeslagen. Latere recept- of inkoopprijswijzigingen herschrijven de historische kost niet.
 - Onvolledige btw- of kostgegevens leveren geen volledige brutowinsttotalen op. De ontbrekende regels worden niet stilzwijgend als nul behandeld.
 - De module heeft nog geen gevalideerde CSV/XLSX-formaten van concrete kassaleveranciers; XLSX en POS-API's zijn nog niet geïmplementeerd.
-- De nieuwe module is alleen in de featurebranch aanwezig; productie en live database zijn niet gewijzigd.
+- De nieuwe module is alleen in de featurebranch aanwezig; productie en live database zijn niet gewijzigd.\n- **Beveiligingsblokkade vóór test met echte verkoopgegevens:** in het geïnspecteerde TEST-project kunnen alle actieve zaakleden de bestaande `app_data`-snapshot lezen. De nieuwe verkoopregels mogen daarom niet in die snapshot blijven staan voor een release. Eerst moet een aparte tabel met RLS worden gebouwd die alleen eigenaar/manager van dezelfde zaak toegang geeft. Tot die tijd uitsluitend fictieve testgegevens gebruiken.
 
 ## 8. Implementatievolgorde
 
