@@ -1316,6 +1316,43 @@ window.FAVVApplyFoodWasteStockChange=(change)=>{
   persist();
   return {status:'applied'};
 };
+
+window.FAVVApplyMenuSalesStockDeduction=async({importId,rows,dryRun=false}={})=>{
+  if(cloudIsEmployee()||!['owner','manager'].includes(window.FAVVCloudRole))throw new Error('Alleen eigenaars en managers mogen kassaverkoop aan stock koppelen.');
+  if(!importId||!Array.isArray(rows))throw new Error('De kassaverkoopimport is ongeldig.');
+  if(!navigator.onLine||window.FAVVOfflineMode||window.FAVVSyncConflict)throw new Error('Stock automatisch afboeken vereist een stabiele online verbinding zonder synchronisatieconflict. De verkoopimport blijft bewaard om later opnieuw te proberen.');
+  const existing=state.stockMovements.find(m=>m?.sourceType==='menu_sales_import'&&m?.sourceId===importId);
+  if(existing){
+    if(dryRun)return {status:'already_applied'};
+    const synced=await window.FAVVCloudSync?.saveNow?.(state);
+    return {status:synced?'already_applied':'pending_sync'};
+  }
+  const plan=window.FAVVBuildMenuSalesStockPlan?.(rows);
+  if(!plan)throw new Error('Het stockplan kon niet worden berekend.');
+  if(dryRun)return plan;
+  if(plan.status!=='ready')return plan;
+  const snapshots=state.stock.map(product=>({product,batches:clone(product.batches||[]),quantity:product.quantity,expiryDate:product.expiryDate}));
+  const movementCount=state.stockMovements.length;
+  for(const requirement of plan.requirements){
+    const product=stockById(requirement.stockId);
+    if(!product||!consumeBatches(product,requirement.required,'Kassaverkoop · import '+importId)){
+      snapshots.forEach(snapshot=>{snapshot.product.batches=snapshot.batches;snapshot.product.quantity=snapshot.quantity;snapshot.product.expiryDate=snapshot.expiryDate});
+      state.stockMovements.splice(0,state.stockMovements.length,...state.stockMovements.slice(movementCount));
+      throw new Error('De voorraad veranderde tijdens de import. Er is geen stockafboeking uitgevoerd. Controleer de voorraad en probeer opnieuw.');
+    }
+    const movement=state.stockMovements[0];
+    if(movement){movement.sourceType='menu_sales_import';movement.sourceId=importId;}
+  }
+  persist();
+  const synced=await window.FAVVCloudSync?.saveNow?.(state);
+  return {status:synced?'applied':'pending_sync',plan};
+};
+window.FAVVBuildMenuSalesStockPlan=(rows)=>{
+  const recipes=state.recipes.map(recipe=>({...recipe,ingredients:Array.isArray(recipe.ingredients)?recipe.ingredients:[]}));
+  const stock=state.stock.map(product=>({...product,batches:Array.isArray(product.batches)?product.batches:[]}));
+  return window.__FAVVBuildMenuSalesStockPlanCore?.(rows,recipes,stock)||null;
+};
+
 window.FAVVGetCurrentUser=()=>currentUser;
 window.FAVVGetMenuProfitabilityData=async()=>{
   if(cloudIsEmployee())throw new Error('Menurendabiliteit is alleen beschikbaar voor eigenaars en managers.');
