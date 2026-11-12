@@ -60,3 +60,9 @@ test("temporary offline and fetch failures show a calm local-queue message inste
   assert.match(ui, /Lokale registraties zijn veilig bewaard/);
   assert.match(ui, /bestaande serverregistraties worden opnieuw geladen zodra de verbinding hersteld is/);
 });
+
+test("a previously created but unsaved void reversal retries cloud persistence", () => {
+  assert.match(ui, /const existingReversal = movements\.find/);
+  assert.match(ui, /if \(existingReversal\) \{[\s\S]*?saveNow\?\.\(state\)/);
+  assert.match(ui, /nog niet door de cloud bevestigd/);
+});
