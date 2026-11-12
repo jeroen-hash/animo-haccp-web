@@ -165,10 +165,6 @@ export async function syncFoodWasteEntry(entry, supabase, {
     throw new Error("De foto-upload is niet door de server bevestigd. De offline registratie blijft bewaard.");
   }
 
-  // Save the app snapshot containing any linked stock deduction before the
-  // waste row is committed. A failed snapshot save keeps this entry queued.
-  const stockSync = await beforeServerInsert(entry);
-
   const insert = await supabase
     .from(FOOD_WASTE_TABLE)
     .insert(row)
@@ -197,6 +193,10 @@ export async function syncFoodWasteEntry(entry, supabase, {
   }
 
   if (!serverId) throw new Error("De server heeft geen bevestiging van de registratie teruggegeven.");
+
+  // Save the linked stock movement after the waste row is confirmed. If this
+  // fails, the queue remains and a retry can safely finish the stock snapshot.
+  const stockSync = await beforeServerInsert(entry);
 
   await removeQueueEntry(clientId);
   return {
