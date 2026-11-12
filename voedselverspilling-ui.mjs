@@ -297,7 +297,6 @@ async function loadEntries() {
   // Herstel voorraad ook wanneer een void-actie eerder offline/conflictgevoelig was.
   await reverseVoidedStockRows(rows);
   // Toon lokale wachtende registraties expliciet; ze staan nog niet in de serverlijst.
-  const pendingForBusiness = queued.filter((entry) => entry.businessId === biz.id);
   const pendingClientIds = new Set(pendingForBusiness.map((entry) => entry.clientId));
   const serverClientIds = new Set(rows.map((row) => row.client_id));
   const pendingHtml = pendingForBusiness.filter((entry) => !serverClientIds.has(entry.clientId)).map((entry) => `
