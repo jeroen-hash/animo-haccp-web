@@ -107,14 +107,22 @@ function makeSupabase({
 test("successful sync uploads the private photo, inserts a snapshot and clears the queue", async () => {
   const { supabase, calls } = makeSupabase();
   const removed = [];
+  let stockSnapshotSaved = false;
   const result = await syncFoodWasteEntry(makeEntry(), supabase, {
-    removeQueueEntry: async id => removed.push(id)
+    removeQueueEntry: async id => removed.push(id),
+    beforeServerInsert: async () => {
+      assert.equal(calls.inserts.length, 1);
+      stockSnapshotSaved = true;
+      return { status: "already_applied" };
+    }
   });
 
   assert.equal(result.status, "synced");
   assert.equal(result.id, serverId);
   assert.equal(result.photoPath, businessId + "/" + userId + "/" + clientId + ".jpg");
   assert.equal(result.alreadySynced, false);
+  assert.equal(stockSnapshotSaved, true);
+  assert.equal(result.stockSync.status, "already_applied");
   assert.deepEqual(removed, [clientId]);
   assert.equal(calls.uploads.length, 1);
   assert.equal(calls.uploads[0].options.contentType, "image/jpeg");
@@ -123,6 +131,21 @@ test("successful sync uploads the private photo, inserts a snapshot and clears t
   assert.equal(calls.inserts[0].cost_unit, "kg");
   assert.equal(calls.inserts[0].cost_status, "calculated");
   assert.equal(calls.inserts[0].cost_value_snapshot, 9);
+});
+
+
+test("a failed stock snapshot save keeps the waste entry queued for a safe retry", async () => {
+  const { supabase, calls } = makeSupabase();
+  let removed = false;
+  await assert.rejects(
+    syncFoodWasteEntry(makeEntry(), supabase, {
+      removeQueueEntry: async () => { removed = true; },
+      beforeServerInsert: async () => { throw new Error("Voorraadcloud niet opgeslagen"); }
+    }),
+    /Voorraadcloud niet opgeslagen/
+  );
+  assert.equal(calls.inserts.length, 1);
+  assert.equal(removed, false);
 });
 
 test("a duplicate client ID is accepted only when the existing row matches", async () => {
