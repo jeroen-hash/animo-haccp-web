@@ -5,6 +5,7 @@ on:
     branches:
       - feature/voedselverspilling-module
       - feature/menurendabiliteit-module
+      - feature/animo-ai-test-integration
     paths:
       - 'index.html'
       - 'sw.js'
