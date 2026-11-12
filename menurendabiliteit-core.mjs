@@ -240,12 +240,11 @@ function median(values) {
 export function salesImportFingerprint(fileName, rows) {
   const dates = (rows || []).map(row => String(row.date)).sort();
   const period = dates.length ? dates[0] + "__" + dates[dates.length - 1] : "empty";
-  const source = String(fileName || "").trim().toLowerCase();
   const contentSignature = (rows || []).map(row => [
     row.date, String(row.product).trim().toLowerCase(), row.quantity,
     row.totalInclusive, row.vatRate ?? "", row.transactionId ?? ""
   ].join("~")).sort().join(";");
-  return [source, period, (rows || []).length, contentSignature].join("|");
+  return [period, (rows || []).length, contentSignature].join("|");
 }
 
 export function findDuplicateSalesLines(existingRows, incomingRows) {
