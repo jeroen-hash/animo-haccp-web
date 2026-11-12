@@ -36,7 +36,7 @@ Status: technische inspectie + geïsoleerde feature-branch. De live database is 
 - Voeg niet zomaar een nieuwe collectie toe aan de volledige snapshot zonder eerst de gevolgen voor cloud-RPC, conflict-resolutie en auditlogging te testen.
 - Foto-binaries horen niet in localStorage of de JSON-snapshot. Gebruik in de echte implementatie private object storage en een aparte IndexedDB upload-wachtrij.
 - Een verspillingregistratie heeft een stabiele client UUID nodig voor idempotentie.
-- De voorraadbeweging moet exact één keer worden aangemaakt. Beslis eerst of registratie automatisch voorraad afboekt of enkel rapporteert; de eerste release moet deze keuze expliciet maken.
+- Besluit voor deze testrelease: een registratie met gekoppeld stockartikel boekt de omgerekende hoeveelheid automatisch af via de bestaande FIFO/FEFO-batches. De beweging bevat de client UUID als idempotency key en de exacte batchallocaties voor een latere terugboeking.
 - Bewaar de gebruikte kostprijs als momentopname zodat historische verspillingswaarde niet wijzigt wanneer de actuele inkoopprijs verandert.
 
 ### Menurendabiliteit
@@ -61,7 +61,7 @@ Status: technische inspectie + geïsoleerde feature-branch. De live database is 
 - De officiële Supabase CLI heeft via GitHub Actions drie migratiebestanden aangemaakt. Tabel, RLS, private bucket, least-privilege grants, one-way audit-trigger en FK-index zijn toegepast op het testproject `xwjcwravfeldndwlugai`. De live omgeving `zimzsovvtdmrthrflkgm` is niet aangeraakt.
 - Er is een geïsoleerde kernmodule toegevoegd in voedselverspilling-core.mjs met validatie, eenheidsconversie, kostprijsmomentopname en een aparte IndexedDB-wachtrij voor foto's/registraties. Deze module is nog niet aan de bestaande app-UI of cloud-sync gekoppeld.
 - Eenheidstestscenario's zijn toegevoegd in tests/voedselverspilling-core.test.mjs. De berekenings- en validatiechecks zijn lokaal uitgevoerd; echte IndexedDB-, Supabase-, Storage- en iPhone-tests zijn nog niet uitgevoerd.
-- Eerste release is bewust rapportage-only: geen automatische voorraadbeweging, om dubbele afboeking te voorkomen.
+- De testbranch bevat nu automatische afboeking voor gekoppelde stockartikelen, met FEFO/FIFO-batchallocaties, geen negatieve voorraad bij tekort, een unieke bron-ID per registratie en idempotente terugboeking bij ongeldig verklaren. Vrije productnamen zonder stockkoppeling veranderen de voorraad niet.
 - Supabase-projectmapping is bevestigd: `ANIMO HACCP` is test (`xwjcwravfeldndwlugai`) en `animo-haccp-test` is live (`zimzsovvtdmrthrflkgm`). De testdatabase is alleen read-only geïnspecteerd; de live database is niet benaderd.
 - RLS- en Storage-policies voor de nieuwe tabellen/foto's moeten in een afzonderlijke testomgeving ontworpen en getest worden.
 - De bestaande snapshot-RPC en volledige offline-sync vereisen regressietests voordat een nieuwe collectie aan de productiestaat kan worden toegevoegd.
@@ -71,12 +71,12 @@ Status: technische inspectie + geïsoleerde feature-branch. De live database is 
 1. Valideer de nieuwe SQL eerst in een geïsoleerde tijdelijke PostgreSQL/Supabase-omgeving, zonder productieverbinding.
 2. Test RLS en Storage met tijdelijke testaccounts en testzaken: medewerker, manager, eigenaar, niet-lid en verlopen abonnement.
 3. Test offline wachtrij, foto-upload, retry en dubbele synchronisatie met dezelfde client-ID.
-4. Integreer pas daarna via een kleine adapter met bestaande voorraad- en recepthelpers; laat de bestaande snapshot-sync ongemoeid.
+4. De voorraadadapter is geïntegreerd via de bestaande batch- en snapshotstructuur. Valideer nu de volledige online/offlineflow op iPhone en met meerdere gebruikers; de bestaande snapshot-RPC blijft ongewijzigd.
 5. Voer regressietests uit voor alle bestaande live functies in een aparte testbuild.
 6. Vraag expliciete goedkeuring voordat iets naar de live branch, database of hosting gaat.
 
 ## 7. Conclusie
 
-De huidige app heeft bruikbare bestaande bouwstenen: voorraadartikelen, batches, voorraadbewegingen, recepten, receptversies, receptkost, gebruikersrollen en offline snapshots. De grootste technische risico's zijn de bestaande volledige-snapshot-synchronisatie, het veilig bewaren/synchroniseren van foto's en het ontbreken van bewezen kassaverkoopdata in de bekeken hoofdcode. De nieuwe modules moeten daarom eerst geïsoleerd worden gebouwd en pas daarna gecontroleerd worden aangesloten.
-- De geïsoleerde adapter `voedselverspilling-sync.mjs` controleert de ingelogde gebruiker, fotoformaat/-grootte, upload naar private Storage, databasebevestiging en idempotente retries. Ze verwijdert een IndexedDB-entry pas na beide serverbevestigingen. Deze adapter is nog niet aan de app gekoppeld; tests gebruiken een fake Supabase-client.
+De huidige app heeft bruikbare bestaande bouwstenen: voorraadartikelen, batches, voorraadbewegingen, recepten, receptversies, receptkost, gebruikersrollen en offline snapshots. De belangrijkste resterende risico's zijn de praktijktest van de volledige-snapshot-synchronisatie met meerdere gebruikers, het veilig bewaren/synchroniseren van foto's op echte iPhones en het ontbreken van bewezen kassaverkoopdata in de bekeken hoofdcode. De nieuwe modules moeten daarom eerst geïsoleerd worden gebouwd en pas daarna gecontroleerd worden aangesloten.
+- De adapter `voedselverspilling-sync.mjs` controleert de ingelogde gebruiker, fotoformaat/-grootte, upload naar private Storage, databasebevestiging en idempotente retries. Voor een gekoppeld stockartikel wordt de volledige app-snapshot met de voorraadbeweging eerst opgeslagen; de lokale IndexedDB-entry wordt pas verwijderd nadat ook deze stap bevestigd is. Bij een mislukte snapshot blijft de registratie opnieuw probeerbaar.
 
