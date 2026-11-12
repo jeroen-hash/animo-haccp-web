@@ -67,6 +67,22 @@ function headerIndex(headers, aliases) {
   return headers.findIndex(header => aliases.includes(String(header).trim().toLowerCase()));
 }
 
+function normalizeSalesDate(value) {
+  const raw = String(value ?? "").trim();
+  let year, month, day;
+  let match = raw.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);
+  if (match) [, year, month, day] = match;
+  else {
+    match = raw.match(/^(\\d{1,2})[\\/. -](\\d{1,2})[\\/. -](\\d{4})$/);
+    if (!match) return null;
+    [, day, month, year] = match;
+  }
+  const y = Number(year), m = Number(month), d = Number(day);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  if (date.getUTCFullYear() !== y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) return null;
+  return [String(y).padStart(4,"0"),String(m).padStart(2,"0"),String(d).padStart(2,"0")].join("-");
+}
+
 export function normalizeSalesCsv(text, options = {}) {
   const rows = parseCsv(text, options.delimiter);
   if (rows.length < 2) return { rows: [], errors: ["Het bestand bevat geen verkoopregels."] };
@@ -85,7 +101,7 @@ export function normalizeSalesCsv(text, options = {}) {
     const total = indexes.total >= 0 ? parseEuroAmount(read("total")) : null;
     const unitPrice = indexes.unitPrice >= 0 ? parseEuroAmount(read("unitPrice")) : null;
     const lineTotal = total ?? (unitPrice == null ? null : Math.round(unitPrice * quantity * 100) / 100);
-    const date = read("date").trim();
+    const date = normalizeSalesDate(read("date"));
     const product = read("product").trim();
     if (!date || !product || !Number.isFinite(quantity) || quantity <= 0 || lineTotal == null || lineTotal < 0) {
       errors.push("Regel " + (index + 2) + ": datum, product, aantal of bedrag is ongeldig.");
