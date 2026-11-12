@@ -79,9 +79,18 @@ async function reverseVoidedStockRows(rows) {
     if (!row?.voided_at || !row.stock_item_id || !row.client_id) continue;
     const state = window.FAVVGetLocalState?.() || {};
     const movements = state.stockMovements || [];
-    if (movements.some((movement) =>
+    const existingReversal = movements.find((movement) =>
       movement?.sourceType === "food_waste_reversal" && movement?.sourceId === "void:" + row.client_id
-    )) continue;
+    );
+    if (existingReversal) {
+      // The reversal may exist only in the local snapshot if its previous cloud
+      // save failed. Retry the idempotent snapshot save before treating it as done.
+      const saved = await window.FAVVCloudSync?.saveNow?.(state);
+      if (saved !== true) {
+        status("De voorraadterugboeking staat lokaal klaar, maar is nog niet door de cloud bevestigd. De synchronisatie wordt opnieuw geprobeerd.", true);
+      }
+      continue;
+    }
     const original = movements.find((movement) =>
       movement?.sourceType === "food_waste" && movement?.sourceId === row.client_id
     );
