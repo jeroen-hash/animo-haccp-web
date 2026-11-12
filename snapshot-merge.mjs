@@ -27,6 +27,11 @@ function mergeArray(base, local, remote, path, conflicts) {
   }
 
   const idOf = item => String(item.id);
+  const hasDuplicateIds = list => new Set(list.map(idOf)).size !== list.length;
+  if ([base, local, remote].some(hasDuplicateIds)) {
+    conflicts.push(path || "(root)");
+    return remote;
+  }
   const baseMap = new Map(base.map(item => [idOf(item), item]));
   const localMap = new Map(local.map(item => [idOf(item), item]));
   const remoteMap = new Map(remote.map(item => [idOf(item), item]));
