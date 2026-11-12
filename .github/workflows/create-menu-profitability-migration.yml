@@ -1,4 +1,4 @@
-name: Create menu profitability RLS migration scaffold
+name: Create menu profitability manager update policy migration
 
 on:
   workflow_dispatch:
@@ -35,13 +35,13 @@ jobs:
         run: |
           set -euo pipefail
           supabase --version
-          supabase migration new create_menu_profitability_private_data
+          supabase migration new allow_manager_updates_menu_profitability_data
           migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_create_menu_profitability_private_data.sql' -print -quit)"
           test -n "$migration_file"
           test -f "$migration_file"
           echo "Generated: $migration_file"
 
-      - name: Commit generated migration scaffold
+      - name: Commit generated manager update policy migration
         shell: bash
         run: |
           set -euo pipefail
@@ -56,5 +56,5 @@ jobs:
             echo "No new migration file to commit."
             exit 0
           fi
-          git commit -m "chore(db): generate menu profitability RLS migration scaffold"
+          git commit -m "chore(db): generate menu profitability manager update migration scaffold"
           git push origin HEAD:feature/menurendabiliteit-module
