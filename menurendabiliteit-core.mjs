@@ -4,12 +4,12 @@
  */
 
 export function parseEuroAmount(value) {
-  const raw = String(value ?? "").trim().replace(/€|\\s/g, "");
+  const raw = String(value ?? "").trim().replace(/€|\s/g, "");
   if (!raw) return null;
   let normalized = raw;
   if (normalized.includes(",") && normalized.includes(".")) {
     normalized = normalized.lastIndexOf(",") > normalized.lastIndexOf(".")
-      ? normalized.replace(/\\./g, "").replace(",", ".")
+      ? normalized.replace(/\./g, "").replace(",", ".")
       : normalized.replace(/,/g, "");
   } else if (normalized.includes(",")) normalized = normalized.replace(",", ".");
   const amount = Number(normalized);
@@ -17,9 +17,9 @@ export function parseEuroAmount(value) {
 }
 
 export function parseCsv(text, delimiter) {
-  const source = String(text ?? "").replace(/^\\uFEFF/, "");
+  const source = String(text ?? "").replace(/^\uFEFF/, "");
   if (!source.trim()) return [];
-  const candidates = delimiter ? [delimiter] : [",", ";", "\\t"];
+  const candidates = delimiter ? [delimiter] : [",", ";", "\t"];
   const count = (character) => {
     let quoted = false, total = 0;
     for (let i = 0; i < source.length; i++) {
@@ -27,7 +27,7 @@ export function parseCsv(text, delimiter) {
         if (quoted && source[i + 1] === '"') i++;
         else quoted = !quoted;
       } else if (!quoted && source[i] === character) total++;
-      if (!quoted && source[i] === "\\n") break;
+      if (!quoted && source[i] === "\n") break;
     }
     return total;
   };
@@ -41,8 +41,8 @@ export function parseCsv(text, delimiter) {
       else quoted = !quoted;
     } else if (!quoted && ch === sep) {
       row.push(cell.trim()); cell = "";
-    } else if (!quoted && (ch === "\\n" || ch === "\\r")) {
-      if (ch === "\\r" && source[i + 1] === "\\n") i++;
+    } else if (!quoted && (ch === "\n" || ch === "\r")) {
+      if (ch === "\r" && source[i + 1] === "\n") i++;
       row.push(cell.trim()); cell = "";
       if (row.some(value => value !== "")) rows.push(row);
       row = [];
