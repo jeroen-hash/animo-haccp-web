@@ -23,27 +23,6 @@ jobs:
       - name: Repository ophalen
         uses: actions/checkout@v4
 
-      - name: Testconfiguratie uitsluitend in testbuild injecteren
-        run: |
-          set -euo pipefail
-          test -f index.html
-          test -f sw.js
-          test -d images
-          node --input-type=module <<'NODE'
-          import { readFileSync, writeFileSync } from 'node:fs';
-          const file = 'out/test/index.html';
-          const source = readFileSync(file, 'utf8');
-          const productionConfig = "const PUBLIC_SUPABASE_CONFIG={url:'https://zimzsovvtdmrthrflkgm.supabase.co',key:'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k'};;";
-          const testConfig = "const PUBLIC_SUPABASE_CONFIG={url:'https://xwjcwravfeldndwlugai.supabase.co',key:'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI'};;";
-          if (!source.includes(productionConfig)) throw new Error('Productieconfiguratie niet exact gevonden; testdeploy afgebroken.');
-          writeFileSync(file, source.replace(productionConfig, testConfig));
-          const built = readFileSync(file, 'utf8');
-          if (!built.includes('https://xwjcwravfeldndwlugai.supabase.co') || built.includes('https://zimzsovvtdmrthrflkgm.supabase.co')) {
-            throw new Error('Testbuild bevat niet uitsluitend de testconfiguratie.');
-          }
-          NODE
-          echo "Broncode behoudt productieconfiguratie; alleen out/test/index.html gebruikt de testdatabase."
-
       - name: Controleren of STRATO-geheimen bestaan
         id: guard
         env:
@@ -69,6 +48,28 @@ jobs:
           cp -r images/. out/test/images/
           echo "Bestanden voor test.animo-apps.com:"
           find out/test -maxdepth 2 -type f -print
+
+      - name: Testconfiguratie uitsluitend in testbuild injecteren
+        if: steps.guard.outputs.present == 'true'
+        run: |
+          set -euo pipefail
+          test -f index.html
+          test -f sw.js
+          test -d images
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const file = 'out/test/index.html';
+          const source = readFileSync(file, 'utf8');
+          const productionConfig = "const PUBLIC_SUPABASE_CONFIG={url:'https://zimzsovvtdmrthrflkgm.supabase.co',key:'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k'};;";
+          const testConfig = "const PUBLIC_SUPABASE_CONFIG={url:'https://xwjcwravfeldndwlugai.supabase.co',key:'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI'};;";
+          if (!source.includes(productionConfig)) throw new Error('Productieconfiguratie niet exact gevonden; testdeploy afgebroken.');
+          writeFileSync(file, source.replace(productionConfig, testConfig));
+          const built = readFileSync(file, 'utf8');
+          if (!built.includes('https://xwjcwravfeldndwlugai.supabase.co') || built.includes('https://zimzsovvtdmrthrflkgm.supabase.co')) {
+            throw new Error('Testbuild bevat niet uitsluitend de testconfiguratie.');
+          }
+          NODE
+          echo "Broncode behoudt productieconfiguratie; alleen out/test/index.html gebruikt de testdatabase."
 
       - name: Uploaden naar uitsluitend /test
         if: steps.guard.outputs.present == 'true'
