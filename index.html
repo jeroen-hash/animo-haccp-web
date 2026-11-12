@@ -1035,9 +1035,16 @@ async function continueToCloudApp(){
       window.FAVVCloudBusiness || null
     );
 
-    // Eerst de echte abonnementsstatus bij Supabase ophalen.
+    // Wacht tot de abonnementscontrole beschikbaar is.
+    // De cloud-sessie kan sneller starten dan de hoofdapp-script deze functie registreert.
     let subscription;
     if(!navigator.onLine)throw new Error('Geen internetverbinding.');
+    for(let attempt=0;typeof window.refreshSubscriptionStatus!=='function'&&attempt<100;attempt++){
+      await wait(50);
+    }
+    if(typeof window.refreshSubscriptionStatus!=='function'){
+      throw new Error('De abonnementscontrole kon niet worden gestart. Vernieuw de pagina en probeer opnieuw.');
+    }
     subscription = await window.refreshSubscriptionStatus();
     // Stripe-webhooks kunnen net na de terugkeer van Checkout aankomen.
     if(!subscription.accessAllowed && new URLSearchParams(location.search).get('stripe')==='success'){
