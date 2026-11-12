@@ -24,6 +24,8 @@ test("verkoopimport normaliseert regels en meldt ongeldige regels", () => {
   assert.equal(result.rows[0].totalInclusive, 30);
   assert.equal(result.rows[0].vatRate, 12);
   assert.equal(result.errors.length, 0);
+  assert.equal(normalizeSalesCsv("Datum/Tijd;Productnaam;Aantal;Totaal incl. btw\n01/11/2026 18:30;Pasta;1;12,00").rows[0].date, "2026-11-01");
+  assert.equal(normalizeSalesCsv("Datum;Product;Aantal;Totaal excl. btw\n01/11/2026;Pasta;1;10,00").errors.length > 0, true);
   assert.equal(normalizeSalesCsv("Datum;Product\n2026-11-01;Pasta").errors.length > 0, true);
 });
 
