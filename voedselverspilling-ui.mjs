@@ -193,7 +193,7 @@ function ensureUi() {
             <div><strong id="foodWasteWeight">0</strong><span>Hoeveelheid (kg/l/stuk apart)</span></div>
             <div><strong id="foodWasteCost">€ 0,00</strong><span>Gekende kost</span></div>
           </div>
-          <div class="fw-legend">Kostprijs wordt vastgelegd op het moment van registratie. Voedselverspilling vermindert de stock niet automatisch.</div><button id="foodWasteRetry" class="btn secondary" type="button">Synchroniseer wachtende registraties</button>
+          <div class="fw-legend">Kostprijs wordt vastgelegd op het moment van registratie. Als je een stockproduct koppelt, wordt de voorraad automatisch verminderd. Bij onvoldoende voorraad of een afwijkende eenheid wordt niets afgeboekt.</div><button id="foodWasteRetry" class="btn secondary" type="button">Synchroniseer wachtende registraties</button>
           <h2 class="fw-list-title">Recente registraties</h2>
           <div id="foodWasteEntries"><div class="empty">Nog geen registraties geladen.</div></div>
         </section>
