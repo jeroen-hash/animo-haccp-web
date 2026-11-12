@@ -1,6 +1,6 @@
 # ANIMO HACCP — Module 2: Menurendabiliteit
 
-Status: functionele en technische specificatie. Nog niet gekoppeld aan productiecode, kassasystemen of klantgegevens.
+Status: eerste implementatiefase op een geïsoleerde featurebranch. De berekeningskern en UI zijn toegevoegd; 18/18 coretests en syntaxcontrole van beide modules zijn geslaagd. De databasebeveiliging is op TEST aangelegd en met SQL-transactietests gecontroleerd. De testbuild is succesvol gepubliceerd naar uitsluitend `/test`; de UI moet nog handmatig worden doorlopen. Geen productie-release.
 
 ## Doel
 
@@ -25,10 +25,10 @@ Belangrijk: gebruik verkoopprijs exclusief btw voor margeanalyse. Maak duidelijk
 Zonder betrouwbare verkoopgegevens mag ANIMO geen verkochte aantallen of werkelijke winstbijdrage suggereren.
 
 Eerste versie:
-- Handmatige import van kassaverkooprapporten (CSV/XLSX) met voorbeeldsjablonen.
+- Eerste versie: CSV-import van kassaverkooprapporten. XLSX-import volgt pas na validatie van concrete kassa-exportbestanden.
 - Mapping van kassaproducten naar ANIMO-gerechten.
-- Validatie van datum, product, aantal, prijs, btw en eventuele kortingen.
-- Dubbele imports detecteren met bronbestand, periode en unieke transactiereferentie indien aanwezig.
+- Validatie van aanwezige datumtekst, product, aantal, prijs en btw-veld; concrete kassadatums en kortingskolommen moeten nog per kassaleverancier worden gevalideerd.
+- Dubbele imports detecteren met een compacte inhoudsfingerprint; herkenbare dubbele transacties worden op transactie-ID overgeslagen indien aanwezig.
 - Importresultaat tonen: geïmporteerd, niet gekoppeld, waarschuwingen en fouten.
 - Handmatige correctie van productmapping door eigenaar/manager.
 
@@ -78,11 +78,36 @@ Elk advies toont de gebruikte cijfers en reden. De uitbater beslist zelf.
 9. Alleen bevoegde eigenaar/manager kan verkoopmappings en prijsinstellingen wijzigen.
 10. Data van verschillende horecazaken blijven strikt gescheiden.
 
-## 7. Implementatievolgorde
+## 7. Huidige implementatiestatus
+
+- De module gebruikt de bestaande `recipeCost`-functie uit ANIMO HACCP; er is geen tweede foodcostberekening toegevoegd.
+- Verkoopprijs, btw-tarief, POS-imports en historische verkoopregels worden opgeslagen in `public.menu_profitability_data`, een aparte tabel met RLS. Ze worden niet in de algemene `app_data`-snapshot opgeslagen.
+- CSV-import ondersteunt komma/puntkomma, aanhalingstekens, veelgebruikte Belgische POS-kolommen, Belgische/internationale geldnotatie en ISO- of Belgische datums (ook datum/tijd). Bedragen moeten inclusief btw zijn; creditnota's en negatieve retourregels zijn nog niet ondersteund. De periodefilters werken op de genormaliseerde datum; validatie met echte kassabestanden blijft nodig.
+- Kassaproducten worden door eigenaar/manager handmatig aan recepten gekoppeld. Niet-gekoppelde regels tellen niet mee in de rendabiliteit.
+- Bij import kiest de module de bewaarde receptversie die bij de verkoopdatum hoort, wanneer die versiehistoriek beschikbaar is, en bewaart de ingrediëntkost per portie als momentopname. Op een datum waarop een receptversie werd aangepast is de kost bewust onbekend, omdat alleen een datum (geen verkooptijd) beschikbaar is. Historische inkoopprijzen van stock worden niet gereconstrueerd; de opgeslagen receptkost is dus een receptkostmomentopname, geen volledige historische nettokost.
+- Onvolledige btw- of kostgegevens leveren geen volledige brutowinsttotalen op. De ontbrekende regels worden niet stilzwijgend als nul behandeld.
+- De module heeft nog geen gevalideerde CSV/XLSX-formaten van concrete kassaleveranciers; XLSX en POS-API's zijn nog niet geïmplementeerd.
+- De nieuwe module is alleen in de featurebranch en de testbuild aanwezig; productiecode, productiehosting en live database zijn niet gewijzigd.
+- De aparte tabel `menu_profitability_data` is met twee migraties op het TEST-project aangemaakt. RLS laat alleen actieve eigenaars/managers met toegang tot dezelfde zaak lezen, invoegen en wijzigen; er is geen delete-recht voor `authenticated`.
+- SQL-transactietests op TEST bevestigden: eigenaar kan schrijven/lezen, manager kan wijzigen, medewerker krijgt 0 zichtbare rijen en een gebruiker ziet geen rij van een andere zaak. Alle testtransacties zijn teruggedraaid; er staat geen testdata in de tabel.
+- De RLS-tabel is nog niet met een echte tweede manageraccount via de browser getest. De app-UI moet nog op de testwebsite worden doorlopen.
+- De eerste versie bewaart POS-gegevens online in de aparte tabel; offline import/synchronisatie voor deze module is nog niet gebouwd. De bestaande offline HACCP-registraties blijven onaangeroerd.
+
+## 8. Implementatievolgorde
 
 A. Lees bestaande recept-, foodcost-, menu- en btw-structuren uit.
 B. Definieer een genormaliseerd verkoopimportformaat en voorbeeldbestand.
 C. Bouw analyse op fictieve data in testomgeving.
-D. Test prijsberekening, btw, receptversies, dubbele imports en rapporttotalen.
+D. Test prijsberekening, btw, receptversies, dubbele imports en rapporttotalen; voer daarna een volledige handmatige test uit in de ANIMO-testwebsite.
 E. Voeg POS-koppelingen pas toe na keuze en validatie van providers.
 F. Geen productie-release zonder review en expliciete goedkeuring.
+
+
+## 9. Kassaverkoop en automatische stockafboeking (testbranch)
+- Bij het bevestigen van een kassaverkoopimport worden gekoppelde kassaproducten omgerekend naar receptingrediënten op basis van de receptyield.
+- De stockplanning groepeert verbruik per stockproduct en controleert alle tekorten vóór de eerste afboeking. Een onvolledig of ongeldig gekoppeld recept blokkeert de stockafboeking; niet-gekoppelde kassaproducten worden niet afgeboekt.
+- De afboeking gebruikt de bestaande FEFO-batchverwerking via `consumeBatches`, zodat voorraadbatches en stockbewegingen dezelfde logica volgen als handmatige bereidingen.
+- Stockbewegingen krijgen `sourceType=menu_sales_import` en het kassabestand-import-ID als `sourceId`. Een herhaling van dezelfde import kan daardoor geen tweede stockafboeking uitvoeren.
+- De verkoopimport wordt eerst als `pending` geregistreerd. Na succesvolle cloudsynchronisatie wordt de status `applied`; bij een tijdelijke syncfout blijft de import zichtbaar als `pending_sync` met een knop om de stockafboeking opnieuw te synchroniseren. Een bestaande marker wordt bij een retry herkend.
+- Automatische stockafboeking vereist online verbinding en geen bestaand synchronisatieconflict. Er wordt niet offline afgeschreven.
+- Dit is uitsluitend featurebranchcode voor TEST. Volledige end-to-endtests met echte testrecepten en batches, RLS/tenant-controle en mobiele test blijven vereist. Geen productie-release.

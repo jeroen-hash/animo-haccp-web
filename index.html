@@ -1316,7 +1316,71 @@ window.FAVVApplyFoodWasteStockChange=(change)=>{
   persist();
   return {status:'applied'};
 };
+
+window.FAVVApplyMenuSalesStockDeduction=async({importId,rows,dryRun=false}={})=>{
+  if(cloudIsEmployee()||!['owner','manager'].includes(window.FAVVCloudRole))throw new Error('Alleen eigenaars en managers mogen kassaverkoop aan stock koppelen.');
+  if(!importId||!Array.isArray(rows))throw new Error('De kassaverkoopimport is ongeldig.');
+  if(!navigator.onLine||window.FAVVOfflineMode||window.FAVVSyncConflict)throw new Error('Stock automatisch afboeken vereist een stabiele online verbinding zonder synchronisatieconflict. Er wordt nu niets geïmporteerd of afgeboekt; probeer opnieuw zodra de verbinding hersteld is.');
+  const existing=state.stockMovements.find(m=>m?.sourceType==='menu_sales_import'&&m?.sourceId===importId);
+  if(existing){
+    if(dryRun)return {status:'already_applied'};
+    const synced=await window.FAVVCloudSync?.saveNow?.(state);
+    return {status:synced?'already_applied':'pending_sync'};
+  }
+  const plan=window.FAVVBuildMenuSalesStockPlan?.(rows);
+  if(!plan)throw new Error('Het stockplan kon niet worden berekend.');
+  if(dryRun)return plan;
+  if(plan.status!=='ready')return plan;
+  const snapshots=state.stock.map(product=>({product,batches:clone(product.batches||[]),quantity:product.quantity,expiryDate:product.expiryDate}));
+  const movementsSnapshot=clone(state.stockMovements);
+  for(const requirement of plan.requirements){
+    const product=stockById(requirement.stockId);
+    if(!product||!consumeBatches(product,requirement.required,'Kassaverkoop · import '+importId)){
+      snapshots.forEach(snapshot=>{snapshot.product.batches=snapshot.batches;snapshot.product.quantity=snapshot.quantity;snapshot.product.expiryDate=snapshot.expiryDate});
+      state.stockMovements=movementsSnapshot;
+      throw new Error('De voorraad veranderde tijdens de import. Er is geen stockafboeking uitgevoerd. Controleer de voorraad en probeer opnieuw.');
+    }
+    const movement=state.stockMovements[0];
+    if(movement){movement.sourceType='menu_sales_import';movement.sourceId=importId;}
+  }
+  persist();
+  const synced=await window.FAVVCloudSync?.saveNow?.(state);
+  return {status:synced?'applied':'pending_sync',plan};
+};
+window.FAVVBuildMenuSalesStockPlan=(rows)=>{
+  const recipes=state.recipes.map(recipe=>({...recipe,ingredients:Array.isArray(recipe.ingredients)?recipe.ingredients:[]}));
+  const stock=state.stock.map(product=>({...product,batches:Array.isArray(product.batches)?product.batches:[]}));
+  return window.__FAVVBuildMenuSalesStockPlanCore?.(rows,recipes,stock)||null;
+};
+
 window.FAVVGetCurrentUser=()=>currentUser;
+window.FAVVGetMenuProfitabilityData=async()=>{
+  if(cloudIsEmployee())throw new Error('Menurendabiliteit is alleen beschikbaar voor eigenaars en managers.');
+  const business=window.FAVVCloudBusiness;
+  const client=window.FAVVGetSupabaseClient?.();
+  if(!business?.id||!client)throw new Error('De zaakgegevens zijn nog niet geladen. Probeer opnieuw zodra je bent aangemeld.');
+  const {data,error}=await client.from('menu_profitability_data').select('payload,updated_at').eq('business_id',business.id).maybeSingle();
+  if(error)throw error;
+  const settings=data?.payload&&typeof data.payload==='object'&&!Array.isArray(data.payload)
+    ?clone(data.payload)
+    :{pricesByRecipe:{},salesImports:[],salesRows:[],mappings:{}};
+  return {recipes:state.recipes.map(recipe=>({...clone(recipe),ingredientCost:recipeCost(recipe),ingredientCostComplete:Array.isArray(recipe.ingredients)&&recipe.ingredients.length>0&&recipe.ingredients.every(ingredient=>!!stockById(ingredient.stockId))})),settings,updatedAt:data?.updated_at||null};
+};
+window.FAVVSaveMenuProfitability=async(value,expectedUpdatedAt=null)=>{
+  if(cloudIsEmployee()||!['owner','manager'].includes(window.FAVVCloudRole))throw new Error('Alleen eigenaars en managers mogen deze instellingen wijzigen.');
+  if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Ongeldige menurendabiliteitsgegevens.');
+  const business=window.FAVVCloudBusiness;
+  const client=window.FAVVGetSupabaseClient?.();
+  if(!business?.id||!client)throw new Error('De zaakgegevens zijn nog niet geladen.');
+  const {data,error}=await client.rpc('save_menu_profitability_data',{
+    p_business_id:business.id,
+    p_payload:clone(value),
+    p_expected_updated_at:expectedUpdatedAt
+  });
+  if(error)throw error;
+  if(typeof data!=='string'||!data)throw new Error('De server bevestigde de opslag niet. Laad de gegevens opnieuw.');
+  return data;
+};
 window.FAVVNavigate=(page)=>navigate(page);
 window.FAVVCreateCleanBusinessState=()=>({cleaning:[],temperatures:[],dishes:[],reports:[],stock:[],stockMovements:[],deliveries:[],recipes:[],productions:[],temperatureActions:[],businessProfile:businessProfile?{businessName:businessProfile.businessName||'',enterpriseNumber:businessProfile.enterpriseNumber||'',businessType:businessProfile.businessType||'Horecazaak',address:businessProfile.address||'',phone:businessProfile.phone||''}:null});
 window.FAVVApplyCloudState=(x)=>{if(!x||!Array.isArray(x.cleaning)||!Array.isArray(x.temperatures)||!Array.isArray(x.dishes))throw new Error('Ongeldige cloudgegevens');state=normalizeStateCollections(clone(x));state.stock=normalizeStockBatchData(state.stock);if(x.businessProfile&&businessProfile){businessProfile={...businessProfile,...x.businessProfile,id:businessProfile.id,businessName:window.FAVVCloudBusiness?.name||x.businessProfile.businessName||businessProfile.businessName,enterpriseNumber:window.FAVVCloudBusiness?.enterprise_number||x.businessProfile.enterpriseNumber||businessProfile.enterpriseNumber};saveBusiness();updateBusinessUI()}localStorage.setItem(businessKey('favv-professional-v1'),JSON.stringify(state));renderDashboard();return true};
@@ -1339,8 +1403,8 @@ window.FAVVStartSupabaseSession=function(user,business){
   window.FAVVApplyCloudRole?.(role);updateBusinessUI();applyPriceVisibility();
   document.querySelectorAll('.user').forEach(el=>el.textContent=currentUser.name.split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase());navigate('dashboard');
 };
-window.FAVVApplyCloudRole=function(role){window.FAVVCloudRole=role;const employee=role==='employee';document.querySelectorAll('[data-page="management"],[data-page="subscription"],#management').forEach(el=>el.classList.toggle('cloud-employee-hidden',employee));if(employee&&document.querySelector('.page.active:is(#management,#subscription)'))navigate('dashboard');const roleEl=$('sidebarRole');if(employee&&roleEl)roleEl.textContent='Medewerker'};
-function navigate(page){const subscription=loadSubscription();if(window.FAVVCloudBusiness&&currentUser&&page!=='subscription'&&subscription.accessAllowed===false){page='subscription'}if(cloudIsEmployee()&&(page==='management'||page==='invoices')){toast('Medewerkers hebben geen toegang tot '+(page==='management'?'Beheer':'Facturen'));return}if(page==='management'&&currentUser?.role!=='manager'){toast('Alleen managers hebben toegang tot Beheer');return}document.querySelectorAll('.page').forEach(el=>el.classList.toggle('active',el.id===page));document.querySelectorAll('[data-page]').forEach(el=>el.classList.toggle('active',el.dataset.page===page));if(page==='cleaning')renderCleaning();if(page==='temperatures')renderTemperatures();if(page==='actions')renderTemperatureActions();if(page==='allergens')renderDishes();if(page==='stock')renderStock();if(page==='invoices')renderInvoices();if(page==='recipes')renderRecipes();if(page==='reports')renderReport();if(page==='subscription'){renderSubscription();window.refreshSubscriptionStatus()}if(page==='management')renderUsers();window.scrollTo(0,0)}
+window.FAVVApplyCloudRole=function(role){window.FAVVCloudRole=role;window.FAVVSetMenuProfitabilityAccess?.(role);const employee=role==='employee';document.querySelectorAll('[data-page="management"],[data-page="subscription"],#management').forEach(el=>el.classList.toggle('cloud-employee-hidden',employee));if(employee&&document.querySelector('.page.active:is(#management,#subscription)'))navigate('dashboard');const roleEl=$('sidebarRole');if(employee&&roleEl)roleEl.textContent='Medewerker'};
+function navigate(page){const subscription=loadSubscription();if(window.FAVVCloudBusiness&&currentUser&&page!=='subscription'&&subscription.accessAllowed===false){page='subscription'}if(cloudIsEmployee()&&(page==='management'||page==='invoices')){toast('Medewerkers hebben geen toegang tot '+(page==='management'?'Beheer':'Facturen'));return}if(page==='management'&&currentUser?.role!=='manager'){toast('Alleen managers hebben toegang tot Beheer');return}if(page==='menu-profitability'&&cloudIsEmployee()){toast('Alleen eigenaars en managers hebben toegang tot Menurendabiliteit');return}document.querySelectorAll('.page').forEach(el=>el.classList.toggle('active',el.id===page));document.querySelectorAll('[data-page]').forEach(el=>el.classList.toggle('active',el.dataset.page===page));if(page==='cleaning')renderCleaning();if(page==='temperatures')renderTemperatures();if(page==='actions')renderTemperatureActions();if(page==='allergens')renderDishes();if(page==='stock')renderStock();if(page==='invoices')renderInvoices();if(page==='recipes')renderRecipes();if(page==='menu-profitability')window.FAVVRenderMenuProfitability?.();if(page==='reports')renderReport();if(page==='subscription'){renderSubscription();window.refreshSubscriptionStatus()}if(page==='management')renderUsers();window.scrollTo(0,0)}
 function renderDashboard(){const done=state.cleaning.filter(x=>x.done).length,total=state.cleaning.length,p=total?Math.round(done/total*100):0;$('dashScore').textContent=p+'%';$('dashProgress').style.width=p+'%';$('dashCleaning').textContent=total;$('dashTemps').textContent=state.temperatures.length;$('dashDishes').textContent=state.dishes.length;$('dashStock').textContent=state.stock.length;$('dashRecipes').textContent=state.recipes.length;syncTemperatureActions()}
 function renderCleaning(){const q=$('cleaningSearch').value.trim().toLowerCase();const rows=state.cleaning.filter(x=>x.name.toLowerCase().includes(q));$('cleaningList').innerHTML=rows.length?rows.map(x=>`<div class="item"><div class="item-main"><input type="checkbox" data-action="toggle-cleaning" data-id="${x.id}" ${x.done?'checked':''} aria-label="${esc(x.name)} voltooid"><div><div class="item-title">${esc(x.name)}</div><div class="item-sub"><strong>Frequentie:</strong> ${esc(x.frequency)}</div><div class="item-sub"><strong>Materiaal:</strong> ${esc(x.material||'Niet ingevuld')}</div><div class="item-sub"><strong>Product:</strong> ${esc(x.product||'Niet ingevuld')}</div></div></div><div class="actions"><button class="btn secondary small" data-action="edit-cleaning" data-id="${x.id}">Bewerken</button><button class="btn danger small" data-action="delete-cleaning" data-id="${x.id}">Verwijderen</button></div></div>`).join(''):'<div class="empty">Geen taken gevonden.</div>';const done=state.cleaning.filter(x=>x.done).length,total=state.cleaning.length;$('cleaningProgressText').textContent=done+' / '+total;$('cleaningProgress').style.width=(total?done/total*100:0)+'%'}
 function tempOk(x){const value=Number(x.value),min=x.min===''||x.min==null?null:Number(x.min),max=x.max===''||x.max==null?null:Number(x.max);if(min!=null&&Number.isFinite(min)&&value<min)return false;if(max!=null&&Number.isFinite(max)&&value>max)return false;if(min!=null||max!=null)return true;return x.type==='Koeling'?value>=0&&value<=7:x.type==='Diepvries'?value<=-18:true}
@@ -2135,6 +2199,7 @@ setInterval(()=>{
 })();
 </script>
 <script type="module" src="./voedselverspilling-ui.mjs"></script>
+<script type="module" src="./menurendabiliteit-ui.mjs"></script>
 <!-- ANIMO_ALL_DOMAIN_VISIT_TRACKER: privacyvriendelijke telling van app-paginaweergaven -->
 <script id="animo-all-domain-visit-tracker">
 (function(){

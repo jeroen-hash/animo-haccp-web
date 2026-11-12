@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/voedselverspilling-module
+      - feature/menurendabiliteit-module
     paths:
       - 'index.html'
       - 'sw.js'
@@ -62,11 +63,19 @@ jobs:
           const source = readFileSync(file, 'utf8');
           const productionConfig = "const PUBLIC_SUPABASE_CONFIG={url:'https://zimzsovvtdmrthrflkgm.supabase.co',key:'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k'};;";
           const testConfig = "const PUBLIC_SUPABASE_CONFIG={url:'https://xwjcwravfeldndwlugai.supabase.co',key:'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI'};;";
+          const productionUrl = 'https://zimzsovvtdmrthrflkgm.supabase.co';
+          const testUrl = 'https://xwjcwravfeldndwlugai.supabase.co';
+          const productionKey = 'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k';
+          const testKey = 'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI';
           if (!source.includes(productionConfig)) throw new Error('Productieconfiguratie niet exact gevonden; testdeploy afgebroken.');
-          writeFileSync(file, source.replace(productionConfig, testConfig));
+          let testBuild = source.replace(productionConfig, testConfig);
+          // Ook eventuele losse productie-endpoints (zoals bezoekregistratie) uitsluitend in de testkopie omzetten.
+          testBuild = testBuild.split(productionUrl).join(testUrl);
+          testBuild = testBuild.split(productionKey).join(testKey);
+          writeFileSync(file, testBuild);
           const built = readFileSync(file, 'utf8');
-          if (!built.includes('https://xwjcwravfeldndwlugai.supabase.co') || built.includes('https://zimzsovvtdmrthrflkgm.supabase.co')) {
-            throw new Error('Testbuild bevat niet uitsluitend de testconfiguratie.');
+          if (!built.includes(testUrl) || !built.includes(testKey) || built.includes(productionUrl) || built.includes(productionKey)) {
+            throw new Error('Testbuild bevat nog productieconfiguratie of mist de testconfiguratie.');
           }
           NODE
           echo "Broncode behoudt productieconfiguratie; alleen out/test/index.html gebruikt de testdatabase."
@@ -106,3 +115,5 @@ jobs:
           mirror -R --verbose out/test /test
           bye
           LFTP
+
+# Trigger test-only publication for the latest menu profitability branch revision.
