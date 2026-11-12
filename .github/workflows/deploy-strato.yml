@@ -63,7 +63,7 @@ jobs:
           cp "$GITHUB_WORKSPACE"/supabase/migrations/20261112174321_correct_food_waste_comment_and_index_menu_profitability_creator.sql supabase/migrations/
           ANIMO_PRODUCTION_DB_URL="$(python3 - <<'PY'
           import os
-          from urllib.parse import quote, unquote, urlsplit, urlunsplit
+          from urllib.parse import parse_qs, quote, unquote, urlencode, urlsplit, urlunsplit
           parsed = urlsplit(os.environ["DATABASE_URL"])
           if parsed.scheme not in ("postgres", "postgresql") or not parsed.hostname:
               raise SystemExit("Production database URL is not a PostgreSQL URI.")
@@ -74,12 +74,14 @@ jobs:
               raise SystemExit("Production migration target guard failed: unexpected Supabase project username.")
           if not parsed.hostname.endswith(".pooler.supabase.com"):
               raise SystemExit("Production migration target guard failed: expected the Supabase session pooler.")
-          if "sslmode=require" not in parsed.query:
+          query = parse_qs(parsed.query, keep_blank_values=True)
+          if query.get("sslmode") and query["sslmode"][0] != "require":
               raise SystemExit("Production database connection must require SSL.")
+          query["sslmode"] = ["require"]
           netloc = f"{quote(username, safe='')}:{quote(os.environ['DATABASE_PASSWORD'], safe='')}@{parsed.hostname}"
           if parsed.port:
               netloc += f":{parsed.port}"
-          print(urlunsplit((parsed.scheme, netloc, parsed.path, parsed.query, parsed.fragment)))
+          print(urlunsplit((parsed.scheme, netloc, parsed.path, urlencode(query, doseq=True), parsed.fragment)))
           PY
           )"
           echo "::add-mask::$ANIMO_PRODUCTION_DB_URL"
