@@ -260,9 +260,39 @@ async function loadEntries() {
     return;
   }
   const queued = await listFoodWasteQueue().catch(() => []);
-  const { data, error } = await supabase.from(TABLE).select(COLUMNS)
-    .eq("business_id", biz.id).order("client_created_at", { ascending: false }).limit(100);
-  if (error) throw error;
+  const pendingForBusiness = queued.filter((entry) => entry.businessId === biz.id);
+  const showOfflineQueue = (message) => {
+    const pendingHtml = pendingForBusiness.map((entry) => `
+      <article class="fw-entry">
+        <div>
+          <strong>${esc(entry.productName)} · ${esc(entry.quantity)} ${esc(entry.inputUnit)}</strong>
+          <small>${esc(entry.reason)} · ${dateTime(entry.clientCreatedAt)} · Door ${esc(entry.employeeName || "medewerker")}</small>
+          <small><span class="fw-badge">Wacht op synchronisatie</span> Deze registratie staat veilig op dit toestel.</small>
+        </div>
+      </article>`).join("");
+    $("foodWasteEntries").innerHTML = pendingHtml || '<div class="empty">Offline: de bestaande serverregistraties worden opnieuw geladen zodra de verbinding hersteld is.</div>';
+    status(message);
+  };
+
+  // Voer geen serveraanvraag uit wanneer het toestel offline is.
+  if (!navigator.onLine || window.FAVVOfflineMode) {
+    showOfflineQueue("Offline: registraties op dit toestel blijven bewaard en worden later gesynchroniseerd.");
+    return;
+  }
+
+  let data;
+  try {
+    const response = await supabase.from(TABLE).select(COLUMNS)
+      .eq("business_id", biz.id).order("client_created_at", { ascending: false }).limit(100);
+    if (response.error) throw response.error;
+    data = response.data;
+  } catch (error) {
+    const networkFailure = error instanceof TypeError
+      || /load failed|failed to fetch|networkerror|network request failed/i.test(String(error?.message || error));
+    if (!networkFailure) throw error;
+    showOfflineQueue("Geen verbinding met de server. Lokale registraties zijn veilig bewaard; bestaande registraties laden opnieuw zodra internet terug is.");
+    return;
+  }
   const rows = data || [];
   // Herstel voorraad ook wanneer een void-actie eerder offline/conflictgevoelig was.
   await reverseVoidedStockRows(rows);
