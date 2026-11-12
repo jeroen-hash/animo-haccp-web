@@ -128,6 +128,7 @@ export function normalizeSalesCsv(text, options = {}) {
 }
 
 export function salesTotalExcludingVat(totalInclusive, vatRate) {
+  if (totalInclusive == null || vatRate == null || String(vatRate).trim() === "") return null;
   const total = Number(totalInclusive);
   const rate = Number(vatRate);
   if (!Number.isFinite(total) || total < 0 || !Number.isFinite(rate) || rate < 0 || rate > 100) return null;
@@ -141,7 +142,8 @@ export function dishEconomics({ recipe, ingredientCost, sellingPriceInclusive, v
   const vat = Number(vatRate);
   if (!recipe || !Number.isFinite(yieldCount) || yieldCount <= 0) return { status: "invalid_recipe" };
   if (!Number.isFinite(cost) || cost < 0) return { status: "missing_cost" };
-  if (!Number.isFinite(price) || price < 0) return { status: "missing_selling_price" };
+  if (sellingPriceInclusive == null || String(sellingPriceInclusive).trim() === "" || !Number.isFinite(price) || price < 0) return { status: "missing_selling_price" };
+  if (vatRate == null || String(vatRate).trim() === "") return { status: "missing_vat_rate" };
   const priceExVat = salesTotalExcludingVat(price, vat);
   if (priceExVat == null) return { status: "missing_vat_rate" };
   const costPerPortion = cost / yieldCount;
