@@ -54,13 +54,13 @@ export function parseCsv(text, delimiter) {
 }
 
 const HEADER_ALIASES = {
-  date: ["datum", "date", "verkoopdatum", "tijdstip"],
-  product: ["product", "gerecht", "artikel", "omschrijving", "naam"],
-  quantity: ["aantal", "quantity", "qty", "verkochte porties", "stuks"],
-  unitPrice: ["prijs", "eenheidsprijs", "unit price", "verkoopprijs"],
-  total: ["totaal", "bedrag", "omzet", "total", "line total"],
-  vatRate: ["btw", "btw %", "vat", "vat rate", "btw-tarief"],
-  transactionId: ["transactie", "transactie-id", "ticket", "bonnummer", "transaction id", "referentie"]
+  date: ["datum", "date", "verkoopdatum", "tijdstip", "datum/tijd", "date time"],
+  product: ["product", "productnaam", "gerecht", "artikel", "artikelnaam", "omschrijving", "naam"],
+  quantity: ["aantal", "quantity", "qty", "verkochte porties", "stuks", "hoeveelheid"],
+  unitPrice: ["prijs", "eenheidsprijs", "unit price", "verkoopprijs", "prijs incl btw", "verkoopprijs incl btw"],
+  total: ["totaal", "bedrag", "omzet", "total", "line total", "totaal incl btw", "totaal incl. btw", "bedrag incl btw", "total incl vat"],
+  vatRate: ["btw", "btw %", "btw%", "btw-tarief", "vat", "vat rate", "tax rate"],
+  transactionId: ["transactie", "transactie-id", "ticket", "bonnummer", "bon", "transaction id", "referentie"]
 };
 
 function headerIndex(headers, aliases) {
