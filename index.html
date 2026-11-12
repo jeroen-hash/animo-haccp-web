@@ -1317,15 +1317,29 @@ window.FAVVApplyFoodWasteStockChange=(change)=>{
   return {status:'applied'};
 };
 window.FAVVGetCurrentUser=()=>currentUser;
-window.FAVVGetMenuProfitabilityData=()=>({
-  recipes:state.recipes.map(recipe=>({...clone(recipe),ingredientCost:recipeCost(recipe)})),
-  settings:clone(state.menuProfitability||{pricesByRecipe:{},salesImports:[],salesRows:[],mappings:{}})
-});
-window.FAVVSaveMenuProfitability=(value)=>{
+window.FAVVGetMenuProfitabilityData=async()=>{
+  if(cloudIsEmployee())throw new Error('Menurendabiliteit is alleen beschikbaar voor eigenaars en managers.');
+  const business=window.FAVVCloudBusiness;
+  const client=window.FAVVGetSupabaseClient?.();
+  if(!business?.id||!client)throw new Error('De zaakgegevens zijn nog niet geladen. Probeer opnieuw zodra je bent aangemeld.');
+  const {data,error}=await client.from('menu_profitability_data').select('payload').eq('business_id',business.id).maybeSingle();
+  if(error)throw error;
+  const settings=data?.payload&&typeof data.payload==='object'&&!Array.isArray(data.payload)
+    ?clone(data.payload)
+    :{pricesByRecipe:{},salesImports:[],salesRows:[],mappings:{}};
+  return {recipes:state.recipes.map(recipe=>({...clone(recipe),ingredientCost:recipeCost(recipe)})),settings};
+};
+window.FAVVSaveMenuProfitability=async(value)=>{
   if(cloudIsEmployee())throw new Error('Alleen eigenaars en managers mogen deze instellingen wijzigen.');
   if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Ongeldige menurendabiliteitsgegevens.');
-  state.menuProfitability=clone(value);
-  persist();
+  const business=window.FAVVCloudBusiness;
+  const client=window.FAVVGetSupabaseClient?.();
+  if(!business?.id||!client)throw new Error('De zaakgegevens zijn nog niet geladen.');
+  const {error}=await client.from('menu_profitability_data').upsert(
+    {business_id:business.id,payload:clone(value)},
+    {onConflict:'business_id'}
+  );
+  if(error)throw error;
   return true;
 };
 window.FAVVNavigate=(page)=>navigate(page);
