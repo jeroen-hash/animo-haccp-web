@@ -1,6 +1,6 @@
 # ANIMO HACCP — Module 2: Menurendabiliteit
 
-Status: eerste implementatiefase op een geïsoleerde featurebranch. De berekeningskern en UI zijn toegevoegd; 18/18 coretests en syntaxcontrole van beide modules zijn geslaagd. De databasebeveiliging is op TEST aangelegd en met SQL-transactietests gecontroleerd. De UI is nog niet handmatig in de testwebsite doorlopen; geen productie-release.
+Status: eerste implementatiefase op een geïsoleerde featurebranch. De berekeningskern en UI zijn toegevoegd; 18/18 coretests en syntaxcontrole van beide modules zijn geslaagd. De databasebeveiliging is op TEST aangelegd en met SQL-transactietests gecontroleerd. De testbuild is succesvol gepubliceerd naar uitsluitend `/test`; de UI moet nog handmatig worden doorlopen. Geen productie-release.
 
 ## Doel
 
@@ -87,7 +87,7 @@ Elk advies toont de gebruikte cijfers en reden. De uitbater beslist zelf.
 - Bij import kiest de module de bewaarde receptversie die bij de verkoopdatum hoort, wanneer die versiehistoriek beschikbaar is, en bewaart de ingrediëntkost per portie als momentopname. Op een datum waarop een receptversie werd aangepast is de kost bewust onbekend, omdat alleen een datum (geen verkooptijd) beschikbaar is. Historische inkoopprijzen van stock worden niet gereconstrueerd; de opgeslagen receptkost is dus een receptkostmomentopname, geen volledige historische nettokost.
 - Onvolledige btw- of kostgegevens leveren geen volledige brutowinsttotalen op. De ontbrekende regels worden niet stilzwijgend als nul behandeld.
 - De module heeft nog geen gevalideerde CSV/XLSX-formaten van concrete kassaleveranciers; XLSX en POS-API's zijn nog niet geïmplementeerd.
-- De nieuwe module is alleen in de featurebranch aanwezig; productie en live database zijn niet gewijzigd.
+- De nieuwe module is alleen in de featurebranch en de testbuild aanwezig; productiecode, productiehosting en live database zijn niet gewijzigd.
 - De aparte tabel `menu_profitability_data` is met twee migraties op het TEST-project aangemaakt. RLS laat alleen actieve eigenaars/managers met toegang tot dezelfde zaak lezen, invoegen en wijzigen; er is geen delete-recht voor `authenticated`.
 - SQL-transactietests op TEST bevestigden: eigenaar kan schrijven/lezen, manager kan wijzigen, medewerker krijgt 0 zichtbare rijen en een gebruiker ziet geen rij van een andere zaak. Alle testtransacties zijn teruggedraaid; er staat geen testdata in de tabel.
 - De RLS-tabel is nog niet met een echte tweede manageraccount via de browser getest. De app-UI moet nog op de testwebsite worden doorlopen.
