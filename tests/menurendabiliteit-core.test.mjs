@@ -94,6 +94,14 @@ test("onvolledige btw-data levert geen misleidende omzet of brutowinst op", () =
   assert.equal(result.dishes[0].missingVatRows, 1);
 });
 
+test("historische verkoop gebruikt vastgelegde receptkost, niet de huidige receptkost", () => {
+  const result = buildDishSalesSummary([
+    { product: "Pasta", dishId: "r1", quantity: 1, totalInclusive: 11.2, vatRate: 12, ingredientCostPerPortionSnapshot: 3, recipeVersion: 1 }
+  ], {}, { r1: { status: "ok", ingredientCostPerPortion: 9 } });
+  assert.equal(result.dishes[0].ingredientCost, 3);
+  assert.equal(result.dishes[0].grossProfit, 7);
+});
+
 test("kostprijsmomentopname bewaart receptversie en berekende kost", () => {
   const snapshot = createCostSnapshot({
     recipe: { id: "r1", name: "Pasta", version: 3, yield: 4 },
