@@ -52,6 +52,10 @@ function mergeArray(base, local, remote, path, conflicts) {
 }
 
 function mergeValue(base, local, remote, path, conflicts) {
+  if (base === MISSING && local !== MISSING && remote !== MISSING && !sameValue(local, remote)) {
+    conflicts.push(path || "(root)");
+    return remote;
+  }
   if (sameValue(local, base)) return remote;
   if (sameValue(remote, base) || sameValue(local, remote)) return local;
 
