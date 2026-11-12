@@ -36,7 +36,7 @@ jobs:
           set -euo pipefail
           supabase --version
           supabase migration new allow_manager_updates_menu_profitability_data
-          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_create_menu_profitability_private_data.sql' -print -quit)"
+          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_allow_manager_updates_menu_profitability_data.sql' -print -quit)"
           test -n "$migration_file"
           test -f "$migration_file"
           echo "Generated: $migration_file"
@@ -45,7 +45,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_create_menu_profitability_private_data.sql' -print -quit)"
+          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_allow_manager_updates_menu_profitability_data.sql' -print -quit)"
           test -n "$migration_file"
           git fetch origin feature/menurendabiliteit-module
           git rebase origin/feature/menurendabiliteit-module
