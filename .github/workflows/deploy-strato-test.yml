@@ -71,6 +71,14 @@ jobs:
           NODE
           echo "Broncode behoudt productieconfiguratie; alleen out/test/index.html gebruikt de testdatabase."
 
+      - name: Release- en back-upworkflow controleren
+        run: |
+          set -euo pipefail
+          grep -Fq 'cp ./*.mjs out/app/' .github/workflows/deploy-strato.yml
+          grep -Fq 'mirror -R --verbose out/app /app' .github/workflows/deploy-strato.yml
+          grep -Fq 'actions/checkout@v4' .github/workflows/backup-supabase-database.yml
+          node --test tests/database-backup-retention.test.mjs
+
       - name: Uploaden naar uitsluitend /test
         if: steps.guard.outputs.present == 'true'
         env:
