@@ -139,8 +139,11 @@ function renderSales(data) {
   $("mrSalesResults").innerHTML = summary.dishes.length ? `
     <div class="mr-table-wrap"><table class="mr-table"><thead><tr><th>Gerecht</th><th>Porties</th><th>Omzet incl. btw</th><th>Omzet excl. btw</th><th>Ingrediëntkost</th><th>Brutowinst</th><th>Marge</th></tr></thead><tbody>
     ${summary.dishes.map(row=>{const recipe=data.recipes.find(item=>item.id===row.dishId);return `<tr><td>${esc(recipe?.name||"Onbekend gerecht")}</td><td>${number(row.portions)}</td><td>${money(row.revenueInclusive)}</td><td>${money(row.revenueExclusive)}</td><td>${money(row.ingredientCost)}</td><td>${money(row.grossProfit)}</td><td>${row.grossMarginPercent==null?"—":number(row.grossMarginPercent)+"%"}</td></tr>`}).join("")}
-    </tbody></table></div>${summary.unmapped.length?`<p class="mr-warning">${summary.unmapped.length} verkoopregel(s) zijn nog niet gekoppeld of missen een geldige receptkost. Ze zijn niet opgenomen in de rendabiliteit.</p>`:""}`
-    : '<div class="mr-empty">Nog geen verkoopregels voor deze periode. Importeer eerst een kassarapport.</div>';
+    </tbody></table></div>${summary.unmapped.length?`<p class="mr-warning">${summary.unmapped.length} verkoopregel(s) zijn nog niet gekoppeld aan een ANIMO-recept.</p>`:""}
+    ${summary.dishes.some(row=>row.missingVatRows||row.missingCostRows)?'<p class="mr-warning">Sommige regels missen een btw-tarief of een kostprijsmomentopname. De volledige brutowinst wordt daarom niet berekend voor die gerechten.</p>':""}`
+    : allRows.length
+      ? `<div class="mr-empty">${summary.unmapped.length} verkoopregel(s) zijn nog niet gekoppeld aan een ANIMO-recept. Koppel kassaproducten bij de import om ze te analyseren.</div>`
+      : '<div class="mr-empty">Nog geen verkoopregels voor deze periode. Importeer eerst een kassarapport.</div>';
   const menuItems = summary.dishes.map(row=>{
     const recipe=data.recipes.find(item=>item.id===row.dishId);
     const econ=economics[row.dishId];
@@ -195,7 +198,7 @@ function commitImport() {
     else delete mappings[select.dataset.mrMap];
   });
   const importedAt=new Date().toISOString();
-  const importId="sales-"+importedAt+"-"+pendingImport.fingerprint.length;
+  const importId="sales-"+(window.crypto?.randomUUID?.()||importedAt+"-"+Math.random().toString(36).slice(2));
   const recipesById=new Map(data.recipes.map(recipe=>[recipe.id,recipe]));
   const newRows=pendingImport.rows.map(row=>{
     const dishId=mappings[normalizedName(row.product)]||null;
