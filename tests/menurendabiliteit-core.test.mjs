@@ -50,6 +50,7 @@ test("geen verzonnen economie wanneer prijs, kost of btw ontbreekt", () => {
   assert.equal(dishEconomics({ recipe: { yield: 1 }, ingredientCost: 4, sellingPriceInclusive: 0, vatRate: null }).status, "missing_vat_rate");
   assert.equal(dishEconomics({ recipe: { yield: 1 }, ingredientCost: 4, sellingPriceInclusive: 5, vatRate: 6 }).status, "ok");
   assert.equal(dishEconomics({ recipe: { yield: 1 }, ingredientCost: NaN, sellingPriceInclusive: 5, vatRate: 6 }).status, "missing_cost");
+  assert.equal(dishEconomics({ recipe: { yield: 1, ingredientCostComplete: false }, ingredientCost: 0, sellingPriceInclusive: 5, vatRate: 6 }).status, "missing_cost");
 });
 
 test("verkoopoverzicht rekent omzet, ingrediëntkost en brutowinst", () => {
