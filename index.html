@@ -1364,20 +1364,22 @@ window.FAVVGetMenuProfitabilityData=async()=>{
   const settings=data?.payload&&typeof data.payload==='object'&&!Array.isArray(data.payload)
     ?clone(data.payload)
     :{pricesByRecipe:{},salesImports:[],salesRows:[],mappings:{}};
-  return {recipes:state.recipes.map(recipe=>({...clone(recipe),ingredientCost:recipeCost(recipe),ingredientCostComplete:Array.isArray(recipe.ingredients)&&recipe.ingredients.length>0&&recipe.ingredients.every(ingredient=>!!stockById(ingredient.stockId))})),settings};
+  return {recipes:state.recipes.map(recipe=>({...clone(recipe),ingredientCost:recipeCost(recipe),ingredientCostComplete:Array.isArray(recipe.ingredients)&&recipe.ingredients.length>0&&recipe.ingredients.every(ingredient=>!!stockById(ingredient.stockId))})),settings,updatedAt:data?.updated_at||null};
 };
-window.FAVVSaveMenuProfitability=async(value)=>{
-  if(cloudIsEmployee())throw new Error('Alleen eigenaars en managers mogen deze instellingen wijzigen.');
+window.FAVVSaveMenuProfitability=async(value,expectedUpdatedAt=null)=>{
+  if(cloudIsEmployee()||!['owner','manager'].includes(window.FAVVCloudRole))throw new Error('Alleen eigenaars en managers mogen deze instellingen wijzigen.');
   if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Ongeldige menurendabiliteitsgegevens.');
   const business=window.FAVVCloudBusiness;
   const client=window.FAVVGetSupabaseClient?.();
   if(!business?.id||!client)throw new Error('De zaakgegevens zijn nog niet geladen.');
-  const {error}=await client.from('menu_profitability_data').upsert(
-    {business_id:business.id,payload:clone(value)},
-    {onConflict:'business_id'}
-  );
+  const {data,error}=await client.rpc('save_menu_profitability_data',{
+    p_business_id:business.id,
+    p_payload:clone(value),
+    p_expected_updated_at:expectedUpdatedAt
+  });
   if(error)throw error;
-  return true;
+  if(typeof data!=='string'||!data)throw new Error('De server bevestigde de opslag niet. Laad de gegevens opnieuw.');
+  return data;
 };
 window.FAVVNavigate=(page)=>navigate(page);
 window.FAVVCreateCleanBusinessState=()=>({cleaning:[],temperatures:[],dishes:[],reports:[],stock:[],stockMovements:[],deliveries:[],recipes:[],productions:[],temperatureActions:[],businessProfile:businessProfile?{businessName:businessProfile.businessName||'',enterpriseNumber:businessProfile.enterpriseNumber||'',businessType:businessProfile.businessType||'Horecazaak',address:businessProfile.address||'',phone:businessProfile.phone||''}:null});
