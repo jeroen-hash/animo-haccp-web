@@ -5,7 +5,8 @@ import {
   findDuplicateSalesLines,
   buildDishSalesSummary,
   classifyMenuItems,
-  recipeCostSnapshotForDate
+  recipeCostSnapshotForDate,
+  buildSalesStockDeductionPlan
 } from "./menurendabiliteit-core.mjs";
 
 let pendingImport = null;
@@ -19,7 +20,7 @@ const number = value => new Intl.NumberFormat("nl-BE",{maximumFractionDigits:2})
 const normalizedName = value => String(value||"").trim().toLocaleLowerCase("nl-BE");
 const emptySettings = () => ({pricesByRecipe:{},salesImports:[],salesRows:[],mappings:{}});
 
-async function appData() {
+window.__FAVVBuildMenuSalesStockPlanCore=buildSalesStockDeductionPlan;\nasync function appData() {
   const data = await window.FAVVGetMenuProfitabilityData?.();
   if (!data) throw new Error("Menurendabiliteit kon de gegevens niet laden.");
   const settings = {...emptySettings(),...(data.settings||{})};
@@ -169,7 +170,7 @@ function renderSales(data) {
     <p class="mr-footnote">Drempels zijn de mediaan van de getoonde gerechten: populariteit ${number(classified[0].popularityThreshold)} porties en brutowinst ${money(classified[0].profitThreshold)} per portie.</p>`
     : '<div class="mr-empty">De menu-matrix verschijnt zodra er gekoppelde verkoopregels en geldige prijzen beschikbaar zijn.</div>';
   $("mrHistory").innerHTML = data.settings.salesImports.length ? `
-    <div class="card mr-card"><h2>Geïmporteerde kassabestanden</h2>${data.settings.salesImports.slice().reverse().map(item=>`<div class="mr-history-row"><span><strong>${esc(item.fileName)}</strong><small>${number(item.rowCount)} regels · ${new Date(item.importedAt).toLocaleString("nl-BE")}</small></span><span class="mr-tag">Geïmporteerd</span></div>`).join("")}</div>` : "";
+    <div class="card mr-card"><h2>Geïmporteerde kassabestanden</h2>${data.settings.salesImports.slice().reverse().map(item=>`<div class="mr-history-row"><span><strong>${esc(item.fileName)}</strong><small>${number(item.rowCount)} regels · ${new Date(item.importedAt).toLocaleString("nl-BE")}</small></span><span class="mr-tag">${item.stockDeductionStatus==="applied"?"Stock afgeboekt":item.stockDeductionStatus==="pending_sync"?"Stock wacht op synchronisatie":"Geïmporteerd"}</span>${item.stockDeductionStatus==="pending_sync"?`<button class="btn secondary small" type="button" data-mr-action="retry-stock" data-id="${esc(item.importId)}">Stock opnieuw synchroniseren</button>`:""}</div>`).join("")}</div>` : "";
 }
 async function render() {
   if (!ensureUi()) return;
@@ -234,16 +235,44 @@ async function commitImport() {
       costSnapshotSource:snapshot?.source??null
     };
   });
+  const mappedRows=newRows.filter(row=>row.dishId).map(row=>({dishId:row.dishId,product:row.product,quantity:row.quantity}));
+  const stockPlan=await window.FAVVApplyMenuSalesStockDeduction?.({importId,rows:mappedRows,dryRun:true});
+  if(mappedRows.length&&stockPlan?.status!=="ready"&&stockPlan?.status!=="already_applied"){
+    const detail=stockPlan?.shortages?.map(item=>`${item.name}: ${number(item.shortage)} ${item.unit} tekort`).join("; ");
+    const errors=stockPlan?.errors?.length?" Controleer de gekoppelde recepten en stockproducten.":"";
+    $("mrImportStatus").textContent=detail?`Import geblokkeerd: onvoldoende stock. ${detail}`:`Import geblokkeerd: recept of ingrediënt ontbreekt.${errors}`;
+    return;
+  }
+  const importRecord={fingerprint:pendingImport.fingerprint,fileName:pendingImport.fileName,rowCount:newRows.length,importedAt,importId,stockDeductionStatus:mappedRows.length?"pending":"not_applicable",unmappedRows:newRows.filter(row=>!row.dishId).length};
   const next={
     ...data.settings,mappings,
     salesRows:[...data.settings.salesRows,...newRows],
-    salesImports:[...data.settings.salesImports,{fingerprint:pendingImport.fingerprint,fileName:pendingImport.fileName,rowCount:newRows.length,importedAt,importId}]
+    salesImports:[...data.settings.salesImports,importRecord]
   };
   await saveSettings(next);
-  $("mrImportStatus").textContent=`${newRows.length} verkoopregels geïmporteerd. Niet gekoppelde regels blijven zichtbaar als niet gekoppeld.`;
+  let stockMessage="";
+  if(mappedRows.length){
+    const result=await window.FAVVApplyMenuSalesStockDeduction({importId,rows:mappedRows});
+    const refreshed=await appData();
+    const imports=refreshed.settings.salesImports.map(item=>item.importId===importId?{...item,stockDeductionStatus:result.status==="applied"||result.status==="already_applied"?"applied":"pending_sync",stockDeductedAt:result.status==="applied"||result.status==="already_applied"?new Date().toISOString():null}:item);
+    await saveSettings({...refreshed.settings,salesImports:imports});
+    stockMessage=result.status==="applied"||result.status==="already_applied"?" Stock automatisch afgeboekt.":" Stockafboeking wacht nog op cloudsynchronisatie; importeer het bestand niet opnieuw.";
+  }else stockMessage=" Geen stock afgeboekt: er waren geen gekoppelde recepten.";
+  $("mrImportStatus").textContent=`${newRows.length} verkoopregels geïmporteerd.${stockMessage}`;
   $("mrImportPreview").innerHTML="";
   $("mrSalesFile").value="";
   pendingImport=null;
+  await render();
+}
+async function retryStockDeduction(importId) {
+  const data=await appData();
+  const record=data.settings.salesImports.find(item=>item.importId===importId);
+  if(!record||!["pending_sync","pending"].includes(record.stockDeductionStatus))throw new Error("Er staat geen stockafboeking klaar voor deze import.");
+  const rows=data.settings.salesRows.filter(row=>row.importId===importId&&row.dishId).map(row=>({dishId:row.dishId,product:row.product,quantity:row.quantity}));
+  const result=await window.FAVVApplyMenuSalesStockDeduction({importId,rows});
+  if(!["applied","already_applied"].includes(result.status))throw new Error("Stockafboeking is nog niet gesynchroniseerd. Controleer de verbinding.");
+  const latest=await appData();
+  await saveSettings({...latest.settings,salesImports:latest.settings.salesImports.map(item=>item.importId===importId?{...item,stockDeductionStatus:"applied",stockDeductedAt:new Date().toISOString()}:item)});
   await render();
 }
 async function savePrice(recipeId) {
@@ -266,7 +295,7 @@ function clickHandler(event) {
   const showError=error=>{ $("mrImportStatus").textContent=error?.message||"De actie is mislukt."; };
   if(button.dataset.mrAction==="save-price")savePrice(button.dataset.id).catch(showError);
   if(button.dataset.mrAction==="preview-import")previewImport().catch(showError);
-  if(button.dataset.mrAction==="commit-import")commitImport().catch(showError);
+  if(button.dataset.mrAction==="commit-import")commitImport().catch(showError);\n  if(button.dataset.mrAction==="retry-stock")retryStockDeduction(button.dataset.id).catch(showError);
   if(button.dataset.mrAction==="refresh")render();
 }
 function init() {
