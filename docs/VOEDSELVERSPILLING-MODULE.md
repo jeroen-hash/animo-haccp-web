@@ -1,6 +1,6 @@
 # ANIMO HACCP — Module Voedselverspilling
 
-Status: eerste werkende testintegratie op de aparte feature-branch; niet samengevoegd of gepubliceerd naar productie.
+Status: testintegratie met automatische voorraadkoppeling op de aparte feature-branch; niet samengevoegd of gepubliceerd naar productie. Geautomatiseerde module-, synchronisatie- en PostgreSQL-beveiligingstests slagen; volledige praktijktest op iPhone en met meerdere gelijktijdige gebruikers blijft nodig.
 
 De huidige testintegratie bevat:
 - Een aparte navigatiepagina **Voedselverspilling** in de ANIMO HACCP-testapp.
@@ -76,13 +76,17 @@ Voorbeeld: 750 g kipfilet aan €12/kg = €9,00 verspilde voorraadwaarde. Dit i
 
 ## 4. Voorraadkoppeling zonder dubbele afboeking
 
-Voor de technische implementatie moet eerst de bestaande voorraadbewegingen worden nagekeken.
+De testbranch gebruikt de bestaande `state.stock`, batchstructuur en `state.stockMovements`.
 
-- **Versie 1 boekt geen voorraad af**: voedselverspilling is eerst rapportage-only. Zo vermijden we dubbele afboeking terwijl de bestaande voorraadflow ongewijzigd blijft. Een latere voorraadkoppeling wordt pas toegevoegd met een unieke client UUID en aparte tests.
-- Gebruik waar mogelijk het bestaande voorraadbewegingssysteem met een herkenbare categorie **Verspilling**.
-- De bestaande voorraadbewegingen blijven in versie 1 volledig onaangeroerd.
-- Bij offline synchronisatie moet de client UUID als idempotency key dienen, zodat opnieuw proberen nooit dubbel registreert of dubbel afboekt.
-- Historische voorraad- en kostprijsgegevens blijven intact.
+- Alleen een registratie die expliciet aan een bestaand stockartikel is gekoppeld, boekt automatisch af. Een vrije productnaam wijzigt de voorraad niet.
+- De hoeveelheid wordt omgerekend naar de basiseenheid van het stockartikel. Niet-compatibele eenheden worden niet afgeboekt.
+- De bestaande FIFO/FEFO-volgorde wordt gevolgd. De beweging bewaart de exacte batch-ID's en hoeveelheden.
+- Bij onvoldoende voorraad wordt de verspilling wel geregistreerd, maar de voorraad wordt niet negatief gemaakt en er gebeurt geen gedeeltelijke afboeking.
+- Elke afboeking gebruikt de client UUID als unieke bron-ID. Herhaalde synchronisatie herkent de bestaande beweging en boekt niet opnieuw af.
+- Bij ongeldig verklaren wordt de oorspronkelijke batchallocatie teruggezet. De terugboeking heeft een eigen idempotente bron-ID.
+- Offline wordt de lokale voorraad onmiddellijk aangepast en via de bestaande snapshot-outbox bewaard. Bij synchronisatie wordt de voorraad-snapshot eerst bevestigd; pas daarna wordt de lokale verspillingwachtrij verwijderd.
+- Als de snapshot niet veilig kan worden opgeslagen, blijft de verspilling in de wachtrij en toont de UI dat synchronisatie nog wacht.
+- Historische kostprijsmomentopnames blijven ongewijzigd.
 
 ## 5. Offline en foto-opslag
 
@@ -156,6 +160,8 @@ Correcties moeten auditbaar zijn. Bij voorkeur wordt een registratie niet stilzw
 6. Offline registratie met foto blijft na herladen van de app bewaard.
 7. Na herstel van internet synchroniseert de registratie precies één keer.
 8. Herhaald uploaden of synchroniseren maakt geen dubbele foto-records of voorraadbewegingen.
+9. Een gekoppelde registratie verbruikt FIFO/FEFO-batches en maakt geen negatieve voorraad.
+10. Een ongeldig verklaarde registratie zet exact de oorspronkelijke batchallocaties terug, maximaal één keer.
 9. Medewerkers kunnen geen dashboard- of eigenaaracties uitvoeren waarvoor ze geen rechten hebben.
 10. Foto's zijn niet publiek toegankelijk.
 11. Filters, totalen en periodevergelijkingen komen overeen met de onderliggende registraties.
