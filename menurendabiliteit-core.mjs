@@ -143,39 +143,59 @@ export function dishEconomics({ recipe, ingredientCost, sellingPriceInclusive, v
   };
 }
 
-export function buildDishSalesSummary(salesRows, mappings, economicsByDish) {
+export function buildDishSalesSummary(salesRows, mappings, economicsByDish = {}) {
   const totals = new Map();
   const unmapped = [];
   for (const row of salesRows || []) {
-    const dishId = mappings?.[String(row.product).trim().toLowerCase()];
-    if (!dishId || !economicsByDish?.[dishId] || economicsByDish[dishId].status !== "ok") {
-      unmapped.push(row);
-      continue;
-    }
-    const current = totals.get(dishId) || { dishId, portions: 0, revenueInclusive: 0, revenueExclusive: 0, ingredientCost: 0, grossProfit: 0, lines: 0, linesWithVat: 0 };
-    const economics = economicsByDish[dishId];
+    const dishId = row.dishId || mappings?.[String(row.product).trim().toLowerCase()];
+    if (!dishId) { unmapped.push(row); continue; }
+    const economics = economicsByDish?.[dishId];
+    const snapshotCost = Number.isFinite(Number(row.ingredientCostPerPortionSnapshot))
+      ? Number(row.ingredientCostPerPortionSnapshot)
+      : economics?.status === "ok" ? economics.ingredientCostPerPortion : null;
     const revenueExclusive = row.vatRate == null ? null : salesTotalExcludingVat(row.totalInclusive, row.vatRate);
-    current.portions += row.quantity;
-    current.revenueInclusive += row.totalInclusive;
+    const current = totals.get(dishId) || {
+      dishId, portions: 0, revenueInclusive: 0, revenueExclusive: 0,
+      ingredientCost: 0, grossProfit: 0, lines: 0,
+      linesWithVat: 0, linesWithCost: 0, linesWithProfit: 0
+    };
+    current.portions += Number(row.quantity);
+    current.revenueInclusive += Number(row.totalInclusive);
     if (revenueExclusive != null) {
       current.revenueExclusive += revenueExclusive;
-      current.grossProfit += revenueExclusive - row.quantity * economics.ingredientCostPerPortion;
       current.linesWithVat++;
     }
-    current.ingredientCost += row.quantity * economics.ingredientCostPerPortion;
+    if (snapshotCost != null && Number.isFinite(snapshotCost) && snapshotCost >= 0) {
+      const lineCost = Number(row.quantity) * snapshotCost;
+      current.ingredientCost += lineCost;
+      current.linesWithCost++;
+      if (revenueExclusive != null) {
+        current.grossProfit += revenueExclusive - lineCost;
+        current.linesWithProfit++;
+      }
+    }
     current.lines++;
     totals.set(dishId, current);
   }
   return {
-    dishes: [...totals.values()].map(row => ({
-      ...row,
-      revenueInclusive: round2(row.revenueInclusive),
-      revenueExclusive: row.linesWithVat === row.lines ? round2(row.revenueExclusive) : null,
-      ingredientCost: round2(row.ingredientCost),
-      grossProfit: row.linesWithVat === row.lines ? round2(row.grossProfit) : null,
-      grossMarginPercent: row.linesWithVat === row.lines && row.revenueExclusive > 0 ? (row.grossProfit / row.revenueExclusive) * 100 : null,
-      missingVatRows: row.lines - row.linesWithVat
-    })),
+    dishes: [...totals.values()].map(row => {
+      const completeRevenue = row.linesWithVat === row.lines;
+      const completeCost = row.linesWithCost === row.lines;
+      const completeProfit = row.linesWithProfit === row.lines;
+      const revenueExclusive = completeRevenue ? round2(row.revenueExclusive) : null;
+      const grossProfit = completeProfit ? round2(row.grossProfit) : null;
+      return {
+        ...row,
+        revenueInclusive: round2(row.revenueInclusive),
+        revenueExclusive,
+        ingredientCost: completeCost ? round2(row.ingredientCost) : null,
+        grossProfit,
+        grossProfitPerPortion: grossProfit == null || row.portions <= 0 ? null : grossProfit / row.portions,
+        grossMarginPercent: grossProfit == null || revenueExclusive == null || revenueExclusive <= 0 ? null : (grossProfit / revenueExclusive) * 100,
+        missingVatRows: row.lines - row.linesWithVat,
+        missingCostRows: row.lines - row.linesWithCost
+      };
+    }),
     unmapped
   };
 }
