@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
+      - "snapshot-merge.mjs"
+      - "tests/snapshot-merge.test.mjs"
       - "voedselverspilling-core.mjs"
       - "voedselverspilling-stock.mjs"
       - "tests/voedselverspilling-stock.test.mjs"
@@ -51,4 +53,4 @@ jobs:
         with:
           node-version: "22"
       - name: Run food waste core tests
-        run: node --check voedselverspilling-ui.mjs && node --check voedselverspilling-stock.mjs && node --test tests/voedselverspilling-stock.test.mjs tests/voedselverspilling-core.test.mjs tests/voedselverspilling-migration.test.mjs tests/voedselverspilling-sync.test.mjs tests/voedselverspilling-demo.test.mjs tests/voedselverspilling-ui.test.mjs
+        run: node --check voedselverspilling-ui.mjs && node --check voedselverspilling-stock.mjs && node --test tests/snapshot-merge.test.mjs tests/voedselverspilling-stock.test.mjs tests/voedselverspilling-core.test.mjs tests/voedselverspilling-migration.test.mjs tests/voedselverspilling-sync.test.mjs tests/voedselverspilling-demo.test.mjs tests/voedselverspilling-ui.test.mjs
