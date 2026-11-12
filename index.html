@@ -1332,12 +1332,12 @@ window.FAVVApplyMenuSalesStockDeduction=async({importId,rows,dryRun=false}={})=>
   if(dryRun)return plan;
   if(plan.status!=='ready')return plan;
   const snapshots=state.stock.map(product=>({product,batches:clone(product.batches||[]),quantity:product.quantity,expiryDate:product.expiryDate}));
-  const movementCount=state.stockMovements.length;
+  const movementsSnapshot=clone(state.stockMovements);
   for(const requirement of plan.requirements){
     const product=stockById(requirement.stockId);
     if(!product||!consumeBatches(product,requirement.required,'Kassaverkoop · import '+importId)){
       snapshots.forEach(snapshot=>{snapshot.product.batches=snapshot.batches;snapshot.product.quantity=snapshot.quantity;snapshot.product.expiryDate=snapshot.expiryDate});
-      state.stockMovements.splice(0,state.stockMovements.length,...state.stockMovements.slice(movementCount));
+      state.stockMovements=movementsSnapshot;
       throw new Error('De voorraad veranderde tijdens de import. Er is geen stockafboeking uitgevoerd. Controleer de voorraad en probeer opnieuw.');
     }
     const movement=state.stockMovements[0];
