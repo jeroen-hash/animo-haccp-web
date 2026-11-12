@@ -69,3 +69,13 @@ test("refuses ambiguous duplicate record IDs", () => {
   assert.equal(result.ok, false);
   assert.deepEqual(result.conflicts, ["stock"]);
 });
+
+test("refuses different records created concurrently with the same ID", () => {
+  const result = mergeSnapshots(
+    { stockMovements: [] },
+    { stockMovements: [{ id: "same-id", delta: -2 }] },
+    { stockMovements: [{ id: "same-id", delta: -5 }] }
+  );
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.conflicts, ["stockMovements[same-id]"]);
+});
