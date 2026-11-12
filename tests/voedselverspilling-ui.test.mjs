@@ -71,6 +71,8 @@ test("cloud sync stores a merge base and only auto-merges non-overlapping concur
   assert.match(app, /baseData:baseData\?JSON\.parse\(JSON\.stringify\(baseData\)\):null/);
   assert.match(app, /store\.put\(item\)/);
   assert.match(app, /pending\.baseData/);
+  assert.match(app, /cloudRowUpdatedAt=pending\.baseUpdatedAt\|\|null/);
+  assert.match(app, /new Date\(indexed\.queuedAt\|\|0\)>=new Date\(local\.queuedAt\|\|0\)/);
   assert.match(app, /import\('\.\/snapshot-merge\.mjs'\)/);
   assert.match(app, /if\(merged\.ok\)/);
   assert.match(app, /mergeConflictPaths=merged\.conflicts/);
