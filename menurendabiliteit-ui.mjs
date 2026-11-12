@@ -122,12 +122,12 @@ function renderPrices(data) {
       recipe, ingredientCost:recipe.ingredientCost,
       sellingPriceInclusive:setting.sellingPriceInclusive, vatRate:setting.vatRate
     });
-    const cost = Number(recipe.ingredientCost) / Math.max(1,Number(recipe.yield)||1);
+    const cost = recipe.ingredientCostComplete===false ? null : Number(recipe.ingredientCost) / Math.max(1,Number(recipe.yield)||1);
     return `<div class="mr-price-row">
       <div class="mr-dish-name"><strong>${esc(recipe.name)}</strong><small>Receptversie ${Number(recipe.version)||1} · ${number(recipe.yield)} porties</small></div>
       <div class="mr-price-field"><label>Verkoopprijs incl. btw (€)</label><input type="number" min="0" step="0.01" inputmode="decimal" data-mr-price="${esc(recipe.id)}" value="${setting.sellingPriceInclusive ?? ""}" placeholder="0,00"></div>
       <div class="mr-price-field"><label>Btw-tarief</label><select data-mr-vat="${esc(recipe.id)}"><option value="">Kies btw</option>${[6,12,21].map(v=>`<option value="${v}" ${Number(setting.vatRate)===v?"selected":""}>${v}%</option>`).join("")}</select></div>
-      <div class="mr-cost"><small>Kost per portie</small><strong>${money(cost)}</strong></div>
+      <div class="mr-cost"><small>Kost per portie</small><strong>${cost==null?"Niet volledig":money(cost)}</strong></div>
       <div class="mr-cost"><small>Brutowinst per portie</small><strong>${economics.status==="ok"?money(economics.grossProfitPerPortion):"Nog in te stellen"}</strong><small>${economics.status==="ok"?"Marge "+number(economics.grossMarginPercent)+"%":"Prijs en btw nodig"}</small></div>
       <button class="btn secondary small" type="button" data-mr-action="save-price" data-id="${esc(recipe.id)}">Bewaren</button>
     </div>`;
@@ -226,7 +226,7 @@ async function commitImport() {
     return {
       ...row,importId,dishId,
       recipeVersion:recipe?(Number(recipe.version)||1):null,
-      ingredientCostPerPortionSnapshot:recipe
+      ingredientCostPerPortionSnapshot:recipe&&recipe.ingredientCostComplete!==false
         ? Number(recipe.ingredientCost)/Math.max(1,Number(recipe.yield)||1)
         : null
     };
