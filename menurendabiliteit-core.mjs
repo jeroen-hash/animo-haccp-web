@@ -141,7 +141,7 @@ export function dishEconomics({ recipe, ingredientCost, sellingPriceInclusive, v
   const price = Number(sellingPriceInclusive);
   const vat = Number(vatRate);
   if (!recipe || !Number.isFinite(yieldCount) || yieldCount <= 0) return { status: "invalid_recipe" };
-  if (!Number.isFinite(cost) || cost < 0) return { status: "missing_cost" };
+  if (recipe.ingredientCostComplete === false || !Number.isFinite(cost) || cost < 0) return { status: "missing_cost" };
   if (sellingPriceInclusive == null || String(sellingPriceInclusive).trim() === "" || !Number.isFinite(price) || price < 0) return { status: "missing_selling_price" };
   if (vatRate == null || String(vatRate).trim() === "") return { status: "missing_vat_rate" };
   const priceExVat = salesTotalExcludingVat(price, vat);
