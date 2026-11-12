@@ -152,14 +152,17 @@ export function buildDishSalesSummary(salesRows, mappings, economicsByDish) {
       unmapped.push(row);
       continue;
     }
-    const current = totals.get(dishId) || { dishId, portions: 0, revenueInclusive: 0, revenueExclusive: 0, ingredientCost: 0, grossProfit: 0, lines: 0 };
+    const current = totals.get(dishId) || { dishId, portions: 0, revenueInclusive: 0, revenueExclusive: 0, ingredientCost: 0, grossProfit: 0, lines: 0, linesWithVat: 0 };
     const economics = economicsByDish[dishId];
     const revenueExclusive = row.vatRate == null ? null : salesTotalExcludingVat(row.totalInclusive, row.vatRate);
     current.portions += row.quantity;
     current.revenueInclusive += row.totalInclusive;
-    if (revenueExclusive != null) current.revenueExclusive += revenueExclusive;
+    if (revenueExclusive != null) {
+      current.revenueExclusive += revenueExclusive;
+      current.grossProfit += revenueExclusive - row.quantity * economics.ingredientCostPerPortion;
+      current.linesWithVat++;
+    }
     current.ingredientCost += row.quantity * economics.ingredientCostPerPortion;
-    current.grossProfit += revenueExclusive == null ? 0 : revenueExclusive - row.quantity * economics.ingredientCostPerPortion;
     current.lines++;
     totals.set(dishId, current);
   }
@@ -167,10 +170,11 @@ export function buildDishSalesSummary(salesRows, mappings, economicsByDish) {
     dishes: [...totals.values()].map(row => ({
       ...row,
       revenueInclusive: round2(row.revenueInclusive),
-      revenueExclusive: round2(row.revenueExclusive),
+      revenueExclusive: row.linesWithVat === row.lines ? round2(row.revenueExclusive) : null,
       ingredientCost: round2(row.ingredientCost),
-      grossProfit: round2(row.grossProfit),
-      grossMarginPercent: row.revenueExclusive > 0 ? (row.grossProfit / row.revenueExclusive) * 100 : null
+      grossProfit: row.linesWithVat === row.lines ? round2(row.grossProfit) : null,
+      grossMarginPercent: row.linesWithVat === row.lines && row.revenueExclusive > 0 ? (row.grossProfit / row.revenueExclusive) * 100 : null,
+      missingVatRows: row.lines - row.linesWithVat
     })),
     unmapped
   };
@@ -201,7 +205,11 @@ export function salesImportFingerprint(fileName, rows) {
   const dates = (rows || []).map(row => String(row.date)).sort();
   const period = dates.length ? dates[0] + "__" + dates[dates.length - 1] : "empty";
   const source = String(fileName || "").trim().toLowerCase();
-  return [source, period, (rows || []).length].join("|");
+  const contentSignature = (rows || []).map(row => [
+    row.date, String(row.product).trim().toLowerCase(), row.quantity,
+    row.totalInclusive, row.vatRate ?? "", row.transactionId ?? ""
+  ].join("~")).sort().join(";");
+  return [source, period, (rows || []).length, contentSignature].join("|");
 }
 
 export function findDuplicateSalesLines(existingRows, incomingRows) {
