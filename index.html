@@ -1479,7 +1479,7 @@ function renderPhase1Dashboard(){
  const duePoints=points.filter(point=>{const needed=requiredMeasurementsPerDay(point);return needed>0&&measurementsToday(point)<needed}).length;
  const openActions=(state.temperatureActions||[]).filter(x=>x.status!=='resolved').length;
  const expiry=phase1ExpiryItems(),expired=expiry.filter(x=>x.days<0).length,soon=expiry.filter(x=>x.days>=0).length;
- const missingExpiry=(state.stock||[]).reduce((total,p)=>total+(p.batches||[]).filter(b=>Number(b.quantity||0)>0&&!b.expiryDate).length),0);
+ const missingExpiry=(state.stock||[]).reduce((total,p)=>total+(p.batches||[]).filter(b=>Number(b.quantity||0)>0&&!b.expiryDate).length,0);
  const pestOpen=(state.pestLogs||[]).filter(x=>x.status!=='closed'&&x.finding!=='Geen sporen vastgesteld').length;
  const pestOverdue=(state.pestLogs||[]).filter(x=>x.status!=='closed'&&x.followUpDate&&x.followUpDate<=localDay()).length;
  const alerts=[];
