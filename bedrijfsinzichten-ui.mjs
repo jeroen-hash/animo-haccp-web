@@ -62,19 +62,19 @@ function localDateKey(date) {
   if (Number.isNaN(d.getTime())) return "";
   return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-");
 }
-function periodRows(rows) {
+function isWithinPeriod(value) {
   const period = $("biPeriod")?.value || "90";
-  if (period === "all") return rows;
+  const key = String(value || "").slice(0,10);
+  if (!key) return false;
+  if (period === "all") return true;
   const days = Number(period);
   const from = new Date();
   from.setHours(0,0,0,0);
   from.setDate(from.getDate() - days + 1);
-  const start = localDateKey(from);
-  const today = localDateKey(new Date());
-  return rows.filter(row => {
-    const key = String(row.client_created_at || row.created_at || "").slice(0,10);
-    return key && key >= start && key <= today;
-  });
+  return key >= localDateKey(from) && key <= localDateKey(new Date());
+}
+function periodRows(rows) {
+  return rows.filter(row => isWithinPeriod(row.client_created_at || row.created_at));
 }
 function aggregate(rows, key) {
   const map = new Map();
@@ -117,7 +117,8 @@ function renderTrend(rows) {
 function renderMenu(data) {
   const node = $("biMenu");
   if (!data) { node.innerHTML='<div class="bi-empty">Menurendabiliteit kon niet worden geladen.</div>'; return; }
-  const rows = Array.isArray(data.settings?.salesRows) ? data.settings.salesRows : [];
+  const allRows = Array.isArray(data.settings?.salesRows) ? data.settings.salesRows : [];
+  const rows = allRows.filter(row => isWithinPeriod(row.date));
   const imports = Array.isArray(data.settings?.salesImports) ? data.settings.salesImports : [];
   if (!rows.length) { node.innerHTML='<div class="bi-empty">Nog geen kassaverkoop geïmporteerd. Importeer een kassabestand in Menurendabiliteit om verkoop en brutowinst hier te zien.</div>'; return; }
   const recipes = data.recipes || [];
@@ -223,6 +224,7 @@ function renderCached() {
   renderBars($("biProducts"),aggregate(rows,"product_name"),"Nog geen registraties in deze periode.");
   renderBars($("biReasons"),aggregate(rows,"reason"),"Nog geen registraties in deze periode.");
   renderTrend(rows);
+  renderMenu(cache.menu);
 }
 document.addEventListener("DOMContentLoaded",init,{once:true});
 if (document.readyState==="interactive" || document.readyState==="complete") init();
