@@ -1554,10 +1554,15 @@ function grFirstValue(objects,keys){
  for(const obj of objects){if(!obj||typeof obj!=='object')continue;for(const key of keys){const value=obj[key];if(value!==undefined&&value!==null&&String(value).trim()!=='')return value}}
  return '';
 }
+function grNormalizeUnit(value){
+ const raw=String(value||'').trim().toLowerCase();
+ const map={st:'stuks',stk:'stuks',stuk:'stuks',stuks:'stuks',unit:'stuks',kg:'kg',kilo:'kg',kilogram:'kg',g:'g',gram:'g',gr:'g',l:'liter',ltr:'liter',liter:'liter',litre:'liter',ml:'ml',milliliter:'ml',doos:'dozen',dozen:'dozen',box:'dozen',pak:'pakken',pakken:'pakken',pack:'pakken',fles:'flessen',flessen:'flessen',bottle:'flessen',zak:'zakken',zakken:'zakken',tray:'tray',ei:'eieren',eieren:'eieren'};
+ return map[raw]||raw;
+}
 function grNormalizeDeliveryResult(result){
  const root=result?.data&&typeof result.data==='object'?result.data:result?.result&&typeof result.result==='object'?result.result:result;
  const invoice=root?.invoice&&typeof root.invoice==='object'?root.invoice:root?.document&&typeof root.document==='object'?root.document:root;
- const supplierValue=grFirstValue([invoice,root,result],[ 'supplier','supplierName','supplier_name','vendor','vendorName','vendor_name','companyName','company_name']);
+ const supplierValue=grFirstValue([invoice,root,result],['supplier','supplierName','supplier_name','vendor','vendorName','vendor_name','companyName','company_name']);
  const invoiceNumber=grFirstValue([invoice,root,result],['invoiceNumber','invoice_number','documentNumber','document_number','deliveryNoteNumber','delivery_note_number','number','reference']);
  const dateValue=grFirstValue([invoice,root,result],['invoiceDate','invoice_date','documentDate','document_date','deliveryDate','delivery_date','date']);
  let rawItems=grFirstValue([invoice,root,result],['items','lines','lineItems','line_items','products','invoiceItems','invoice_items']);
@@ -1565,11 +1570,12 @@ function grNormalizeDeliveryResult(result){
  if(!Array.isArray(rawItems))rawItems=[];
  const items=rawItems.slice(0,250).map((item,index)=>{
   const name=grFirstValue([item],['product','productName','product_name','description','name','item','label','article']);
-  const quantity=grFirstValue([item],['quantity','qty','amount','count']);
-  const unit=grFirstValue([item],['unit','unitOfMeasure','unit_of_measure','uom']);
-  const unitPrice=grFirstValue([item],['unitPrice','unit_price','pricePerUnit','price_per_unit']);
-  const total=grFirstValue([item],['lineTotal','line_total','total','amountTotal','amount_total']);
-  return {name:String(name||'Productregel '+(index+1)).slice(0,180),quantity:quantity===''?'':String(quantity).slice(0,40),unit:String(unit||'').slice(0,30),unitPrice:unitPrice===''?'':String(unitPrice).slice(0,40),total:total===''?'':String(total).slice(0,40)};
+  const quantity=grFirstValue([item],['quantity','qty','amount','count','invoicedQuantity','invoiced_quantity']);
+  const unit=grFirstValue([item],['unit','unitOfMeasure','unit_of_measure','uom','unitCode','unit_code']);
+  const unitPrice=grFirstValue([item],['unitPrice','unit_price','pricePerUnit','price_per_unit','price']);
+  const total=grFirstValue([item],['lineTotal','line_total','total','amountTotal','amount_total','lineExtensionAmount','line_extension_amount']);
+  const code=grFirstValue([item],['code','itemCode','item_code','sku','articleCode','article_code']);
+  return {name:String(name||'Productregel '+(index+1)).slice(0,180),code:String(code||'').slice(0,80),quantity:quantity===''?'':String(quantity).slice(0,40),unit:grNormalizeUnit(unit).slice(0,30),unitPrice:unitPrice===''?'':String(unitPrice).slice(0,40),total:total===''?'':String(total).slice(0,40),supplier:String(supplierValue||'').slice(0,120),expiryDate:''};
  }).filter(item=>item.name);
  return {supplier:String(supplierValue||'').slice(0,120),invoiceNumber:String(invoiceNumber||'').slice(0,80),date:String(dateValue||'').slice(0,80),items};
 }
@@ -1580,9 +1586,10 @@ function grFormatDate(value){
 }
 function grRenderAiPreview(parsed){
  const box=$('grAiPreview');if(!box)return;
- if(!parsed||(!parsed.items.length&&!parsed.supplier&&!parsed.invoiceNumber&&!parsed.date)){box.innerHTML='<div class="muted">Geen herkenbare gegevens gevonden. Vul de velden manueel in.</div>';return}
- const rows=parsed.items.map(item=>'<div class="item-sub">• '+esc(item.name)+(item.quantity?' · '+esc(item.quantity)+' '+esc(item.unit):'')+(item.unitPrice?' · € '+esc(item.unitPrice):'')+(item.total?' · Totaal € '+esc(item.total):'')+'</div>').join('');
- box.innerHTML='<div class="pill success" style="margin-bottom:8px">Uitlezing klaar – controleer de gegevens</div>'+(parsed.items.length?'<strong>'+parsed.items.length+' productregel(s)</strong>'+rows:'<div class="muted">Geen productregels herkend.</div>');
+ if(!parsed||(!parsed.items.length&&!parsed.supplier&&!parsed.invoiceNumber&&!parsed.date)){box.innerHTML='<div class="muted">Geen herkenbare gegevens gevonden. Vul de gegevens manueel in.</div>';return}
+ const rows=parsed.items.map((item,i)=>'<div class="card" style="padding:10px;margin:8px 0"><strong>Product '+(i+1)+'</strong><div class="grid"><div class="field"><label>Productnaam</label><input data-gr-item="name" data-index="'+i+'" value="'+esc(item.name)+'"></div><div class="field"><label>Artikelcode</label><input data-gr-item="code" data-index="'+i+'" value="'+esc(item.code||'')+'"></div><div class="field"><label>Aantal</label><input data-gr-item="quantity" data-index="'+i+'" type="number" min="0" step="0.001" value="'+esc(item.quantity||'')+'"></div><div class="field"><label>Eenheid</label><select data-gr-item="unit" data-index="'+i+'"><option value="">Kies eenheid</option>'+deliveryUnitOptions(item.unit)+'</select></div><div class="field"><label>Prijs per eenheid (€)</label><input data-gr-item="unitPrice" data-index="'+i+'" type="number" min="0" step="0.0001" value="'+esc(item.unitPrice||'')+'"></div><div class="field"><label>Totaal productregel (€)</label><input data-gr-item="total" data-index="'+i+'" type="number" min="0" step="0.01" value="'+esc(item.total||'')+'"></div><div class="field"><label>Houdbaar tot (optioneel)</label><input data-gr-item="expiryDate" data-index="'+i+'" type="date" value="'+esc(item.expiryDate||'')+'"></div></div></div>').join('');
+ box.innerHTML='<div class="pill success" style="margin-bottom:8px">Uitlezing klaar – controleer en verbeter elke productregel</div>'+(parsed.items.length?'<strong>'+parsed.items.length+' productregel(s) – deze worden na bevestiging aan Stock toegevoegd</strong>'+rows:'<div class="muted">Geen productregels herkend. De ontvangstcontrole kan wel worden bewaard, maar er wordt niets aan Stock toegevoegd.</div>');
+ box.querySelectorAll('[data-gr-item]').forEach(input=>input.addEventListener('change',()=>{const item=grParsedItems[Number(input.dataset.index)];if(item)item[input.dataset.grItem]=input.value}));
 }
 async function processGoodsDeliveryNote(event){
  const file=event.target.files?.[0];if(!file)return;
@@ -1610,11 +1617,42 @@ async function processGoodsDeliveryNote(event){
 }
 function saveGoodsReceipt(e){
  e.preventDefault();
- const decision=$('grDecision').value,reason=$('grReason').value.trim(),temperature=$('grTemperature').value;
+ const decision=$('grDecision').value,reason=$('grReason').value.trim(),temperature=$('grTemperature').value,supplier=$('grSupplier').value.trim(),invoiceNumber=$('grInvoice').value.trim();
  if(decision==='rejected'&&!reason){alert('Vul bij een geweigerde levering de reden of genomen actie in.');return}
  if(temperature!==''&&!Number.isFinite(Number(temperature))){alert('Vul een geldige temperatuur in.');return}
- state.goodsReceipts.unshift({id:id('gr'),supplier:$('grSupplier').value.trim(),product:$('grProduct').value.trim(),products:grParsedItems.map(item=>({...item})),sourceFileName:$('grDeliveryNoteFile')?.files?.[0]?.name||'',invoiceNumber:$('grInvoice').value.trim(),receivedAt:brusselsDateTimeToIso($('grReceivedAt').value),temperature,packaging:$('grPackaging').value,quality:$('grQuality').value,decision,reason,notes:$('grNotes').value.trim(),recordedBy:currentUser?.name||'Gebruiker',recordedAt:new Date().toISOString()});
- persist();e.target.reset();$('grDeliveryNoteFile').value='';grParsedItems=[];$('grAiStatus').textContent='';$('grAiPreview').innerHTML='';$('grReceivedAt').value=brusselsDateTimeInput(new Date());renderGoodsReceipts();toast('Ontvangstcontrole bewaard');
+ const duplicate=invoiceNumber&&(state.goodsReceipts||[]).some(r=>r.invoiceNumber===invoiceNumber&&String(r.supplier||'').toLowerCase()===supplier.toLowerCase());
+ if(duplicate){alert('Deze leveringsbon werd al als goederenontvangst geregistreerd. Controleer de historiek om dubbele stocktoevoeging te vermijden.');return}
+ let stockPrepared=[];
+ if(decision!=='rejected'&&grParsedItems.length){
+  const lines=grParsedItems.map(item=>({...item,name:String(item.name||'').trim(),supplier:item.supplier||supplier,quantity:parseBelgianNumber(item.quantity),unit:String(item.unit||'').trim(),unitPrice:parseBelgianNumber(item.unitPrice),lineTotal:parseBelgianNumber(item.total),expiryDate:item.expiryDate||''}));
+  const invalid=lines.filter(x=>!x.name||!(x.quantity>0)||!x.unit);
+  if(invalid.length){alert('Controleer alle herkende productregels: productnaam, aantal groter dan 0 en eenheid zijn verplicht. Er is nog niets bewaard of aan Stock toegevoegd.');return}
+  try{stockPrepared=prepareDeliveryRows(lines)}catch(error){alert(error.message);return}
+  if(!confirm('De goederenontvangst bewaren en '+stockPrepared.length+' productregel(s) automatisch aan Stock toevoegen? Controleer dat de levering effectief aanvaard is.'))return;
+ }
+ const receipt={id:id('gr'),supplier,product:$('grProduct').value.trim(),products:grParsedItems.map(item=>({...item})),sourceFileName:$('grDeliveryNoteFile')?.files?.[0]?.name||'',invoiceNumber,receivedAt:brusselsDateTimeToIso($('grReceivedAt').value),temperature,packaging:$('grPackaging').value,quality:$('grQuality').value,decision,reason,notes:$('grNotes').value.trim(),stockLinked:stockPrepared.length>0,recordedBy:currentUser?.name||'Gebruiker',recordedAt:new Date().toISOString()};
+ if(stockPrepared.length){
+  normalizeStateCollections(state);
+  const createdInThisReceipt=new Map();
+  stockPrepared.forEach(({line,product:matchedProduct,stockUnit,stockQuantity})=>{
+   const identity=stockIdentityKey(line,stockUnit);
+   let product=matchedProduct||createdInThisReceipt.get(identity)||null;
+   if(!product){product={id:id('s'),name:line.name,code:String(line.code||'').trim(),unit:stockUnit,supplier:String(line.supplier||supplier).trim(),quantity:0,minimum:0,batches:[],allergens:[],purchaseQuantity:stockQuantity,purchasePrice:Number(line.lineTotal)>0?Number(line.lineTotal):Number(line.unitPrice||0)*Number(line.quantity)};state.stock.push(product);if(identity)createdInThisReceipt.set(identity,product)}
+   else{
+    if(line.supplier)product.supplier=String(line.supplier).trim();
+    if(line.code&&!product.code)product.code=String(line.code).trim();
+    const cost=Number(line.lineTotal)>0?Number(line.lineTotal):Number(line.unitPrice||0)*Number(line.quantity);
+    if(cost>0){product.purchaseQuantity=stockQuantity;product.purchasePrice=cost}
+   }
+   product.batches=Array.isArray(product.batches)?product.batches:[];
+   product.batches.push({id:id('b'),quantity:stockQuantity,expiryDate:line.expiryDate||'',receivedAt:receipt.receivedAt||new Date().toISOString(),source:'goederenontvangst',invoiceNumber});
+   syncProductQuantity(product);
+   stockMovement(product,stockQuantity,'Goederenontvangst'+(invoiceNumber?' · '+invoiceNumber:''));
+  });
+  state.deliveries.unshift({id:id('dly'),createdAt:new Date().toISOString(),items:stockPrepared.map(x=>({...x.line})),userId:currentUser?.id||null,userName:currentUser?.name||'',fileName:receipt.sourceFileName,invoiceNumber,supplier,source:'goods-receipt',payments:[],paymentOverride:'',paymentUpdatedAt:'',paymentUpdatedBy:''});
+ }
+ state.goodsReceipts.unshift(receipt);
+ persist();e.target.reset();$('grDeliveryNoteFile').value='';grParsedItems=[];$('grAiStatus').textContent='';$('grAiPreview').innerHTML='';$('grReceivedAt').value=brusselsDateTimeInput(new Date());renderGoodsReceipts();if(stockPrepared.length)renderStock();toast(stockPrepared.length?'Ontvangst bewaard en stock automatisch bijgewerkt':'Ontvangstcontrole bewaard');
 }
 function renderPestLogs(){renderPestPlan();
  const box=$('pestLogList');if(!box)return;
