@@ -626,22 +626,39 @@ body:has(#cloudGate:not(.hidden)) .mobile-nav{display:none!important}
  </div>
 </section>
 <section id="pest-control" class="page">
- <div class="page-head"><div><h1>Ongediertecontrole</h1><p>Waarnemingen, preventieve controles en opvolgacties registreren</p></div></div>
- <div class="card" style="margin-bottom:16px"><p class="muted">Registreer ook wanneer je niets aantreft tijdens een geplande controle. Dit logboek vervangt geen professionele ongediertebestrijding of eigen autocontrolegids.</p></div>
- <div class="grid">
-  <div class="card c5">
-   <h3>Nieuwe controle of waarneming</h3>
-   <form id="pestLogForm">
-    <div class="field"><label for="pestObservedAt">Datum en uur *</label><input id="pestObservedAt" type="datetime-local" required></div>
-    <div class="field"><label for="pestLocation">Plaats *</label><input id="pestLocation" required maxlength="120" placeholder="Bijvoorbeeld stockruimte"></div>
-    <div class="field"><label for="pestFinding">Waarneming *</label><select id="pestFinding" required><option value="">Kies...</option><option value="Geen sporen vastgesteld">Geen sporen vastgesteld</option><option value="Insecten">Insecten</option><option value="Knaagdieren">Knaagdieren</option><option value="Vogel">Vogel</option><option value="Andere sporen">Andere sporen</option></select></div>
-    <div class="field"><label for="pestSeverity">Ernst</label><select id="pestSeverity"><option value="Geen">Geen</option><option value="Laag">Laag</option><option value="Matig">Matig</option><option value="Hoog">Hoog</option></select></div>
-    <div class="field"><label for="pestActionTaken">Genomen maatregel / actie *</label><textarea id="pestActionTaken" required rows="3" maxlength="1500" placeholder="Wat werd gecontroleerd of ondernomen?"></textarea></div>
-    <div class="field"><label for="pestFollowUp">Opvolgdatum</label><input id="pestFollowUp" type="date"></div>
-    <div class="field"><label for="pestNotes">Opmerkingen</label><textarea id="pestNotes" rows="2" maxlength="1500"></textarea></div>
-    <button class="btn" type="submit">Controle bewaren</button>
-   </form>
+ <div class="page-head"><div><h1>Ongediertecontrole</h1><p>Digitaal ongedierteplan, vallen, vliegenlampen en controlehistoriek</p></div><button class="btn secondary" type="button" id="pestPlanPrint">Ongedierteplan afdrukken / PDF</button></div>
+ <div class="card" style="margin-bottom:16px"><p class="muted">Maak een plan met een eigen schets of upload een grondplan als afbeelding of PDF. Plaats daarna de controlepunten op de juiste plek. Bewaar daarnaast je controles en opvolgacties in het logboek.</p></div>
+ <div class="card" style="margin-bottom:16px">
+  <h3>Plattegrond van je zaak</h3>
+  <div class="toolbar"><label class="btn secondary" for="pestPlanFile">Grondplan uploaden (PDF / afbeelding)</label><input id="pestPlanFile" type="file" accept="image/png,image/jpeg,image/webp,application/pdf,.pdf" style="max-width:220px"><button class="btn secondary" type="button" id="pestPlanClear">Leeg plan maken</button><span id="pestPlanFileName" class="muted">Nog geen grondplan geüpload</span></div>
+  <div class="field"><label for="pestPlanName">Naam van de plattegrond</label><input id="pestPlanName" maxlength="100" placeholder="Bijvoorbeeld Gelijkvloers - restaurant en keuken"></div>
+  <div class="grid">
+   <div class="card c4" style="box-shadow:none">
+    <h3>Controlepunt toevoegen</h3>
+    <div class="field"><label for="pestMarkerType">Type controlepunt</label><select id="pestMarkerType"><option value="Muizenval">🐭 Muizenval</option><option value="Rattenval">🐀 Rattenval</option><option value="Vliegenlamp">💡 Vliegenlamp</option><option value="Feromoonval">🪰 Feromoonval</option><option value="Controlepunt">📍 Algemeen controlepunt</option></select></div>
+    <div class="field"><label for="pestMarkerLabel">Nummer / omschrijving</label><input id="pestMarkerLabel" maxlength="60" placeholder="Bijvoorbeeld M01 - achterdeur"></div>
+    <div class="field"><label for="pestMarkerNotes">Opmerking (optioneel)</label><input id="pestMarkerNotes" maxlength="180" placeholder="Bijvoorbeeld naast voorraadrek"></div>
+    <button class="btn" type="button" id="pestMarkerPlace">Plaats op plattegrond</button>
+    <p id="pestMarkerHint" class="muted">Kies het type en tik daarna op de juiste plaats op het plan.</p>
+    <div id="pestMarkerList" class="items"></div>
+   </div>
+   <div class="card c8" style="box-shadow:none">
+    <div id="pestPlanSurface" class="pest-plan-surface" role="button" tabindex="0" aria-label="Plattegrond. Tik om een controlepunt te plaatsen"><div id="pestPlanArtwork" class="pest-plan-artwork"><div class="pest-plan-empty">Upload een grondplan of gebruik dit lege tekenvlak.<br>Kies links een controlepunt en tik op de juiste plaats.</div></div><div id="pestPlanMarkers" class="pest-plan-markers"></div></div>
+    <p class="source-note">De markeringen zijn een praktisch overzicht. Controleer of de plaatsing overeenkomt met de instructies van de leverancier en de geldende voedselveiligheidsregels.</p>
+   </div>
   </div>
+ </div>
+ <div class="grid">
+  <div class="card c5"><h3>Nieuwe controle of waarneming</h3><form id="pestLogForm">
+   <div class="field"><label for="pestObservedAt">Datum en uur *</label><input id="pestObservedAt" type="datetime-local" required></div>
+   <div class="field"><label for="pestLocation">Plaats *</label><input id="pestLocation" required maxlength="120" placeholder="Bijvoorbeeld stockruimte"></div>
+   <div class="field"><label for="pestFinding">Waarneming *</label><select id="pestFinding" required><option value="">Kies...</option><option value="Geen sporen vastgesteld">Geen sporen vastgesteld</option><option value="Insecten">Insecten</option><option value="Knaagdieren">Knaagdieren</option><option value="Vogel">Vogel</option><option value="Andere sporen">Andere sporen</option></select></div>
+   <div class="field"><label for="pestSeverity">Ernst</label><select id="pestSeverity"><option value="Geen">Geen</option><option value="Laag">Laag</option><option value="Matig">Matig</option><option value="Hoog">Hoog</option></select></div>
+   <div class="field"><label for="pestActionTaken">Genomen maatregel / actie *</label><textarea id="pestActionTaken" required rows="3" maxlength="1500" placeholder="Wat werd gecontroleerd of ondernomen?"></textarea></div>
+   <div class="field"><label for="pestFollowUp">Opvolgdatum</label><input id="pestFollowUp" type="date"></div>
+   <div class="field"><label for="pestNotes">Opmerkingen</label><textarea id="pestNotes" rows="2" maxlength="1500"></textarea></div>
+   <button class="btn" type="submit">Controle bewaren</button>
+  </form></div>
   <div class="card c7"><h3>Controlehistoriek</h3><div id="pestLogList" class="items"></div></div>
  </div>
 </section>
@@ -1328,6 +1345,7 @@ window.FAVVGetSupabaseClient=()=>cloudClient;
 (function(){'use strict';
 const ALLERGENS=['Glutenbevattende granen','Schaaldieren','Eieren','Vis','Aardnoten','Soja','Melk','Noten','Selderij','Mosterd','Sesamzaad','Zwaveldioxide en sulfieten','Lupine','Weekdieren'];
 const DEFAULTS={cleaning:[],temperatures:[],dishes:[],reports:[],stock:[],stockMovements:[],deliveries:[],recipes:[],productions:[],temperatureActions:[],goodsReceipts:[],pestLogs:[]};
+// Pest plan is stored per business with its own map and placed control points.
 function normalizeStateCollections(value){
   const target=value&&typeof value==='object'&&!Array.isArray(value)?value:{};
   Object.keys(DEFAULTS).forEach(key=>{
@@ -1345,6 +1363,8 @@ function normalizeStateCollections(value){
   target.temperatureActions=target.temperatureActions.map(item=>({...item,history:Array.isArray(item?.history)?item.history:[]}));
   target.goodsReceipts=target.goodsReceipts.map(item=>item&&typeof item==='object'?item:{});
   target.pestLogs=target.pestLogs.map(item=>item&&typeof item==='object'?item:{});
+  target.pestPlan=target.pestPlan&&typeof target.pestPlan==='object'?target.pestPlan:{name:'',fileName:'',fileType:'',fileDataUrl:'',markers:[]};
+  target.pestPlan.markers=Array.isArray(target.pestPlan.markers)?target.pestPlan.markers:[];
   return target;
 }
 const $=id=>document.getElementById(id), clone=o=>JSON.parse(JSON.stringify(o));
@@ -1513,10 +1533,52 @@ function saveGoodsReceipt(e){
  state.goodsReceipts.unshift({id:id('gr'),supplier:$('grSupplier').value.trim(),product:$('grProduct').value.trim(),invoiceNumber:$('grInvoice').value.trim(),receivedAt:brusselsDateTimeToIso($('grReceivedAt').value),temperature,packaging:$('grPackaging').value,quality:$('grQuality').value,decision,reason,notes:$('grNotes').value.trim(),recordedBy:currentUser?.name||'Gebruiker',recordedAt:new Date().toISOString()});
  persist();e.target.reset();$('grReceivedAt').value=brusselsDateTimeInput(new Date());renderGoodsReceipts();toast('Ontvangstcontrole bewaard');
 }
-function renderPestLogs(){
+function renderPestLogs(){renderPestPlan();
  const box=$('pestLogList');if(!box)return;
  const rows=(state.pestLogs||[]).slice().sort((a,b)=>String(b.observedAt||'').localeCompare(String(a.observedAt||'')));
  box.innerHTML=rows.length?rows.map(r=>'<article class="item"><div><div class="item-title">'+esc(r.location)+' · '+esc(r.finding)+'</div><div class="item-sub">'+formatBrusselsDateTime(r.observedAt)+' · Ernst: '+esc(r.severity||'Niet ingevuld')+' · '+(r.status==='closed'?'Opgevolgd':'Openstaand')+'</div><div class="item-sub"><strong>Actie:</strong> '+esc(r.actionTaken)+'</div>'+(r.followUpDate?'<div class="item-sub">Opvolgdatum: '+esc(r.followUpDate)+'</div>':'')+(r.notes?'<div class="item-sub">'+esc(r.notes)+'</div>':'')+'<div class="item-sub">Geregistreerd door '+esc(r.reportedBy||'Gebruiker')+'</div></div><div class="actions">'+(r.status==='closed'?'<span class="pill">Opgevolgd</span>':'<button class="btn small" data-phase1-action="close-pest" data-id="'+esc(r.id)+'">Opvolging afronden</button>')+(currentUser?.role==='manager'?'<button class="btn danger small" data-phase1-action="delete-pest" data-id="'+esc(r.id)+'">Verwijderen</button>':'')+'</div></article>').join(''):'<div class="empty">Nog geen ongediertecontroles geregistreerd.</div>';
+}
+let pestMarkerPlacementActive=false;
+function renderPestPlan(){
+ const plan=state.pestPlan||{markers:[]},surface=$('pestPlanSurface'),art=$('pestPlanArtwork'),markers=$('pestPlanMarkers');
+ if(!surface||!art||!markers)return;
+ $('pestPlanName').value=plan.name||'';
+ $('pestPlanFileName').textContent=plan.fileName||'Nog geen grondplan geüpload';
+ surface.classList.toggle('placing',pestMarkerPlacementActive);
+ if(plan.fileDataUrl){
+  if(plan.fileType==='application/pdf')art.innerHTML='<iframe title="Grondplan PDF" class="pest-plan-pdf" src="'+plan.fileDataUrl+'#toolbar=0&navpanes=0"></iframe>';
+  else art.innerHTML='<img class="pest-plan-image" alt="Grondplan van de horecazaak" src="'+plan.fileDataUrl+'">';
+ }else{
+  art.innerHTML='<div class="pest-plan-empty">Eigen tekenvlak<br><small>Je kunt hier rechtstreeks controlepunten plaatsen. Upload eventueel eerst een grondplan.</small></div>';
+ }
+ markers.innerHTML=(plan.markers||[]).map(m=>'<button type="button" class="pest-map-marker" style="left:'+Math.max(0,Math.min(100,Number(m.x)||0))+'%;top:'+Math.max(0,Math.min(100,Number(m.y)||0))+'%" data-pest-marker-remove="'+esc(m.id)+'" title="'+esc(m.label||m.type)+'">'+esc(({Muizenval:'🐭',Rattenval:'🐀',Vliegenlamp:'💡',Feromoonval:'🪰',Controlepunt:'📍'})[m.type]||'📍')+'<span>'+esc(m.label||m.type)+'</span></button>').join('');
+ $('pestMarkerList').innerHTML=(plan.markers||[]).length?(plan.markers||[]).map(m=>'<div class="item"><div><div class="item-title">'+esc(m.label||m.type)+'</div><div class="item-sub">'+esc(m.type)+(m.notes?' · '+esc(m.notes):'')+'</div></div><button type="button" class="btn danger small" data-pest-marker-remove="'+esc(m.id)+'">Verwijderen</button></div>').join(''):'<div class="empty">Nog geen vallen of lampen aangeduid.</div>';
+}
+function savePestPlanName(){state.pestPlan=state.pestPlan||{markers:[]};state.pestPlan.name=$('pestPlanName').value.trim();persist()}
+function loadPestPlanFile(file){
+ if(!file)return;
+ const allowed=['image/png','image/jpeg','image/webp','application/pdf'];
+ if(!allowed.includes(file.type)&&!file.name.toLowerCase().endsWith('.pdf')){alert('Kies een JPG-, PNG-, WEBP- of PDF-bestand.');return}
+ if(file.size>2*1024*1024){alert('Dit bestand is te groot. Gebruik een bestand van maximaal 2 MB zodat synchronisatie vlot blijft.');return}
+ const reader=new FileReader();
+ reader.onload=()=>{state.pestPlan=state.pestPlan||{markers:[]};state.pestPlan.fileDataUrl=String(reader.result||'');state.pestPlan.fileType=file.type||'application/pdf';state.pestPlan.fileName=file.name;persist();renderPestPlan();toast('Grondplan toegevoegd')};
+ reader.onerror=()=>alert('Het grondplan kon niet worden gelezen.');
+ reader.readAsDataURL(file);
+}
+function placePestMarker(event){
+ if(!pestMarkerPlacementActive)return;
+ const surface=$('pestPlanSurface'),rect=surface.getBoundingClientRect();
+ const x=Math.max(0,Math.min(100,((event.clientX-rect.left)/rect.width)*100));
+ const y=Math.max(0,Math.min(100,((event.clientY-rect.top)/rect.height)*100));
+ const type=$('pestMarkerType').value,label=$('pestMarkerLabel').value.trim()||type+' '+String((state.pestPlan.markers||[]).filter(m=>m.type===type).length+1).padStart(2,'0');
+ state.pestPlan.markers.push({id:id('pmarker'),type,label,notes:$('pestMarkerNotes').value.trim(),x,y,createdAt:new Date().toISOString(),createdBy:currentUser?.name||'Gebruiker',status:'active'});
+ pestMarkerPlacementActive=false;$('pestMarkerLabel').value='';$('pestMarkerNotes').value='';$('pestMarkerPlace').textContent='Plaats op plattegrond';$('pestMarkerHint').textContent='Kies het type en tik daarna op de juiste plaats op het plan.';
+ persist();renderPestPlan();toast('Controlepunt op plan geplaatst');
+}
+function removePestMarker(markerId){
+ if(currentUser?.role!=='manager'){alert('Alleen een manager kan controlepunten verwijderen.');return}
+ if(!confirm('Dit controlepunt van het plan verwijderen?'))return;
+ state.pestPlan.markers=(state.pestPlan.markers||[]).filter(m=>m.id!==markerId);persist();renderPestPlan();
 }
 function savePestLog(e){
  e.preventDefault();
@@ -2315,7 +2377,7 @@ async function saveSelectedRole(event){
   }
 }
 async function userAction(action,id,el){if(cloudIsEmployee()||currentUser?.role!=='manager')return;if(action==='reload-cloud-users'){await renderUsers();return}let payload={userId:id};if(action==='edit-name'){const fullName=prompt('Nieuwe naam:',el?.dataset.name||'');if(fullName===null)return;payload={...payload,action:'update_name',fullName:fullName.trim()}}else if(action==='password-reset'){if(!confirm('Wachtwoordherstelmail versturen?'))return;payload={...payload,action:'send_password_reset'}}else if(action==='change-role'){openRoleModal(id,el?.dataset.role||'employee');return}else if(action==='set-active'){const active=el?.dataset.active!=='true';if(!confirm(active?'Gebruiker activeren?':'Gebruiker deactiveren?'))return;payload={...payload,action:'set_active',active}}else if(action==='remove-membership'){if(!confirm('Gebruiker uit deze zaak verwijderen?'))return;payload={...payload,action:'remove_membership'}}else return;try{const result=await window.FAVVManageBusinessMember(payload);toast(result?.message||'Gebruiker bijgewerkt');await renderUsers()}catch(error){alert(error.message||'De beheeractie is mislukt.')}}
-document.addEventListener('click',e=>{const button=e.target.closest('[data-invoice-action]');if(button){invoiceAction(button.dataset.invoiceAction,button.dataset.id)}});document.addEventListener('click',e=>{const goto=e.target.closest('[data-goto]');if(goto){navigate(goto.dataset.goto);return}const nav=e.target.closest('[data-page]');if(nav){navigate(nav.dataset.page);return}const a=e.target.closest('[data-action]');if(a&&a.dataset.action!=='toggle-cleaning')handleAction(a.dataset.action,a.dataset.id,a)});document.addEventListener('change',e=>{const a=e.target.closest('[data-action="toggle-cleaning"]');if(a)handleAction(a.dataset.action,a.dataset.id,a)});$('cleaningSearch').addEventListener('input',renderCleaning);$('temperatureSearch').addEventListener('input',renderTemperatures);$('dishSearch').addEventListener('input',renderDishes);$('reportSearch').addEventListener('input',renderHistory);$('modalForm').addEventListener('submit',submitModal);$('modalLayer').addEventListener('click',e=>{if(e.target===$('modalLayer'))closeModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeRecovery();closeTemperatureAction();closeRoleModal();closeInvoicePayment();closeFavvExport();closeBusinessEdit()}});$('recoveryLayer').addEventListener('click',e=>{if(e.target===$('recoveryLayer'))closeRecovery()});$('registrationForm').addEventListener('submit',registerBusiness);$('loginForm').addEventListener('submit',loginSubmit);$('loginBusiness').addEventListener('change',e=>switchBusiness(e.target.value));$('recoveryForm').addEventListener('submit',submitRecovery);$('userForm').addEventListener('submit',addUser);$('newUserRole').addEventListener('change',configureInviteRoleChoices);document.addEventListener('click',e=>{const businessRegistration=e.target.closest('[data-business-registration]');if(businessRegistration?.dataset.businessRegistration==='open'){$('registrationForm').reset();$('registrationError').classList.remove('show');showRegistration()}if(businessRegistration?.dataset.businessRegistration==='close')closeRegistration();const temperatureAction=e.target.closest('[data-temperature-action]');if(temperatureAction)temperatureActionClick(temperatureAction.dataset.temperatureAction,temperatureAction.dataset.id);const subscription=e.target.closest('[data-subscription-action]');if(subscription)subscriptionAction(subscription.dataset.subscriptionAction,subscription);const recovery=e.target.closest('[data-recovery-action]');if(recovery?.dataset.recoveryAction==='open')openRecovery();if(recovery?.dataset.recoveryAction==='close')closeRecovery();const auth=e.target.closest('[data-auth-action]');if(auth?.dataset.authAction==='logout')logout();const ua=e.target.closest('[data-user-action]');if(ua)userAction(ua.dataset.userAction,ua.dataset.id,ua);const ba=e.target.closest('[data-business-action]');if(ba?.dataset.businessAction==='edit')editBusiness();if(ba?.dataset.businessAction==='export')exportBusiness();const sa=e.target.closest('[data-stock-action]');if(sa)stockAction(sa.dataset.stockAction,sa.dataset.id,sa);const ra=e.target.closest('[data-recipe-action]');if(ra)recipeAction(ra.dataset.recipeAction,ra.dataset.id,ra)});$('goodsReceiptForm').addEventListener('submit',saveGoodsReceipt);$('pestLogForm').addEventListener('submit',savePestLog);$('grReceivedAt').value=brusselsDateTimeInput(new Date());$('pestObservedAt').value=brusselsDateTimeInput(new Date());document.addEventListener('click',e=>{const action=e.target.closest('[data-phase1-action]');if(action)phase1Action(action.dataset.phase1Action,action.dataset.id)});
+document.addEventListener('click',e=>{const button=e.target.closest('[data-invoice-action]');if(button){invoiceAction(button.dataset.invoiceAction,button.dataset.id)}});document.addEventListener('click',e=>{const goto=e.target.closest('[data-goto]');if(goto){navigate(goto.dataset.goto);return}const nav=e.target.closest('[data-page]');if(nav){navigate(nav.dataset.page);return}const a=e.target.closest('[data-action]');if(a&&a.dataset.action!=='toggle-cleaning')handleAction(a.dataset.action,a.dataset.id,a)});document.addEventListener('change',e=>{const a=e.target.closest('[data-action="toggle-cleaning"]');if(a)handleAction(a.dataset.action,a.dataset.id,a)});$('cleaningSearch').addEventListener('input',renderCleaning);$('temperatureSearch').addEventListener('input',renderTemperatures);$('dishSearch').addEventListener('input',renderDishes);$('reportSearch').addEventListener('input',renderHistory);$('modalForm').addEventListener('submit',submitModal);$('modalLayer').addEventListener('click',e=>{if(e.target===$('modalLayer'))closeModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeRecovery();closeTemperatureAction();closeRoleModal();closeInvoicePayment();closeFavvExport();closeBusinessEdit()}});$('recoveryLayer').addEventListener('click',e=>{if(e.target===$('recoveryLayer'))closeRecovery()});$('registrationForm').addEventListener('submit',registerBusiness);$('loginForm').addEventListener('submit',loginSubmit);$('loginBusiness').addEventListener('change',e=>switchBusiness(e.target.value));$('recoveryForm').addEventListener('submit',submitRecovery);$('userForm').addEventListener('submit',addUser);$('newUserRole').addEventListener('change',configureInviteRoleChoices);document.addEventListener('click',e=>{const businessRegistration=e.target.closest('[data-business-registration]');if(businessRegistration?.dataset.businessRegistration==='open'){$('registrationForm').reset();$('registrationError').classList.remove('show');showRegistration()}if(businessRegistration?.dataset.businessRegistration==='close')closeRegistration();const temperatureAction=e.target.closest('[data-temperature-action]');if(temperatureAction)temperatureActionClick(temperatureAction.dataset.temperatureAction,temperatureAction.dataset.id);const subscription=e.target.closest('[data-subscription-action]');if(subscription)subscriptionAction(subscription.dataset.subscriptionAction,subscription);const recovery=e.target.closest('[data-recovery-action]');if(recovery?.dataset.recoveryAction==='open')openRecovery();if(recovery?.dataset.recoveryAction==='close')closeRecovery();const auth=e.target.closest('[data-auth-action]');if(auth?.dataset.authAction==='logout')logout();const ua=e.target.closest('[data-user-action]');if(ua)userAction(ua.dataset.userAction,ua.dataset.id,ua);const ba=e.target.closest('[data-business-action]');if(ba?.dataset.businessAction==='edit')editBusiness();if(ba?.dataset.businessAction==='export')exportBusiness();const sa=e.target.closest('[data-stock-action]');if(sa)stockAction(sa.dataset.stockAction,sa.dataset.id,sa);const ra=e.target.closest('[data-recipe-action]');if(ra)recipeAction(ra.dataset.recipeAction,ra.dataset.id,ra)});$('goodsReceiptForm').addEventListener('submit',saveGoodsReceipt);$('pestLogForm').addEventListener('submit',savePestLog);$('grReceivedAt').value=brusselsDateTimeInput(new Date());$('pestObservedAt').value=brusselsDateTimeInput(new Date());$('pestPlanFile').addEventListener('change',e=>loadPestPlanFile(e.target.files?.[0]));$('pestPlanName').addEventListener('change',savePestPlanName);$('pestPlanSurface').addEventListener('click',e=>{if(e.target.closest('[data-pest-marker-remove]'))return;placePestMarker(e)});$('pestMarkerPlace').addEventListener('click',()=>{pestMarkerPlacementActive=!pestMarkerPlacementActive;$('pestMarkerPlace').textContent=pestMarkerPlacementActive?'Annuleren':'Plaats op plattegrond';$('pestMarkerHint').textContent=pestMarkerPlacementActive?'Tik nu op de juiste plek op de plattegrond.':'Kies het type en tik daarna op de juiste plaats op het plan.';$('pestPlanSurface').classList.toggle('placing',pestMarkerPlacementActive)});$('pestPlanClear').addEventListener('click',()=>{if(!confirm('Het grondplan verwijderen? De geplaatste vallen en lampen blijven bewaard.'))return;state.pestPlan.fileDataUrl='';state.pestPlan.fileName='';state.pestPlan.fileType='';persist();renderPestPlan()});$('pestPlanPrint').addEventListener('click',()=>window.print());document.addEventListener('click',e=>{const marker=e.target.closest('[data-pest-marker-remove]');if(marker)removePestMarker(marker.dataset.pestMarkerRemove)});document.addEventListener('click',e=>{const action=e.target.closest('[data-phase1-action]');if(action)phase1Action(action.dataset.phase1Action,action.dataset.id)});
 $('stockSearch').addEventListener('input',renderStock);$('stockSupplierFilter').addEventListener('change',renderStock);$('stockFilter').addEventListener('change',renderStock);$('recipeSearch').addEventListener('input',renderRecipes);$('recipeFilter').addEventListener('change',renderRecipes);$('recipeForm').addEventListener('submit',saveRecipe);$('recipeModalLayer').addEventListener('click',e=>{if(e.target===$('recipeModalLayer'))closeRecipe()});$('temperatureActionForm').addEventListener('submit',saveTemperatureAction);$('temperatureActionModal').addEventListener('click',e=>{if(e.target===$('temperatureActionModal'))closeTemperatureAction()});$('stockProductForm').addEventListener('submit',saveStockProduct);['stockProductPurchaseQty','stockProductPurchasePrice','stockProductUnit'].forEach(idValue=>$(idValue).addEventListener('input',renderStockUnitCostPreview));$('stockProductModal').addEventListener('click',e=>{if(e.target===$('stockProductModal'))closeStockProduct()});$('favvExportOpen').addEventListener('click',openFavvExport);
 $('favvExportClose').addEventListener('click',closeFavvExport);
 $('favvExportCancel').addEventListener('click',closeFavvExport);
@@ -2400,6 +2462,7 @@ setInterval(()=>{
 @media(prefers-reduced-motion:reduce){#animo-ai-panel.open{animation:none}#animo-ai-launcher{transition:none}}
 
 @media(max-width:900px){.mobile-nav{display:flex!important;align-items:stretch;justify-content:flex-start;gap:0;overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:env(safe-area-inset-bottom)}.mobile-nav::-webkit-scrollbar{display:none}.mobile-nav button{flex:0 0 76px;min-width:76px;max-width:76px;white-space:normal;line-height:1.15;scroll-snap-align:start}.mobile-nav{scroll-snap-type:x proximity}}
+.pest-plan-surface{position:relative;min-height:480px;width:100%;overflow:hidden;border:2px dashed #9eb5a5;border-radius:14px;background-color:#f8fbf9;background-image:linear-gradient(#dce8df 1px,transparent 1px),linear-gradient(90deg,#dce8df 1px,transparent 1px);background-size:24px 24px;touch-action:pan-y}.pest-plan-surface.placing{border:3px solid #147a46;cursor:crosshair}.pest-plan-artwork{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden}.pest-plan-empty{text-align:center;color:#637168;padding:20px;font-weight:800;pointer-events:none}.pest-plan-empty small{font-weight:500}.pest-plan-image,.pest-plan-pdf{width:100%;height:100%;object-fit:contain;border:0;pointer-events:none;background:#fff}.pest-plan-markers{position:absolute;inset:0;pointer-events:none}.pest-map-marker{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;display:flex;align-items:center;gap:4px;border:2px solid #fff;border-radius:999px;padding:4px 8px;background:#103e2a;color:#fff;font-size:12px;font-weight:900;box-shadow:0 2px 8px #0005;white-space:nowrap}.pest-map-marker span{max-width:110px;overflow:hidden;text-overflow:ellipsis}.pest-plan-surface.placing:after{content:'Tik op de plattegrond om het punt te plaatsen';position:absolute;left:10px;right:10px;bottom:10px;text-align:center;background:#103e2a;color:#fff;padding:9px;border-radius:9px;font-size:12px;pointer-events:none}@media(max-width:700px){.pest-plan-surface{min-height:360px}.pest-plan-surface .pest-map-marker{font-size:10px;padding:3px 6px}.pest-plan-surface .pest-map-marker span{max-width:70px}}@media print{body *{visibility:hidden!important}#pest-control,#pest-control *{visibility:visible!important}#pest-control{display:block!important;position:absolute;left:0;top:0;width:100%}#pest-control .page-head button,#pest-control form,#pest-control .toolbar,#pest-control #pestMarkerList{display:none!important}#pest-control .pest-plan-surface{min-height:650px;break-inside:avoid}.pest-map-marker{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
 </style>
 <div id="animo-ai-widget">
 <section id="animo-ai-panel" role="dialog" aria-label="ANIMO AI-chat" aria-modal="false">
