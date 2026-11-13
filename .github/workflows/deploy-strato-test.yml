@@ -6,6 +6,7 @@ on:
       - feature/voedselverspilling-module
       - feature/menurendabiliteit-module
       - feature/animo-ai-test-integration
+      - feature/phase1-haccp-completion
     paths:
       - 'index.html'
       - 'sw.js'
