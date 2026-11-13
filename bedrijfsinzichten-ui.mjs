@@ -340,3 +340,28 @@ document.head.appendChild(style);
 
 /* Navigatiebeveiliging: toon exact één hoofdmodule tegelijk. */
 style.textContent += `\n.page:not(.active){display:none!important;visibility:hidden!important;pointer-events:none!important}\n.page.active{display:block!important;visibility:visible!important;pointer-events:auto!important}\n`;
+
+
+/* Zorg dat Bedrijfsinzichten nooit visueel onder een andere hoofdmodule terechtkomt. */
+style.textContent += `
+.layout > .main { position:relative; isolation:isolate; }
+.layout > .main > .page { position:relative; }
+.layout > .main > .page:not(.active) {
+  display:none!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  z-index:-1!important;
+}
+.layout > .main > #business-insights.active {
+  display:block!important;
+  visibility:visible!important;
+  position:relative!important;
+  z-index:2!important;
+  isolation:isolate;
+}
+.layout > .main > #menu-profitability:not(.active) {
+  display:none!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+`;
