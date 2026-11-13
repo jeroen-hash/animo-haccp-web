@@ -878,6 +878,7 @@ async function loadMembership(options={}){
           cloudBusiness={...b,role:m.role};
           window.FAVVCloudRole=m.role;
           window.FAVVCloudBusiness=cloudBusiness;
+          window.dispatchEvent(new CustomEvent('favv:business-ready',{detail:{businessId:cloudBusiness.id}}));
           window.FAVVApplyCloudRole?.(m.role);
           return cloudBusiness;
         }
