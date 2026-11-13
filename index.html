@@ -611,7 +611,7 @@ body:has(#cloudGate:not(.hidden)) .mobile-nav{display:none!important}
    <h3>Nieuwe ontvangstcontrole</h3>
    <div class="field" style="padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--soft)">
     <label for="grDeliveryNoteFile">Leverbon automatisch laten uitlezen</label>
-    <input id="grDeliveryNoteFile" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment">
+    <input id="grDeliveryNoteFile" type="file" accept=".pdf,application/pdf,.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
     <div class="muted" style="font-size:13px;margin-top:6px">Neem een foto van de leverbon of kies een PDF/foto. ANIMO vult de herkenbare gegevens voor je in. Controleer ze altijd.</div>
     <div id="grAiStatus" class="muted" role="status" aria-live="polite" style="margin-top:8px"></div>
     <div id="grAiPreview" style="margin-top:8px"></div>
@@ -1594,14 +1594,16 @@ function grRenderAiPreview(parsed){
 async function processGoodsDeliveryNote(event){
  const file=event.target.files?.[0];if(!file)return;
  const status=$('grAiStatus'),preview=$('grAiPreview'),input=event.target;
+ const extension=String(file.name||'').split('.').pop().toLowerCase();
+ const mimeType=String(file.type||'').toLowerCase()||(extension==='pdf'?'application/pdf':extension==='jpg'||extension==='jpeg'?'image/jpeg':extension==='png'?'image/png':extension==='webp'?'image/webp':'');
  const allowed=['image/jpeg','image/png','image/webp','application/pdf'];
- if(!allowed.includes(file.type)){status.textContent='Gebruik een JPG-, PNG-, WebP-foto of PDF. HEIC-foto’s kun je eerst als JPG delen.';input.value='';return}
+ if(!allowed.includes(mimeType)){status.textContent='Gebruik een JPG-, PNG-, WebP-foto of PDF. HEIC-foto’s kun je eerst als JPG delen.';input.value='';return}
  if(file.size>4*1024*1024){status.textContent='Dit bestand is groter dan 4 MB. Maak een kleinere foto of kies een PDF met lagere bestandsgrootte.';input.value='';return}
  if(typeof window.FAVVProcessDeliveryNote!=='function'){status.textContent='De beveiligde uitleesdienst is nog niet beschikbaar in deze testversie.';return}
  status.textContent='ANIMO leest de leverbon uit…';preview.innerHTML='';input.disabled=true;
  try{
   const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>{const value=String(reader.result||'');const comma=value.indexOf(',');if(comma<0)return reject(new Error('Het bestand kon niet worden gelezen.'));resolve(value.slice(comma+1))};reader.onerror=()=>reject(new Error('Het bestand kon niet worden gelezen.'));reader.readAsDataURL(file)});
-  const result=await window.FAVVProcessDeliveryNote({fileBase64:base64,mimeType:file.type,fileName:file.name});
+  const result=await window.FAVVProcessDeliveryNote({fileBase64:base64,mimeType,fileName:file.name});
   const parsed=grNormalizeDeliveryResult(result);
   grParsedItems=parsed.items;
   if(parsed.supplier)$('grSupplier').value=parsed.supplier;
