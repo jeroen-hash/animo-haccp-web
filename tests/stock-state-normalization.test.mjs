@@ -67,3 +67,27 @@ test("manual stock additions merge into an existing product and UBL duplicates r
   assert.ok(html.includes("if(identity)productsCreatedInThisDelivery.set(identity,product);"));
   assert.ok(!html.includes("return state.stock.find(x=>normalizeStockName(x.name)===wanted)||state.stock.find(x=>{"));
 });
+
+
+test("singular and plural packaging units match without mixing different package types", () => {
+  const helpers = extract("function recipeUnitInfo(", "function saveRecipe(e){");
+  const script = helpers + `
+    const checks = [
+      ["doos", "dozen"],
+      ["pak", "pakken"],
+      ["fles", "flessen"],
+      ["zak", "zakken"],
+      ["bakje", "bakjes"],
+      ["portie", "porties"]
+    ];
+    for (const [singular, plural] of checks) {
+      if (convertRecipeQuantity(1, plural, singular) !== 1) {
+        throw new Error(singular + "/" + plural + " should convert 1:1");
+      }
+    }
+    if (convertRecipeQuantity(1, "dozen", "pakken") !== null) {
+      throw new Error("Different package types must remain incompatible");
+    }
+  `;
+  vm.runInNewContext(script, {});
+});
