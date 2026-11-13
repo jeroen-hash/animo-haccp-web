@@ -48,6 +48,7 @@ function ensureUi() {
       <div class="bi-grid">
         <section class="card"><h2>Waar gaat het meeste verloren?</h2><div id="biProducts"></div></section>
         <section class="card"><h2>Waarom wordt er verspild?</h2><div id="biReasons"></div></section>
+        <section class="card"><h2>Verspilling per medewerker</h2><div id="biEmployees"></div></section>
         <section class="card bi-wide"><h2>Verspilling doorheen de tijd</h2><div id="biTrend"></div></section>
         <section class="card bi-wide"><h2>Menurendabiliteit</h2><p class="bi-muted">Gebaseerd op geïmporteerde kassaregels en de bestaande receptkostmomentopnames. Dit is brutowinst op ingrediëntenbasis, geen nettowinst.</p><div id="biMenu"></div></section>
       </div>
@@ -170,14 +171,28 @@ async function render() {
     const count = rows.length;
     const products = aggregate(rows,"product_name");
     const reasons = aggregate(rows,"reason");
+    const employees = aggregate(rows,"employee_name");
+    const quantities = { kg:0, g:0, l:0, ml:0, cl:0, stuk:0 };
+    for (const row of rows) {
+      const unit = String(row.input_unit || "").toLowerCase();
+      if (Object.prototype.hasOwnProperty.call(quantities,unit)) quantities[unit] += Number(row.quantity || 0);
+    }
+    const volume = [];
+    const kg = quantities.kg + quantities.g/1000;
+    const litres = quantities.l + quantities.cl/100 + quantities.ml/1000;
+    if (kg) volume.push(number(kg,2)+" kg");
+    if (litres) volume.push(number(litres,2)+" l");
+    if (quantities.stuk) volume.push(number(quantities.stuk,0)+" stuks");
     $("biStats").innerHTML = [
       ["Registraties",number(count,0)],
       ["Gekende verspilde waarde",known.length?money(totalCost):"Geen kostprijzen"],
+      ["Hoeveelheid",volume.join(" · ") || "Niet beschikbaar"],
       ["Gemiddelde kost / registratie",avg==null?"Onbekend":money(avg)],
       ["Kostprijs ontbreekt",number(count-known.length,0)]
     ].map(([label,value])=>`<div class="bi-stat"><small>${label}</small><strong>${value}</strong></div>`).join("");
     renderBars($("biProducts"),products,"Nog geen registraties in deze periode.");
     renderBars($("biReasons"),reasons,"Nog geen registraties in deze periode.");
+    renderBars($("biEmployees"),employees,"Nog geen registraties in deze periode.");
     renderTrend(rows);
     renderMenu(cache.menu);
     $("biFootnote").textContent = cache.waste.length >= 1000
@@ -221,8 +236,28 @@ function renderCached() {
     ["Gemiddelde kost / registratie",avg==null?"Onbekend":money(avg)],
     ["Kostprijs ontbreekt",number(rows.length-known.length,0)]
   ].map(([label,value])=>`<div class="bi-stat"><small>${label}</small><strong>${value}</strong></div>`).join("");
+  const employees = aggregate(rows,"employee_name");
+  const quantities = { kg:0, g:0, l:0, ml:0, cl:0, stuk:0 };
+  for (const row of rows) {
+    const unit = String(row.input_unit || "").toLowerCase();
+    if (Object.prototype.hasOwnProperty.call(quantities,unit)) quantities[unit] += Number(row.quantity || 0);
+  }
+  const volume = [];
+  const kg = quantities.kg + quantities.g/1000;
+  const litres = quantities.l + quantities.cl/100 + quantities.ml/1000;
+  if (kg) volume.push(number(kg,2)+" kg");
+  if (litres) volume.push(number(litres,2)+" l");
+  if (quantities.stuk) volume.push(number(quantities.stuk,0)+" stuks");
+  $("biStats").innerHTML = [
+    ["Registraties",number(rows.length,0)],
+    ["Gekende verspilde waarde",known.length?money(totalCost):"Geen kostprijzen"],
+    ["Hoeveelheid",volume.join(" · ") || "Niet beschikbaar"],
+    ["Gemiddelde kost / registratie",avg==null?"Onbekend":money(avg)],
+    ["Kostprijs ontbreekt",number(rows.length-known.length,0)]
+  ].map(([label,value])=>`<div class="bi-stat"><small>${label}</small><strong>${value}</strong></div>`).join("");
   renderBars($("biProducts"),aggregate(rows,"product_name"),"Nog geen registraties in deze periode.");
   renderBars($("biReasons"),aggregate(rows,"reason"),"Nog geen registraties in deze periode.");
+  renderBars($("biEmployees"),employees,"Nog geen registraties in deze periode.");
   renderTrend(rows);
   renderMenu(cache.menu);
 }
@@ -234,7 +269,7 @@ style.textContent = `
 #business-insights .bi-notice{padding:12px 15px;background:#edf7f1;border-left:4px solid #147a46;border-radius:9px;margin-bottom:15px;color:#355443;font-size:13px}
 #business-insights .bi-filters{display:flex;align-items:center;gap:12px;margin-bottom:15px}
 #business-insights .bi-filters label{font-weight:800}#business-insights .bi-filters select{padding:10px;border:1px solid #c8d5cc;border-radius:9px;background:#fff;min-width:210px}
-#business-insights .bi-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+#business-insights .bi-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:16px}
 #business-insights .bi-stat{background:#fff;border:1px solid #dce5df;border-radius:13px;padding:15px;min-width:0}
 #business-insights .bi-stat small{display:block;color:#65736a;font-size:12px}#business-insights .bi-stat strong{display:block;color:#174d34;font-size:clamp(19px,2.4vw,27px);margin-top:7px;overflow-wrap:anywhere}
 #business-insights .bi-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}#business-insights .bi-grid>.card{min-width:0;margin:0}#business-insights .bi-grid h2{font-size:18px;margin:0 0 13px}#business-insights .bi-wide{grid-column:1/-1}
