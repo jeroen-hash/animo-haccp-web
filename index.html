@@ -1589,7 +1589,7 @@ async function processGoodsDeliveryNote(event){
  const status=$('grAiStatus'),preview=$('grAiPreview'),input=event.target;
  const allowed=['image/jpeg','image/png','image/webp','application/pdf'];
  if(!allowed.includes(file.type)){status.textContent='Gebruik een JPG-, PNG-, WebP-foto of PDF. HEIC-foto’s kun je eerst als JPG delen.';input.value='';return}
- if(file.size>8*1024*1024){status.textContent='Dit bestand is groter dan 8 MB. Maak een kleinere foto of kies een PDF met lagere bestandsgrootte.';input.value='';return}
+ if(file.size>4*1024*1024){status.textContent='Dit bestand is groter dan 4 MB. Maak een kleinere foto of kies een PDF met lagere bestandsgrootte.';input.value='';return}
  if(typeof window.FAVVProcessDeliveryNote!=='function'){status.textContent='De beveiligde uitleesdienst is nog niet beschikbaar in deze testversie.';return}
  status.textContent='ANIMO leest de leverbon uit…';preview.innerHTML='';input.disabled=true;
  try{
@@ -1614,7 +1614,7 @@ function saveGoodsReceipt(e){
  if(decision==='rejected'&&!reason){alert('Vul bij een geweigerde levering de reden of genomen actie in.');return}
  if(temperature!==''&&!Number.isFinite(Number(temperature))){alert('Vul een geldige temperatuur in.');return}
  state.goodsReceipts.unshift({id:id('gr'),supplier:$('grSupplier').value.trim(),product:$('grProduct').value.trim(),products:grParsedItems.map(item=>({...item})),sourceFileName:$('grDeliveryNoteFile')?.files?.[0]?.name||'',invoiceNumber:$('grInvoice').value.trim(),receivedAt:brusselsDateTimeToIso($('grReceivedAt').value),temperature,packaging:$('grPackaging').value,quality:$('grQuality').value,decision,reason,notes:$('grNotes').value.trim(),recordedBy:currentUser?.name||'Gebruiker',recordedAt:new Date().toISOString()});
- persist();e.target.reset();grParsedItems=[];$('grAiStatus').textContent='';$('grAiPreview').innerHTML='';$('grReceivedAt').value=brusselsDateTimeInput(new Date());renderGoodsReceipts();toast('Ontvangstcontrole bewaard');
+ persist();e.target.reset();$('grDeliveryNoteFile').value='';grParsedItems=[];$('grAiStatus').textContent='';$('grAiPreview').innerHTML='';$('grReceivedAt').value=brusselsDateTimeInput(new Date());renderGoodsReceipts();toast('Ontvangstcontrole bewaard');
 }
 function renderPestLogs(){renderPestPlan();
  const box=$('pestLogList');if(!box)return;
