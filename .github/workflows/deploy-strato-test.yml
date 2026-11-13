@@ -10,6 +10,7 @@ on:
     paths:
       - 'index.html'
       - 'sw.js'
+      - 'tests/**/*.mjs'
       - '*.mjs'
       - 'images/**'
       - '.github/workflows/deploy-strato-test.yml'
@@ -90,7 +91,33 @@ jobs:
           for migration in 20261111222221 20261111222452 20261111223111 20261112155500 20261112155729 20261112163255 20261112174321; do
             grep -Fq "$migration" .github/workflows/deploy-strato.yml
           done
-          node --test tests/database-backup-retention.test.mjs tests/service-worker-cache.test.mjs
+          for file in ./*.mjs; do
+            node --check "$file"
+          done
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { spawnSync } from 'node:child_process';
+          const html = readFileSync('index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+          let checked = 0;
+          for (const match of scripts) {
+            const attrs = match[1] || '';
+            const type = (attrs.match(/\btype=["']([^"']+)["']/i) || [])[1] || '';
+            if (type && !/^(text\/javascript|application\/javascript|module)$/i.test(type)) continue;
+            const source = match[2] || '';
+            if (!source.trim()) continue;
+            const path = '/tmp/animo-inline-' + checked + '.js';
+            writeFileSync(path, source);
+            const result = spawnSync(process.execPath, ['--check', path], { encoding: 'utf8' });
+            if (result.status !== 0) {
+              process.stderr.write(result.stderr || result.stdout || 'Inline script syntax error');
+              process.exit(result.status || 1);
+            }
+            checked++;
+          }
+          console.log('Inline scripts syntax checked:', checked);
+          NODE
+          node --test tests/*.test.mjs
 
       - name: Uploaden naar uitsluitend /test
         if: steps.guard.outputs.present == 'true'
