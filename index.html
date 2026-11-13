@@ -1466,7 +1466,7 @@ function phase1ExpiryItems(){
   const expiryMs=Date.parse(String(batch.expiryDate).slice(0,10)+'T00:00:00Z');
   if(!Number.isFinite(expiryMs))return;
   const days=Math.round((expiryMs-todayMs)/86400000);
-  if(days<=7)items.push({product:product.name,quantity:Number(batch.quantity||0),unit:product.unit||'',expiryDate:String(batch.expiryDate).slice(0,10),days});
+  if(days<=7)items.push({productId:product.id,product:product.name,quantity:Number(batch.quantity||0),unit:product.unit||'',expiryDate:String(batch.expiryDate).slice(0,10),days});
  }));
  return items.sort((a,b)=>a.days-b.days);
 }
@@ -1490,7 +1490,7 @@ function renderPhase1Dashboard(){
 function renderExpiryOverview(){
  const box=$('stockExpiryList');if(!box)return;
  const urgent=phase1ExpiryItems(),missing=(state.stock||[]).flatMap(product=>(product.batches||[]).filter(batch=>Number(batch.quantity)>0&&!batch.expiryDate).map(batch=>({product:product.name,quantity:Number(batch.quantity),unit:product.unit||'',id:product.id})));
- const rows=urgent.map(item=>'<div class="item"><div><div class="item-title">'+esc(item.product)+'</div><div class="item-sub">'+item.quantity+' '+esc(item.unit)+' · '+(item.days<0?'Vervallen sinds '+Math.abs(item.days)+' dag(en)':item.days===0?'Vervalt vandaag':'Vervalt binnen '+item.days+' dag(en)')+'</div></div><button class="btn secondary small" data-stock-action="edit-product" data-id="'+esc((state.stock.find(p=>p.name===item.product)||{}).id||'')+'">Details</button></div>');
+ const rows=urgent.map(item=>'<div class="item"><div><div class="item-title">'+esc(item.product)+'</div><div class="item-sub">'+item.quantity+' '+esc(item.unit)+' · '+(item.days<0?'Vervallen sinds '+Math.abs(item.days)+' dag(en)':item.days===0?'Vervalt vandaag':'Vervalt binnen '+item.days+' dag(en)')+'</div></div><button class="btn secondary small" data-stock-action="edit-product" data-id="'+esc(item.productId||'')+'">Details</button></div>');
  const missingRows=missing.map(item=>'<div class="item"><div><div class="item-title">'+esc(item.product)+'</div><div class="item-sub">'+item.quantity+' '+esc(item.unit)+' · Geen vervaldatum ingevuld</div></div><button class="btn secondary small" data-stock-action="edit-product" data-id="'+esc(item.id)+'">Details</button></div>');
  box.innerHTML=rows.concat(missingRows).join('')||'<div class="empty">Geen batches met een naderende vervaldatum of ontbrekende datum gevonden.</div>';
 }
