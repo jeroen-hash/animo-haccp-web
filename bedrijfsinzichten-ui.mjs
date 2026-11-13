@@ -337,3 +337,6 @@ style.textContent += `
   #business-insights .page-head button { width:100%; }
 }`;
 document.head.appendChild(style);
+
+/* Navigatiebeveiliging: toon exact één hoofdmodule tegelijk. */
+style.textContent += `\n.page:not(.active){display:none!important;visibility:hidden!important;pointer-events:none!important}\n.page.active{display:block!important;visibility:visible!important;pointer-events:auto!important}\n`;
