@@ -18,7 +18,7 @@ function createWorkerHarness(cacheNames = []) {
   const caches = {
     keys: async () => [...cacheNames],
     delete: async name => { deleted.push(name); return true; },
-    open: async () => ({ addAll: async () => {}, add: async () => {} }),
+    open: async () => ({ addAll: async () => {}, add: async () => {}, put: async () => {} }),
     match: async () => null,
   };
   vm.runInNewContext(workerSource, { self, caches, URL, console, fetch: async () => ({ ok: true, clone() { return this; } }) });
@@ -70,13 +70,15 @@ test("service worker never intercepts same-origin Supabase API requests", () => 
 });
 
 
-test("service worker caches ES modules so app modules can be reused offline", () => {
+test("service worker caches ES modules so app modules can be reused offline", async () => {
   const harness = createWorkerHarness([EXPECTED_CACHE]);
   const fetchHandler = harness.listeners.get("fetch");
   let intercepted = false;
+  let responsePromise;
   fetchHandler({
     request: { method: "GET", url: "https://app.animo-apps.com/voedselverspilling-ui.mjs", mode: "cors" },
-    respondWith: () => { intercepted = true; },
+    respondWith: promise => { intercepted = true; responsePromise = promise; },
   });
   assert.equal(intercepted, true, "ES module requests must use the cache-aware fetch handler");
+  await responsePromise;
 });

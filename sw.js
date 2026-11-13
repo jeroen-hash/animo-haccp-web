@@ -35,9 +35,9 @@ self.addEventListener('fetch',event=>{
     return;
   }
   if(/\.(?:js|mjs|css|png|jpg|jpeg|svg|webp|woff2?)$/i.test(url.pathname)){
-    event.respondWith(caches.match(request).then(cached=>cached||fetch(request).then(response=>{
-      if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy))}
+    event.respondWith(fetch(request).then(async response=>{
+      if(response.ok){const copy=response.clone();const cache=await caches.open(CACHE);await cache.put(request,copy)}
       return response;
-    })));
+    }).catch(()=>caches.match(request)));
   }
 });
