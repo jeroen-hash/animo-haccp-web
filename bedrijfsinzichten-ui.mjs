@@ -281,4 +281,59 @@ style.textContent = `
 #business-insights .bi-menu-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}#business-insights .bi-menu-stats>div{padding:12px;background:#f7faf8;border:1px solid #e0e8e2;border-radius:10px;min-width:0}#business-insights .bi-menu-stats small{display:block;color:#65736a;font-size:11px}#business-insights .bi-menu-stats strong{display:block;margin-top:5px;color:#174d34;font-size:18px;overflow-wrap:anywhere}
 @media(max-width:800px){#business-insights .bi-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#business-insights .bi-grid{grid-template-columns:1fr}#business-insights .bi-wide{grid-column:auto}#business-insights .bi-menu-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#business-insights .bi-bar-label{display:block}#business-insights .bi-bar-label span{display:block;text-align:left;margin-top:3px}#business-insights .bi-trend{grid-template-columns:repeat(3,minmax(0,1fr))}}
 `;
+
+/* Responsive correcties: voorkom dat teksten en kaarten buiten beeld vallen */
+style.textContent += `
+#business-insights,
+#business-insights * { box-sizing:border-box; }
+#business-insights { width:100%; max-width:100%; min-width:0; overflow-x:clip; }
+#business-insights .page-head { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px; min-width:0; }
+#business-insights .page-head>div { flex:1 1 240px; min-width:0; }
+#business-insights .page-head h1,
+#business-insights .page-head p,
+#business-insights h2,
+#business-insights .bi-notice,
+#business-insights .bi-muted,
+#business-insights .bi-footnote { overflow-wrap:anywhere; word-break:normal; }
+#business-insights .page-head button { flex:0 0 auto; max-width:100%; white-space:normal; }
+#business-insights .bi-filters { display:flex; flex-wrap:wrap; align-items:center; min-width:0; }
+#business-insights .bi-filters select { flex:1 1 220px; width:100%; max-width:100%; min-width:0; }
+#business-insights .bi-stats,
+#business-insights .bi-grid,
+#business-insights .bi-menu-stats { width:100%; min-width:0; }
+#business-insights .bi-stat,
+#business-insights .bi-grid>.card,
+#business-insights .bi-menu-stats>div { min-width:0; max-width:100%; }
+#business-insights .bi-stat small { line-height:1.4; overflow-wrap:anywhere; }
+#business-insights .bi-stat strong { line-height:1.2; overflow-wrap:anywhere; word-break:break-word; }
+#business-insights .bi-bar-label { display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:4px 10px; min-width:0; }
+#business-insights .bi-bar-label strong,
+#business-insights .bi-bar-label span { min-width:0; max-width:100%; overflow-wrap:anywhere; text-align:left; }
+#business-insights .bi-bar-track { width:100%; }
+#business-insights .bi-trend { min-width:0; }
+#business-insights .bi-month { overflow-wrap:anywhere; }
+#business-insights .bi-month-value { max-width:100%; overflow-wrap:anywhere; }
+@media(max-width:600px) {
+  #business-insights .bi-stats { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  #business-insights .bi-stat { padding:11px; }
+  #business-insights .bi-stat strong { font-size:clamp(16px,5vw,22px); }
+  #business-insights .bi-grid { grid-template-columns:minmax(0,1fr); gap:12px; }
+  #business-insights .bi-wide { grid-column:auto; }
+  #business-insights .bi-grid>.card { padding:14px; }
+  #business-insights .bi-grid h2 { font-size:17px; line-height:1.3; }
+  #business-insights .bi-filters { align-items:stretch; flex-direction:column; gap:7px; }
+  #business-insights .bi-filters select { min-width:0; }
+  #business-insights .bi-bar-label { display:block; }
+  #business-insights .bi-bar-label span { display:block; margin-top:3px; }
+  #business-insights .bi-menu-stats { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  #business-insights .bi-menu-stats>div { padding:10px; }
+  #business-insights .bi-menu-stats strong { font-size:16px; }
+  #business-insights .bi-trend { grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+}
+@media(max-width:360px) {
+  #business-insights .bi-stats,
+  #business-insights .bi-menu-stats { grid-template-columns:minmax(0,1fr); }
+  #business-insights .bi-trend { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  #business-insights .page-head button { width:100%; }
+}`;
 document.head.appendChild(style);
