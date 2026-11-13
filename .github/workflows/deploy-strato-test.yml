@@ -120,4 +120,4 @@ jobs:
           bye
           LFTP
 
-# Trigger test-only publication for the latest menu profitability branch revision.
+# Trigger test-only publication for phase 1 HACCP modules.
