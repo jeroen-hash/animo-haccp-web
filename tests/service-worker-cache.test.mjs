@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
 const workerSource = readFileSync(new URL("../sw.js", import.meta.url), "utf8");
-const EXPECTED_CACHE = "animo-haccp-shell-v6";
+const EXPECTED_CACHE = "animo-haccp-shell-v7";
 
 function createWorkerHarness(cacheNames = []) {
   const listeners = new Map();
@@ -67,4 +67,16 @@ test("service worker never intercepts same-origin Supabase API requests", () => 
     });
     assert.equal(intercepted, false, "Supabase API path must bypass the service worker: " + path);
   }
+});
+
+
+test("service worker caches ES modules so app modules can be reused offline", () => {
+  const harness = createWorkerHarness([EXPECTED_CACHE]);
+  const fetchHandler = harness.listeners.get("fetch");
+  let intercepted = false;
+  fetchHandler({
+    request: { method: "GET", url: "https://app.animo-apps.com/voedselverspilling-ui.mjs", mode: "cors" },
+    respondWith: () => { intercepted = true; },
+  });
+  assert.equal(intercepted, true, "ES module requests must use the cache-aware fetch handler");
 });
