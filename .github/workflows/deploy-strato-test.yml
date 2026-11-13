@@ -5,6 +5,7 @@ on:
     branches:
       - feature/voedselverspilling-module
       - feature/menurendabiliteit-module
+      - feature/animo-ai-test-integration
     paths:
       - 'index.html'
       - 'sw.js'
@@ -50,35 +51,26 @@ jobs:
           echo "Bestanden voor test.animo-apps.com:"
           find out/test -maxdepth 2 -type f -print
 
-      - name: Testconfiguratie uitsluitend in testbuild injecteren
+      - name: Testconfiguratie controleren (nooit productie injecteren)
         if: steps.guard.outputs.present == 'true'
         run: |
           set -euo pipefail
-          test -f index.html
-          test -f sw.js
-          test -d images
           node --input-type=module <<'NODE'
-          import { readFileSync, writeFileSync } from 'node:fs';
+          import { readFileSync } from 'node:fs';
           const file = 'out/test/index.html';
-          const source = readFileSync(file, 'utf8');
-          const productionConfig = "const PUBLIC_SUPABASE_CONFIG={url:'https://zimzsovvtdmrthrflkgm.supabase.co',key:'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k'};;";
-          const testConfig = "const PUBLIC_SUPABASE_CONFIG={url:'https://xwjcwravfeldndwlugai.supabase.co',key:'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI'};;";
-          const productionUrl = 'https://zimzsovvtdmrthrflkgm.supabase.co';
-          const testUrl = 'https://xwjcwravfeldndwlugai.supabase.co';
-          const productionKey = 'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k';
-          const testKey = 'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI';
-          if (!source.includes(productionConfig)) throw new Error('Productieconfiguratie niet exact gevonden; testdeploy afgebroken.');
-          let testBuild = source.replace(productionConfig, testConfig);
-          // Ook eventuele losse productie-endpoints (zoals bezoekregistratie) uitsluitend in de testkopie omzetten.
-          testBuild = testBuild.split(productionUrl).join(testUrl);
-          testBuild = testBuild.split(productionKey).join(testKey);
-          writeFileSync(file, testBuild);
           const built = readFileSync(file, 'utf8');
-          if (!built.includes(testUrl) || !built.includes(testKey) || built.includes(productionUrl) || built.includes(productionKey)) {
-            throw new Error('Testbuild bevat nog productieconfiguratie of mist de testconfiguratie.');
+          const testUrl = 'https://zimzsovvtdmrthrflkgm.supabase.co';
+          const testKey = 'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k';
+          const liveUrl = 'https://xwjcwravfeldndwlugai.supabase.co';
+          const liveKey = 'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI';
+          if (!built.includes(testUrl) || !built.includes(testKey)) {
+            throw new Error('De testbuild mist de bevestigde Supabase-testconfiguratie.');
+          }
+          if (built.includes(liveUrl) || built.includes(liveKey)) {
+            throw new Error('Live Supabase-configuratie gevonden in testbuild. Publicatie afgebroken.');
           }
           NODE
-          echo "Broncode behoudt productieconfiguratie; alleen out/test/index.html gebruikt de testdatabase."
+          echo "Testbuild gebruikt uitsluitend Supabase-testproject zimzsovvtdmrthrflkgm; liveproject xwjcwravfeldndwlugai is uitgesloten."
 
       - name: Release- en back-upworkflow controleren
         run: |
