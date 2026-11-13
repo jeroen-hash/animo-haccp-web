@@ -2689,6 +2689,14 @@ const BUSINESS_KEY='favv-business-v1:'+BUSINESS_ID;
 const ACTIVE_KEY='favv-active-business-v1';
 const ROLE_KEY='animo-test-selected-role';
 const PROFILE={id:BUSINESS_ID,businessName:'ANIMO Testomgeving',enterpriseNumber:'TEST-0000',businessType:'Testomgeving',address:'',phone:'',ownerName:'ANIMO Test',ownerEmail:'test@animo-apps.com',createdAt:'2026-01-01T00:00:00.000Z'};
+const previousBusiness=localStorage.getItem(ACTIVE_KEY);
+localStorage.setItem(ACTIVE_KEY,BUSINESS_ID);
+if(previousBusiness!==BUSINESS_ID&&!sessionStorage.getItem('animo-test-sandbox-ready')){
+  sessionStorage.setItem('animo-test-sandbox-ready','1');
+  if(!localStorage.getItem(BUSINESS_KEY))localStorage.setItem(BUSINESS_KEY,JSON.stringify(PROFILE));
+  location.reload();
+  return;
+}
 try{
   localStorage.setItem(ACTIVE_KEY,BUSINESS_ID);
   if(!localStorage.getItem(BUSINESS_KEY))localStorage.setItem(BUSINESS_KEY,JSON.stringify(PROFILE));
@@ -2722,6 +2730,8 @@ function activate(role){
   window.FAVVCloudBusiness=business;
   window.FAVVCloudUser=user;
   window.FAVVCloudRole=role;
+  // In test mode the subscription check is intentionally local and always allows access.
+  window.refreshSubscriptionStatus=async()=>({accessAllowed:true,status:'test',isTestMode:true});
   if(typeof window.FAVVStartSupabaseSession==='function')window.FAVVStartSupabaseSession(user,business);
   const title=panel.querySelector('strong');
   if(title)title.textContent='ANIMO · Testmodus — '+(role==='owner'?'Eigenaar':role==='manager'?'Manager':'Medewerker');
