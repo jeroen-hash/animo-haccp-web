@@ -21,6 +21,10 @@ test('production deploy checks migration source files but never connects to or c
   assert.ok(workflow.includes('Geen verbinding met live DB en geen SQL/migratie wordt uitgevoerd.'));
   assert.ok(!workflow.includes('PRODUCTION_DATABASE_URL'));
   assert.ok(!workflow.includes('PRODUCTION_DATABASE_PASSWORD'));
+  const upload = workflow.indexOf('      - name: Uploaden via SFTP');
+  const lastValidation = workflow.lastIndexOf('      - name: Validate UBL unit dropdown mobile change handling');
+  assert.ok(upload > lastValidation, 'SFTP upload must be after all validation steps');
+  assert.ok(!workflow.slice(upload).includes('      - name: '), 'SFTP upload must be the final workflow step');
   assert.ok(!/supabase\\s+db\\s+push(?![^\\n]*--dry-run)/.test(workflow), 'production deploy must not run a mutating db push');
   assert.ok(!workflow.includes('postgres.zimzsovvtdmrthrflkgm'));
   assert.ok(workflow.includes('https://xwjcwravfeldndwlugai.supabase.co'));
