@@ -68,4 +68,5 @@ test('live verification workflow is strictly read-only', () => {
   assert.ok(!dryRun.includes('lftp'));
   assert.ok(dryRun.includes('postgres.xwjcwravfeldndwlugai'));
   assert.ok(dryRun.includes('PRODUCTION_DATABASE_PASSWORD'));
+  assert.ok(!dryRun.includes('Connection metadata (no password)'));
 });
