@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 jobs:
-  test-local-role-switcher:
+  test-restored-login:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -35,18 +35,18 @@ jobs:
         run: |
           for attempt in $(seq 1 18); do
             if curl --fail --silent --show-error https://test.animo-apps.com/ -o /tmp/animo-test.html; then
-              if grep -q 'animo-test-role-panel' /tmp/animo-test.html; then
-                echo "Testversie met rolkeuze is gepubliceerd."
+              if grep -q 'cloudLoginForm' /tmp/animo-test.html && ! grep -q 'ANIMO TEST ROLE SWITCHER' /tmp/animo-test.html; then
+                echo "Testversie met gewone login is gepubliceerd."
                 exit 0
               fi
             fi
             echo "Testdeploy nog niet zichtbaar (poging $attempt/18)."
             sleep 10
           done
-          echo "::error::De gepubliceerde testversie met rolkeuze werd niet gevonden."
+          echo "::error::De gepubliceerde testversie met gewone login werd niet gevonden."
           exit 1
 
-      - name: Test eigenaar, manager en medewerker zonder login
+      - name: Test gewone e-mail- en wachtwoordlogin
         env:
           ANIMO_TEST_URL: https://test.animo-apps.com
         run: node tests/test-mode.playwright.mjs
