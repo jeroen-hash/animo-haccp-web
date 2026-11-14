@@ -100,7 +100,7 @@ jobs:
           if (upload < 0 || finalValidation < 0 || upload < finalValidation) {
             throw new Error('Production SFTP upload must occur only after all validation steps.');
           }
-          if (workflow.slice(upload).includes('      - name: ')) {
+          if ((/\\n      - name: /.test(workflow.slice(upload)))) {
             throw new Error('No workflow step may run after the production SFTP upload.');
           }
           NODE
