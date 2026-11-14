@@ -1,0 +1,89 @@
+name: ANIMO productiebuild voorbereiden (zonder publiceren)
+
+on:
+  push:
+    branches: [feature/phase1-haccp-completion]
+    paths:
+      - 'index.html'
+      - 'sw.js'
+      - '*.mjs'
+      - 'images/**'
+      - '.github/workflows/preview-production-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-only:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository ophalen
+        uses: actions/checkout@v4
+
+      - name: Productiebuild lokaal samenstellen (geen migraties of upload)
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf out
+          mkdir -p out/app/images
+          cp index.html sw.js out/app/
+          cp ./*.mjs out/app/
+          cp -r images/. out/app/images/
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const file = 'out/app/index.html';
+          let built = readFileSync(file, 'utf8');
+          const testUrl = 'https://zimzsovvtdmrthrflkgm.supabase.co';
+          const testKey = 'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k';
+          const liveUrl = 'https://xwjcwravfeldndwlugai.supabase.co';
+          const liveKey = 'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI';
+          const sourceConfig = "const PUBLIC_SUPABASE_CONFIG={url:'" + testUrl + "',key:'" + testKey + "'};;";
+          const liveConfig = "const PUBLIC_SUPABASE_CONFIG={url:'" + liveUrl + "',key:'" + liveKey + "'};;";
+          if (!built.includes(sourceConfig)) throw new Error('Verwachte testbronconfiguratie ontbreekt; build gestopt.');
+          built = built.replace(sourceConfig, liveConfig);
+          built = built.split(testUrl).join(liveUrl).split(testKey).join(liveKey);
+          const forbidden = [testUrl, testKey, 'animo-test-sandbox-local', 'test.animo-apps.com'];
+          for (const value of forbidden) {
+            if (built.includes(value)) throw new Error('Testreferentie gevonden in productiebuild: ' + value);
+          }
+          if (!built.includes(liveUrl) || !built.includes(liveKey)) throw new Error('Liveconfiguratie ontbreekt.');
+          writeFileSync(file, built);
+          console.log('Productiebuild-configuratie gecontroleerd; bron/testbestanden niet gewijzigd.');
+          NODE
+
+      - name: Syntaxcontroles op gebouwde bestanden
+        run: |
+          set -euo pipefail
+          for file in out/app/*.mjs; do node --check "$file"; done
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { spawnSync } from 'node:child_process';
+          const html = readFileSync('out/app/index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)];
+          let checked = 0;
+          for (const match of scripts) {
+            const attrs = match[1] || '';
+            const type = (attrs.match(/\\btype=["']([^"']+)["']/i) || [])[1] || '';
+            if (type && !/^(text\\/javascript|application\\/javascript|module)$/i.test(type)) continue;
+            const source = match[2] || '';
+            if (!source.trim()) continue;
+            const file = '/tmp/animo-prod-build-' + checked + '.js';
+            writeFileSync(file, source);
+            const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
+            if (result.status !== 0) {
+              process.stderr.write(result.stderr || result.stdout || 'Inline script syntaxfout');
+              process.exit(result.status || 1);
+            }
+            checked++;
+          }
+          console.log('Gebouwde inline scripts syntax gecontroleerd:', checked);
+          NODE
+
+      - name: Productiebuild als controle-artifact bewaren
+        uses: actions/upload-artifact@v4
+        with:
+          name: animo-haccp-production-preview
+          path: out/app/
+          if-no-files-found: error
+          retention-days: 7
