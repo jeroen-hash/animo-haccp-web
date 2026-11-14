@@ -78,7 +78,7 @@ jobs:
           LIVE_BASELINE
 
           ANIMO_PRODUCTION_DB_URL="$(python3 - <<'PY'
-          import os
+          import os, sys
           from urllib.parse import quote, unquote, urlsplit, urlunsplit, parse_qs, urlencode
           parsed = urlsplit(os.environ["DATABASE_URL"])
           if parsed.scheme not in ("postgres", "postgresql") or not parsed.hostname:
@@ -88,7 +88,7 @@ jobs:
           username = unquote(parsed.username or "")
           host = (parsed.hostname or "").lower()
           database = unquote(parsed.path.lstrip("/"))
-          print(f"Connection metadata (no password): scheme={parsed.scheme}, username={username}, host={host}, database={database}")
+          print(f"Connection metadata (no password): scheme={parsed.scheme}, username={username}, host={host}, database={database}", file=sys.stderr)
           pooler_target = username == "postgres.xwjcwravfeldndwlugai" and host.endswith(".pooler.supabase.com")
           direct_target = username == "postgres" and host == "db.xwjcwravfeldndwlugai.supabase.co"
           if not (pooler_target or direct_target):
