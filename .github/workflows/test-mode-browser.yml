@@ -35,7 +35,7 @@ jobs:
         run: |
           for attempt in $(seq 1 18); do
             if curl --fail --silent --show-error https://test.animo-apps.com/ -o /tmp/animo-test.html; then
-              if grep -q 'animo-test-role-switcher' /tmp/animo-test.html; then
+              if grep -q 'animo-test-role-panel' /tmp/animo-test.html; then
                 echo "Testversie met rolkeuze is gepubliceerd."
                 exit 0
               fi
