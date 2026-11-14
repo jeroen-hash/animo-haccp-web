@@ -156,42 +156,7 @@ jobs:
           echo "Verwijzingen naar het oude domein in de te uploaden bestanden:"
           grep -rIn "freelance-animo" out || echo "Geen gevonden."
 
-      - name: Uploaden via SFTP
-        if: steps.guard.outputs.present == 'true'
-        env:
-          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
-          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
-          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
-        run: |
-          set -e
-          sudo apt-get update -y
-          sudo apt-get install -y lftp
-          # Controleer de STRATO SSH-hostkey tegen de fingerprint die
-          # tijdens de eerste SFTP-verbinding in FileZilla is waargenomen.
-          mkdir -p "$HOME/.ssh"
-          chmod 700 "$HOME/.ssh"
-          ssh-keyscan -T 15 -p 22 -t ed25519 "$SFTP_HOST" > "$RUNNER_TEMP/strato_known_hosts" 2>/dev/null
-          test -s "$RUNNER_TEMP/strato_known_hosts"
-          ACTUAL_FINGERPRINT="$(ssh-keygen -lf "$RUNNER_TEMP/strato_known_hosts" -E sha256 | awk '{print $2}')"
-          EXPECTED_FINGERPRINT="SHA256:1gx2w8Rtv3wCgi7Jh8myf/KVd72cRQbow03UP8P095Q"
-          if [ "$ACTUAL_FINGERPRINT" != "$EXPECTED_FINGERPRINT" ]; then
-            echo "::error::STRATO SSH-hostkey fingerprint komt niet overeen. Upload afgebroken."
-            exit 1
-          fi
-          chmod 600 "$RUNNER_TEMP/strato_known_hosts"
-          # Alleen uploaden, nooit verwijderen op de server. SSH weigert
-          # elke hostkey die niet overeenkomt met de gecontroleerde key.
-          lftp -e "set sftp:connect-program 'ssh -a -x -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/strato_known_hosts'" -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<'LFTP'
-          set net:max-retries 3
-          set net:timeout 30
-          mirror -R --verbose out/landing /landing
-          # Publiceer de app afzonderlijk op de documentroot van app.animo-apps.com.
-          # Geen --delete: bestaande bestanden worden niet automatisch verwijderd.
-          mirror -R --verbose out/app /app
-          bye
-          LFTP
-
-      - name: Validate atomic recipe stock consumption
+- name: Validate atomic recipe stock consumption
         run: |
           node <<'NODE'
           const fs = require('node:fs');
@@ -306,3 +271,39 @@ jobs:
           if (!html.includes('function convertRecipeQuantity(')) throw new Error('Shared unit conversion helper is missing.');
           console.log('UBL mobile change-handler test passed.');
           NODE
+
+      # Upload is deliberately the final step: every syntax and regression check must pass first.
+      - name: Uploaden via SFTP
+        if: steps.guard.outputs.present == 'true'
+        env:
+          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
+          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
+          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+        run: |
+          set -e
+          sudo apt-get update -y
+          sudo apt-get install -y lftp
+          # Controleer de STRATO SSH-hostkey tegen de fingerprint die
+          # tijdens de eerste SFTP-verbinding in FileZilla is waargenomen.
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          ssh-keyscan -T 15 -p 22 -t ed25519 "$SFTP_HOST" > "$RUNNER_TEMP/strato_known_hosts" 2>/dev/null
+          test -s "$RUNNER_TEMP/strato_known_hosts"
+          ACTUAL_FINGERPRINT="$(ssh-keygen -lf "$RUNNER_TEMP/strato_known_hosts" -E sha256 | awk '{print $2}')"
+          EXPECTED_FINGERPRINT="SHA256:1gx2w8Rtv3wCgi7Jh8myf/KVd72cRQbow03UP8P095Q"
+          if [ "$ACTUAL_FINGERPRINT" != "$EXPECTED_FINGERPRINT" ]; then
+            echo "::error::STRATO SSH-hostkey fingerprint komt niet overeen. Upload afgebroken."
+            exit 1
+          fi
+          chmod 600 "$RUNNER_TEMP/strato_known_hosts"
+          # Alleen uploaden, nooit verwijderen op de server. SSH weigert
+          # elke hostkey die niet overeenkomt met de gecontroleerde key.
+          lftp -e "set sftp:connect-program 'ssh -a -x -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/strato_known_hosts'" -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<'LFTP'
+          set net:max-retries 3
+          set net:timeout 30
+          mirror -R --verbose out/landing /landing
+          # Publiceer de app afzonderlijk op de documentroot van app.animo-apps.com.
+          # Geen --delete: bestaande bestanden worden niet automatisch verwijderd.
+          mirror -R --verbose out/app /app
+          bye
+          LFTP
