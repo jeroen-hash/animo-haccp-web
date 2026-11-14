@@ -35,141 +35,31 @@ jobs:
             echo "present=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Supabase CLI installeren
-        if: steps.guard.outputs.present == 'true'
-        uses: supabase/setup-cli@v3
-
-      - name: Controleer livehistoriek en pas uitsluitend ontbrekende ANIMO-modulemigraties toe
+      - name: Controleer releasemigraties zonder de live database te wijzigen
         if: steps.guard.outputs.present == 'true'
         shell: bash
-        env:
-          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
-          DATABASE_PASSWORD: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
         run: |
           set -euo pipefail
-          test -n "$DATABASE_URL"
-          test -n "$DATABASE_PASSWORD"
-          release_dir="$RUNNER_TEMP/animo-module-release"
-          mkdir -p "$release_dir"
-          cd "$release_dir"
-          supabase init
-          mkdir -p supabase/migrations
-          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261111222221_create_food_waste_entries.sql supabase/migrations/
-          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261111222452_tighten_food_waste_table_grants.sql supabase/migrations/
-          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261111223111_harden_food_waste_audit_and_index.sql supabase/migrations/
-          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261112155500_create_menu_profitability_private_data.sql supabase/migrations/
-          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261112155729_allow_manager_updates_menu_profitability_data.sql supabase/migrations/
-          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261112163255_add_atomic_menu_profitability_manager_save.sql supabase/migrations/
-          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261112174321_correct_food_waste_comment_and_index_menu_profitability_creator.sql supabase/migrations/
-          ANIMO_PRODUCTION_DB_URL="$(python3 - <<'PY'
-          import os
-          from urllib.parse import parse_qs, quote, unquote, urlencode, urlsplit, urlunsplit
-          parsed = urlsplit(os.environ["DATABASE_URL"])
-          if parsed.scheme not in ("postgres", "postgresql") or not parsed.hostname:
-              raise SystemExit("Production database URL is not a PostgreSQL URI.")
-          if parsed.password:
-              raise SystemExit("Remove the password from PRODUCTION_DATABASE_URL; use PRODUCTION_DATABASE_PASSWORD.")
-          username = unquote(parsed.username or "")
-          database = unquote(parsed.path.lstrip("/"))
-          host = (parsed.hostname or "").lower()
-          pooler_target = username == "postgres.xwjcwravfeldndwlugai" and host.endswith(".pooler.supabase.com")
-          direct_target = username == "postgres" and host == "db.xwjcwravfeldndwlugai.supabase.co"
-          if not (pooler_target or direct_target):
-              raise SystemExit("PRODUCTION_DATABASE_URL does not target live project xwjcwravfeldndwlugai; refusing to connect.")
-          if database != "postgres":
-              raise SystemExit("Production migration target guard failed: expected the postgres database.")
-          query = parse_qs(parsed.query, keep_blank_values=True)
-          if query.get("sslmode") and query["sslmode"][0] != "require":
-              raise SystemExit("Production database connection must require SSL.")
-          query["sslmode"] = ["require"]
-          netloc = f"{quote(username, safe='')}:{quote(os.environ['DATABASE_PASSWORD'], safe='')}@{parsed.hostname}"
-          if parsed.port:
-              netloc += f":{parsed.port}"
-          print(urlunsplit((parsed.scheme, netloc, parsed.path, urlencode(query, doseq=True), parsed.fragment)))
-          PY
-          )"
-          echo "::add-mask::$ANIMO_PRODUCTION_DB_URL"
-          echo "Controleer eerst de bestaande live-migratiehistoriek (22 herstelmigraties + 7 ANIMO-modulemigraties)."
-          supabase migration list --remote="$ANIMO_PRODUCTION_DB_URL" | tee "$RUNNER_TEMP/animo-remote-migration-history.txt"
-          while IFS=' ' read -r version migration_name; do
-            [ -n "$version" ] || continue
-            grep -Fq "$version" "$RUNNER_TEMP/animo-remote-migration-history.txt" || {
-              echo "::error::Verwachte bestaande productiemigratie ontbreekt: $version. Geen placeholder of nieuwe migratie wordt toegepast."
-              exit 1
-            }
-          done <<'REMOTE_MIGRATIONS'
-20261107215657 snapshot_legacy_public_data_before_recovery_rebuild
-20261107215721 snapshot_legacy_database_object_definitions
-20261107215940 archive_legacy_haccp_tables_before_saas_recovery_rebuild
-20261107220001 rebuild_saas_core_tables_in_recovery_environment
-20261107220027 restore_saas_indexes_rls_and_core_access_helpers
-20261107220100 restore_saas_account_and_app_data_rpc_functions
-20261107220126 restore_onboarding_and_website_rpc_functions
-20261107220143 restore_platform_dashboard_billing_and_onboarding_rpcs
-20261107220204 restore_complete_onboarding_activation_rpc
-20261107220214 restore_business_default_app_state_trigger
-20261107220302 add_legacy_onboarding_activation_rpc_compatibility
-20261107220329 harden_recovery_rpc_grants_and_archive_legacy_functions
-20261107220741 restore_private_onboarding_storage_buckets_and_policies
-20261107220809 harden_archived_haccp_seed_function_search_path
-20261107220934 align_website_visit_identity_with_production
-20261107221010 sync_exact_live_onboarding_activation_functions
-20261107221015 sync_exact_live_rpc_functions_batch_1
-20261107221018 sync_exact_live_rpc_functions_batch_2
-20261107221020 sync_exact_live_rpc_functions_batch_3
-20261107221023 sync_exact_live_rpc_functions_batch_4
-20261107221027 sync_exact_live_onboarding_rpc_functions_final_batch
-20261107221035 sync_exact_private_business_access_function
-          REMOTE_MIGRATIONS
-          # Temporary no-op files align the isolated release bundle with the 22 recovery migrations
-          # already recorded on the live database. The preflight above verifies every live
-          # recovery version; these files are skipped and are never committed.
-          while IFS=' ' read -r version migration_name; do
-            [ -n "$version" ] || continue
-            placeholder="supabase/migrations/${version}_${migration_name}.sql"
-            if [ ! -f "$placeholder" ]; then
-              cat > "$placeholder" <<'SQL'
-          -- Already applied on production before this isolated module release.
-          -- Temporary history-alignment placeholder; db push must skip this version.
-          select 1;
-          SQL
-            fi
-          done <<'REMOTE_MIGRATIONS'
-20261107215657 snapshot_legacy_public_data_before_recovery_rebuild
-20261107215721 snapshot_legacy_database_object_definitions
-20261107215940 archive_legacy_haccp_tables_before_saas_recovery_rebuild
-20261107220001 rebuild_saas_core_tables_in_recovery_environment
-20261107220027 restore_saas_indexes_rls_and_core_access_helpers
-20261107220100 restore_saas_account_and_app_data_rpc_functions
-20261107220126 restore_onboarding_and_website_rpc_functions
-20261107220143 restore_platform_dashboard_billing_and_onboarding_rpcs
-20261107220204 restore_complete_onboarding_activation_rpc
-20261107220214 restore_business_default_app_state_trigger
-20261107220302 add_legacy_onboarding_activation_rpc_compatibility
-20261107220329 harden_recovery_rpc_grants_and_archive_legacy_functions
-20261107220741 restore_private_onboarding_storage_buckets_and_policies
-20261107220809 harden_archived_haccp_seed_function_search_path
-20261107220934 align_website_visit_identity_with_production
-20261107221010 sync_exact_live_onboarding_activation_functions
-20261107221015 sync_exact_live_rpc_functions_batch_1
-20261107221018 sync_exact_live_rpc_functions_batch_2
-20261107221020 sync_exact_live_rpc_functions_batch_3
-20261107221023 sync_exact_live_rpc_functions_batch_4
-20261107221027 sync_exact_live_onboarding_rpc_functions_final_batch
-20261107221035 sync_exact_private_business_access_function
-          REMOTE_MIGRATIONS
-          echo "Controleer welke uitsluitend modulemigraties klaarstaan voor productie..."
-          supabase db push --dry-run --yes --remote="$ANIMO_PRODUCTION_DB_URL"
-          echo "Pas de zeven modulemigraties toe; alle andere bestaande productiemigraties blijven buiten deze geïsoleerde release."
-          supabase db push --yes --remote="$ANIMO_PRODUCTION_DB_URL"
-          supabase migration list --remote="$ANIMO_PRODUCTION_DB_URL" | tee "$RUNNER_TEMP/animo-module-migration-list.txt"
-          for version in 20261111222221 20261111222452 20261111223111 20261112155500 20261112155729 20261112163255 20261112174321; do
-            grep -Fq "$version" "$RUNNER_TEMP/animo-module-migration-list.txt" || {
-              echo "::error::Productiemigratie ontbreekt na db push: $version"
+          # De database-audit bevestigde dat deze zeven modulemigraties al in live geregistreerd zijn.
+          # Deze deploy controleert alleen dat de bronbestanden aanwezig zijn; ze worden niet opnieuw toegepast.
+          for migration in \
+            20261111222221_create_food_waste_entries.sql \
+            20261111222452_tighten_food_waste_table_grants.sql \
+            20261111223111_harden_food_waste_audit_and_index.sql \
+            20261112155500_create_menu_profitability_private_data.sql \
+            20261112155729_allow_manager_updates_menu_profitability_data.sql \
+            20261112163255_add_atomic_menu_profitability_manager_save.sql \
+            20261112174321_correct_food_waste_comment_and_index_menu_profitability_creator.sql; do
+            test -f "supabase/migrations/$migration" || {
+              echo "::error::Releasemigratie ontbreekt in de repository: $migration"
               exit 1
             }
           done
-          unset DATABASE_URL DATABASE_PASSWORD ANIMO_PRODUCTION_DB_URL
+          echo "Alle zeven modulemigraties zijn aanwezig. Geen verbinding met live DB en geen SQL/migratie wordt uitgevoerd."
+          if grep -Eq 'postgres\\.zimzsovvtdmrthrflkgm' .github/workflows/deploy-strato.yml; then
+            echo "::error::Testdatabaseverwijzing gevonden in productie-workflow."
+            exit 1
+          fi
 
       - name: Mappen voor landing en app klaarzetten
         if: steps.guard.outputs.present == 'true'
