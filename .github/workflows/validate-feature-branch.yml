@@ -409,3 +409,5 @@ jobs:
           }
           console.log('Legacy stock batch migration and safe consumption tests passed.');
           NODE
+      - name: Run all isolated application regression tests
+        run: node --test tests/*.test.mjs
