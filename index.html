@@ -1401,7 +1401,7 @@ window.FAVVGetSupabaseClient=()=>cloudClient;
 <script>
 (function(){'use strict';
 const ALLERGENS=['Glutenbevattende granen','Schaaldieren','Eieren','Vis','Aardnoten','Soja','Melk','Noten','Selderij','Mosterd','Sesamzaad','Zwaveldioxide en sulfieten','Lupine','Weekdieren'];
-const DEFAULTS={cleaning:[],temperatures:[],dishes:[],reports:[],stock:[],stockMovements:[],deliveries:[],recipes:[],productions:[],temperatureActions:[],goodsReceipts:[],pestLogs:[]};
+const DEFAULTS={cleaning:[],temperatures:[],dishes:[],reports:[],stock:[],stockMovements:[],deliveries:[],recipes:[],productions:[],temperatureActions:[],goodsReceipts:[],pestLogs:[],pestPlan:{plans:[{id:'floor-main',name:'Gelijkvloers',rooms:[],markers:[]}],activePlanId:'floor-main'}};
 // Pest plan is stored per business with its own map and placed control points.
 function normalizeStateCollections(value){
   const target=value&&typeof value==='object'&&!Array.isArray(value)?value:{};
