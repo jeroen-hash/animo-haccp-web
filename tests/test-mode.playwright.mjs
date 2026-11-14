@@ -42,8 +42,8 @@ try {
     const actualRole = await page.evaluate(() => window.FAVVCloudRole);
     assert.equal(actualRole, item.role, `Actieve testrol is fout: ${actualRole}`);
     const panelTitle = await page.locator('#animo-test-role-panel strong').innerText();
-    assert.match(panelTitle, new RegExp(item.label.replace(' (test)', '').replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\    const actual = (await page.locator('#sidebarRole').evaluate(el => el.textContent)).trim();
-    assert.equal(actual, item.label, `Roltekst voor ${item.role} is fout: ${actual}`);'), 'i'), `Rolpaneel toont verkeerde rol: ${panelTitle}`);
+    const expectedTitle = item.label.replace(' (test)', '').toLowerCase();
+    assert.ok(panelTitle.toLowerCase().includes(expectedTitle), `Rolpaneel toont verkeerde rol: ${panelTitle}`);
     const management = page.locator('[data-page="management"].manager-only').first();
     if (await management.count()) {
       assert.equal(await management.evaluate(el => getComputedStyle(el).display !== 'none'), item.visible, `Beheerrechten fout voor ${item.role}`);
