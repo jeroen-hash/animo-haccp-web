@@ -61,7 +61,7 @@ test('production release remains isolated to the seven verified ANIMO module mig
 
 test('live verification workflow is strictly read-only', () => {
   const dryRun = readFileSync('.github/workflows/preview-production-migrations.yml', 'utf8');
-  const commands = [...dryRun.matchAll(/^\\s*supabase db push[^\\n]*/gm)].map(match => match[0].trim());
+  const commands = dryRun.split(/\\r?\\n/).map(line => line.trim()).filter(line => line.startsWith('supabase db push'));
   assert.equal(commands.length, 1, 'only one db push command may exist in the verification workflow');
   assert.match(commands[0], /--dry-run/);
   assert.ok(!dryRun.includes('mirror -R'));
