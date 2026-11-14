@@ -29,6 +29,9 @@ on:
       - 'supabase/migrations/**'
       - '.github/workflows/validate-offline.yml'
       - '.github/workflows/validate-feature-branch.yml'
+      - '.github/workflows/deploy-strato.yml'
+      - '.github/workflows/deploy-strato-test.yml'
+      - 'docs/release-veiligheidsplan.md'
   workflow_dispatch:
 
 permissions:
