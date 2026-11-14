@@ -110,8 +110,7 @@ try {
 
   // Dagafsluiting bewaren; PDF-dialoog bewust niet openen.
   await page.locator('nav.nav button[data-page="reports"]').click();
-  page.once('dialog', dialog => dialog.accept());
-  // Vervang de bevestiging voor PDF door annuleren; het rapport zelf blijft bewaard.
+  // PDF openen overslaan; het rapport zelf blijft bewaard.
   page.once('dialog', dialog => dialog.dismiss());
   await page.locator('[data-action="create-day-report"]').click();
   await page.waitForTimeout(300);
