@@ -87,6 +87,8 @@ jobs:
               raise SystemExit("Remove the password from PRODUCTION_DATABASE_URL; use PRODUCTION_DATABASE_PASSWORD.")
           username = unquote(parsed.username or "")
           host = (parsed.hostname or "").lower()
+          database = unquote(parsed.path.lstrip("/"))
+          print(f"Connection metadata (no password): scheme={parsed.scheme}, username={username}, host={host}, database={database}")
           pooler_target = username == "postgres.xwjcwravfeldndwlugai" and host.endswith(".pooler.supabase.com")
           direct_target = username == "postgres" and host == "db.xwjcwravfeldndwlugai.supabase.co"
           if not (pooler_target or direct_target):
