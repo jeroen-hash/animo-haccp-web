@@ -192,3 +192,16 @@ Bij verdere inspectie bleek dat de bestaande productieworkflow de SFTP-upload v�
 - `main` staat nog steeds op `8a052850844255f67c456e2b10168626ae1d1d32`; de productiebranch is niet gewijzigd.
 
 **Belangrijk:** dit is alleen een wijziging aan de featurebranch-workflows en tests. Er is geen productie-uitrol gestart. De live migratie dry-run wacht nog steeds op correcte GitHub Actions-geheimen voor het live Supabase-project.
+
+
+## Laatste live dry-run opnieuw gecontroleerd — 14 november 2026
+
+De bestaande read-only workflow is opnieuw uitgevoerd (run [43592986596, poging 2](https://github.com/jeroen-hash/animo-haccp-web/actions/runs/43592986596)). De controle stopte veilig vóór de databaseverbinding met:
+
+`PRODUCTION_DATABASE_URL does not target live project xwjcwravfeldndwlugai; refusing to connect.`
+
+Dit bevestigt dat de GitHub Actions-secret op dit moment nog niet naar het liveproject verwijst. De databasehistoriek is in deze poging niet uitgelezen en er is geen dry-run tegen live uitgevoerd. Er is geen SQL uitgevoerd, geen migratie toegepast en geen livebestand geüpload.
+
+De testomgeving is wel gepubliceerd met succes (run [43620651587](https://github.com/jeroen-hash/animo-haccp-web/actions/runs/43620651587)). De volledige featurebranch-validatie is geslaagd (run [43620702994](https://github.com/jeroen-hash/animo-haccp-web/actions/runs/43620702994)).
+
+**Nog geblokkeerd:** pas de GitHub Actions-secrets `PRODUCTION_DATABASE_URL` en `PRODUCTION_DATABASE_PASSWORD` aan zodat ze allebei bij hetzelfde live Supabase-project `xwjcwravfeldndwlugai` horen. Gebruik voor de URL de Session Pooler-URI uit Supabase Connect, zonder wachtwoord in de URL; zet het databasewachtwoord afzonderlijk in de tweede secret. Deel het wachtwoord niet in ChatGPT.
