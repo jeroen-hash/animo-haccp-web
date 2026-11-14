@@ -85,12 +85,14 @@ jobs:
               raise SystemExit("Production database URL is not a PostgreSQL URI.")
           if parsed.password:
               raise SystemExit("Remove the password from PRODUCTION_DATABASE_URL; use PRODUCTION_DATABASE_PASSWORD.")
-          if unquote(parsed.username or "") != "postgres.xwjcwravfeldndwlugai":
-              raise SystemExit("Live project target guard failed.")
+          username = unquote(parsed.username or "")
+          host = (parsed.hostname or "").lower()
+          pooler_target = username == "postgres.xwjcwravfeldndwlugai" and host.endswith(".pooler.supabase.com")
+          direct_target = username == "postgres" and host == "db.xwjcwravfeldndwlugai.supabase.co"
+          if not (pooler_target or direct_target):
+              raise SystemExit("Live project target guard failed: URL is not an exact live-project pooler or direct endpoint.")
           if unquote(parsed.path.lstrip("/")) != "postgres":
               raise SystemExit("Expected the postgres database.")
-          if not parsed.hostname.endswith(".pooler.supabase.com"):
-              raise SystemExit("Expected the Supabase session pooler.")
           query = parse_qs(parsed.query, keep_blank_values=True)
           if query.get("sslmode") and query["sslmode"][0] != "require":
               raise SystemExit("SSL is required.")
