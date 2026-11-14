@@ -77,7 +77,7 @@ try {
   await page.locator('#fType').selectOption('Koeling');
   await page.locator('#fValue').fill('4.2');
   await page.locator('#modalForm button[type="submit"]').click();
-  await page.locator('#modalLayer:not(.open)').waitFor();
+  await page.locator('#modalLayer:not(.open)').waitFor({ state: 'hidden' });
   assert.match(await page.locator('#temperatureList').innerText(), /TEST-koelkast/);
   console.log('[PASS] temperatuurmeting lokaal bewaren en terugvinden');
 
@@ -93,7 +93,7 @@ try {
   await page.locator('[data-stock-action="add-batch"]').click();
   await page.locator('#stockBatchEditors input[data-batch-field="quantity"]').last().fill('10');
   await page.locator('#stockProductForm button[type="submit"]').click();
-  await page.locator('#stockProductModal:not(.open)').waitFor();
+  await page.locator('#stockProductModal:not(.open)').waitFor({ state: 'hidden' });
   assert.match(await page.locator('#stockList').innerText(), /TEST eieren/);
   assert.match(await page.locator('#stockUnitCostPreview').innerText().catch(()=>''), /0,50|0\.50/);
   console.log('[PASS] stockproduct, batch en verpakkingskost lokaal bewaren');
@@ -105,7 +105,7 @@ try {
   await page.locator('#recipeName').fill('TEST omelet');
   assert.ok(await page.locator('#recipeIngredientEditors select').count(), 'Ingrediëntkeuze ontbreekt in recepteditor');
   await page.locator('[data-recipe-action="close"]').click();
-  await page.locator('#recipeModalLayer:not(.open)').waitFor();
+  await page.locator('#recipeModalLayer:not(.open)').waitFor({ state: 'hidden' });
   console.log('[PASS] recepteneditor opent met stockingrediënten');
 
   // Dagafsluiting bewaren; PDF-dialoog bewust niet openen.
