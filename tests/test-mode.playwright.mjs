@@ -39,15 +39,18 @@ try {
   for (const item of expected) {
     await page.locator(`#animo-test-role-panel button[data-role="${item.role}"]`).click();
     await page.waitForTimeout(250);
-    const actual = (await page.locator('#sidebarRole').evaluate(el => el.textContent)).trim();
-    assert.equal(actual, item.label, `Roltekst voor ${item.role} is fout: ${actual}`);
+    const actualRole = await page.evaluate(() => window.FAVVCloudRole);
+    assert.equal(actualRole, item.role, `Actieve testrol is fout: ${actualRole}`);
+    const panelTitle = await page.locator('#animo-test-role-panel strong').innerText();
+    assert.match(panelTitle, new RegExp(item.label.replace(' (test)', '').replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\    const actual = (await page.locator('#sidebarRole').evaluate(el => el.textContent)).trim();
+    assert.equal(actual, item.label, `Roltekst voor ${item.role} is fout: ${actual}`);'), 'i'), `Rolpaneel toont verkeerde rol: ${panelTitle}`);
     const management = page.locator('[data-page="management"].manager-only').first();
     if (await management.count()) {
       assert.equal(await management.evaluate(el => getComputedStyle(el).display !== 'none'), item.visible, `Beheerrechten fout voor ${item.role}`);
     }
     const selected = await page.locator(`#animo-test-role-panel button[data-role="${item.role}"]`).getAttribute('aria-pressed');
     assert.equal(selected, 'true', `Rolknop ${item.role} is niet geselecteerd`);
-    console.log(`[PASS] ${item.label}: rolweergave en zichtbaarheid beheer gecontroleerd`);
+    console.log(`[PASS] ${item.label}: actieve rol, rolpaneel en zichtbaarheid beheer gecontroleerd`);
   }
 
   const activeBusiness = await page.evaluate(() => localStorage.getItem('favv-active-business-v1'));
