@@ -32,6 +32,7 @@ on:
       - '.github/workflows/deploy-strato.yml'
       - '.github/workflows/deploy-strato-test.yml'
       - 'docs/release-veiligheidsplan.md'
+      - 'tests/production-migration-preflight.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -412,5 +413,7 @@ jobs:
           }
           console.log('Legacy stock batch migration and safe consumption tests passed.');
           NODE
+      - name: Validate production migration preflight against live history
+        run: node --test tests/production-migration-preflight.test.mjs
       - name: Run all isolated application regression tests
         run: node --test tests/*.test.mjs
