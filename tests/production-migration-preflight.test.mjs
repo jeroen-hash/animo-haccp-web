@@ -58,3 +58,14 @@ test('production release remains isolated to the seven verified ANIMO module mig
   assert.ok(!workflow.includes('20261108150151'));
   assert.ok(!workflow.includes('postgres.zimzsovvtdmrthrflkgm'));
 });
+
+test('live verification workflow is strictly read-only', () => {
+  const dryRun = readFileSync('.github/workflows/preview-production-migrations.yml', 'utf8');
+  const commands = [...dryRun.matchAll(/supabase db push[^\\n]*/g)].map(match => match[0]);
+  assert.equal(commands.length, 1, 'only one db push command may exist in the verification workflow');
+  assert.match(commands[0], /--dry-run/);
+  assert.ok(!dryRun.includes('mirror -R'));
+  assert.ok(!dryRun.includes('lftp'));
+  assert.ok(dryRun.includes('postgres.xwjcwravfeldndwlugai'));
+  assert.ok(dryRun.includes('PRODUCTION_DATABASE_PASSWORD'));
+});
