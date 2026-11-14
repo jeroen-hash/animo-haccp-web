@@ -79,17 +79,18 @@ jobs:
           set -euo pipefail
           grep -Fq 'cp ./*.mjs out/app/' .github/workflows/deploy-strato.yml
           grep -Fq 'mirror -R --verbose out/app /app' .github/workflows/deploy-strato.yml
-          grep -Fq 'supabase/setup-cli@v3' .github/workflows/deploy-strato.yml
-          grep -Fq 'supabase db push --dry-run --yes --remote=' .github/workflows/deploy-strato.yml
-          grep -Fq 'supabase db push --yes --remote=' .github/workflows/deploy-strato.yml
-          grep -Fq 'supabase migration list --remote=' .github/workflows/deploy-strato.yml
-          grep -Fq '20261107215657 snapshot_legacy_public_data_before_recovery_rebuild' .github/workflows/deploy-strato.yml
-          grep -Fq 'Temporary history-alignment placeholder' .github/workflows/deploy-strato.yml
-          grep -Fq 'postgres.xwjcwravfeldndwlugai' .github/workflows/deploy-strato.yml
           grep -Fq "const liveUrl = 'https://xwjcwravfeldndwlugai.supabase.co'" .github/workflows/deploy-strato.yml
           grep -Fq "built.includes(testUrl) || built.includes(testKey)" .github/workflows/deploy-strato.yml
-          grep -Fq 'mirror -R --verbose out/app /app' .github/workflows/deploy-strato.yml
-          grep -Fq 'database != "postgres"' .github/workflows/deploy-strato.yml
+          grep -Fq 'Controleer releasemigraties zonder de live database te wijzigen' .github/workflows/deploy-strato.yml
+          grep -Fq 'Geen verbinding met live DB en geen SQL/migratie wordt uitgevoerd.' .github/workflows/deploy-strato.yml
+          if grep -Eq 'supabase[[:space:]]+db[[:space:]]+push' .github/workflows/deploy-strato.yml; then
+            echo "::error::Productiedeploy mag geen database-migraties uitvoeren."
+            exit 1
+          fi
+          if grep -Eq 'PRODUCTION_DATABASE_(URL|PASSWORD)' .github/workflows/deploy-strato.yml; then
+            echo "::error::Productiedeploy mag geen live databasegeheimen gebruiken."
+            exit 1
+          fi
           grep -Fq 'actions/checkout@v4' .github/workflows/backup-supabase-database.yml
           for migration in 20261111222221 20261111222452 20261111223111 20261112155500 20261112155729 20261112163255 20261112174321; do
             grep -Fq "$migration" .github/workflows/deploy-strato.yml
