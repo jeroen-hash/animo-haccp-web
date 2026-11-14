@@ -1,0 +1,128 @@
+name: ANIMO live migraties - alleen dry-run
+
+on:
+  push:
+    branches: [feature/phase1-haccp-completion]
+    paths:
+      - '.github/workflows/preview-production-migrations.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  production-migration-dry-run:
+    runs-on: ubuntu-latest
+    name: Controleer live migratiehistoriek zonder wijzigingen
+    steps:
+      - name: Repository ophalen
+        uses: actions/checkout@v4
+
+      - name: Supabase CLI installeren
+        uses: supabase/setup-cli@v3
+
+      - name: Alleen live migratiehistoriek en dry-run controleren
+        shell: bash
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          DATABASE_PASSWORD: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$DATABASE_URL" || { echo "::error::PRODUCTION_DATABASE_URL ontbreekt."; exit 1; }
+          test -n "$DATABASE_PASSWORD" || { echo "::error::PRODUCTION_DATABASE_PASSWORD ontbreekt."; exit 1; }
+          release_dir="$RUNNER_TEMP/animo-live-migration-dry-run"
+          mkdir -p "$release_dir"
+          cd "$release_dir"
+          supabase init
+          mkdir -p supabase/migrations
+
+          # Alleen de zeven modulemigraties die al in de livehistoriek staan.
+          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261111222221_create_food_waste_entries.sql supabase/migrations/
+          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261111222452_tighten_food_waste_table_grants.sql supabase/migrations/
+          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261111223111_harden_food_waste_audit_and_index.sql supabase/migrations/
+          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261112155500_create_menu_profitability_private_data.sql supabase/migrations/
+          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261112155729_allow_manager_updates_menu_profitability_data.sql supabase/migrations/
+          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261112163255_add_atomic_menu_profitability_manager_save.sql supabase/migrations/
+          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261112174321_correct_food_waste_comment_and_index_menu_profitability_creator.sql supabase/migrations/
+
+          # Tijdelijke no-op placeholders voor de 22 bestaande live-herstelmigraties.
+          while IFS=' ' read -r version migration_name; do
+            [ -n "$version" ] || continue
+            cat > "supabase/migrations/${version}_${migration_name}.sql" <<'SQL'
+          -- Already applied in the live database; temporary dry-run alignment only.
+          select 1;
+          SQL
+          done <<'LIVE_BASELINE'
+          20261107215657 snapshot_legacy_public_data_before_recovery_rebuild
+          20261107215721 snapshot_legacy_database_object_definitions
+          20261107215940 archive_legacy_haccp_tables_before_saas_recovery_rebuild
+          20261107220001 rebuild_saas_core_tables_in_recovery_environment
+          20261107220027 restore_saas_indexes_rls_and_core_access_helpers
+          20261107220100 restore_saas_account_and_app_data_rpc_functions
+          20261107220126 restore_onboarding_and_website_rpc_functions
+          20261107220143 restore_platform_dashboard_billing_and_onboarding_rpcs
+          20261107220204 restore_complete_onboarding_activation_rpc
+          20261107220214 restore_business_default_app_state_trigger
+          20261107220302 add_legacy_onboarding_activation_rpc_compatibility
+          20261107220329 harden_recovery_rpc_grants_and_archive_legacy_functions
+          20261107220741 restore_private_onboarding_storage_buckets_and_policies
+          20261107220809 harden_archived_haccp_seed_function_search_path
+          20261107220934 align_website_visit_identity_with_production
+          20261107221010 sync_exact_live_onboarding_activation_functions
+          20261107221015 sync_exact_live_rpc_functions_batch_1
+          20261107221018 sync_exact_live_rpc_functions_batch_2
+          20261107221020 sync_exact_live_rpc_functions_batch_3
+          20261107221023 sync_exact_live_rpc_functions_batch_4
+          20261107221027 sync_exact_live_onboarding_rpc_functions_final_batch
+          20261107221035 sync_exact_private_business_access_function
+          LIVE_BASELINE
+
+          ANIMO_PRODUCTION_DB_URL="$(python3 - <<'PY'
+          import os
+          from urllib.parse import quote, unquote, urlsplit, urlunsplit, parse_qs, urlencode
+          parsed = urlsplit(os.environ["DATABASE_URL"])
+          if parsed.scheme not in ("postgres", "postgresql") or not parsed.hostname:
+              raise SystemExit("Production database URL is not a PostgreSQL URI.")
+          if parsed.password:
+              raise SystemExit("Remove the password from PRODUCTION_DATABASE_URL; use PRODUCTION_DATABASE_PASSWORD.")
+          if unquote(parsed.username or "") != "postgres.xwjcwravfeldndwlugai":
+              raise SystemExit("Live project target guard failed.")
+          if unquote(parsed.path.lstrip("/")) != "postgres":
+              raise SystemExit("Expected the postgres database.")
+          if not parsed.hostname.endswith(".pooler.supabase.com"):
+              raise SystemExit("Expected the Supabase session pooler.")
+          query = parse_qs(parsed.query, keep_blank_values=True)
+          if query.get("sslmode") and query["sslmode"][0] != "require":
+              raise SystemExit("SSL is required.")
+          query["sslmode"] = ["require"]
+          netloc = f"{quote(unquote(parsed.username or ''), safe='')}:{quote(os.environ['DATABASE_PASSWORD'], safe='')}@{parsed.hostname}"
+          if parsed.port:
+              netloc += f":{parsed.port}"
+          print(urlunsplit((parsed.scheme, netloc, parsed.path, urlencode(query, doseq=True), parsed.fragment)))
+          PY
+          )"
+          echo "::add-mask::$ANIMO_PRODUCTION_DB_URL"
+
+          echo "Lees uitsluitend de migratiehistoriek van het bevestigde liveproject..."
+          supabase migration list --remote="$ANIMO_PRODUCTION_DB_URL" | tee "$RUNNER_TEMP/animo-live-migrations.txt"
+
+          # Verwacht exact 29 versies, met zowel een lokale als remote registratie.
+          versions="$(grep -oE '[0-9]{14}' "$RUNNER_TEMP/animo-live-migrations.txt" | sort -u)"
+          count="$(printf '%s\n' "$versions" | sed '/^$/d' | wc -l | tr -d ' ')"
+          test "$count" = "29" || { echo "::error::Verwacht 29 live migraties, gevonden: $count"; exit 1; }
+          while IFS= read -r version; do
+            occurrences="$(grep -o "$version" "$RUNNER_TEMP/animo-live-migrations.txt" | wc -l | tr -d ' ')"
+            test "$occurrences" = "2" || {
+              echo "::error::Migratie $version staat niet exact lokaal én remote geregistreerd."
+              exit 1
+            }
+          done <<< "$versions"
+
+          echo "Voer nu uitsluitend supabase db push --dry-run uit. Er wordt geen migratie toegepast."
+          supabase db push --dry-run --yes --remote="$ANIMO_PRODUCTION_DB_URL" | tee "$RUNNER_TEMP/animo-live-db-push-dry-run.txt"
+          if grep -Eiq 'Would push|Applying migration|pending migration' "$RUNNER_TEMP/animo-live-db-push-dry-run.txt"; then
+            echo "::error::De dry-run toont nog migraties die zouden worden toegepast. Geen livewijziging uitgevoerd."
+            exit 1
+          fi
+          echo "Geslaagd: alle 29 migraties komen overeen en de dry-run toont geen toe te passen migraties."
+          echo "Deze workflow bevat bewust geen db push zonder --dry-run, geen SQL-wijziging en geen SFTP-upload."
