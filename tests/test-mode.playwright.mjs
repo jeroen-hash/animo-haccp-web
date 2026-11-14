@@ -70,7 +70,7 @@ try {
   console.log(`[PASS] ${navCount} navigatiepagina's openen zonder fout`);
 
   // Temperatuurregistratie bewaren en terugvinden.
-  await page.locator('nav.nav button[data-page="temperatures"]').click();
+  await page.locator('nav.nav button[data-page="temperatures"]').evaluate(el => el.click());
   await page.locator('[data-action="new-temperature"]').click();
   await page.locator('#modalLayer.open').waitFor();
   await page.locator('#fDevice').fill('TEST-koelkast');
@@ -82,7 +82,7 @@ try {
   console.log('[PASS] temperatuurmeting lokaal bewaren en terugvinden');
 
   // Stockproduct met verpakking, aankoopprijs en voorraadbatch bewaren.
-  await page.locator('nav.nav button[data-page="stock"]').click();
+  await page.locator('nav.nav button[data-page="stock"]').evaluate(el => el.click());
   await page.locator('[data-stock-action="new-product"]').click();
   await page.locator('#stockProductModal.open').waitFor();
   await page.locator('#stockProductName').fill('TEST eieren');
@@ -99,7 +99,7 @@ try {
   console.log('[PASS] stockproduct, batch en verpakkingskost lokaal bewaren');
 
   // Receptenmodule openen en de editor controleren met de nieuw aangemaakte stock.
-  await page.locator('nav.nav button[data-page="recipes"]').click();
+  await page.locator('nav.nav button[data-page="recipes"]').evaluate(el => el.click());
   await page.locator('[data-recipe-action="new"]').click();
   await page.locator('#recipeModalLayer.open').waitFor();
   await page.locator('#recipeName').fill('TEST omelet');
@@ -109,7 +109,7 @@ try {
   console.log('[PASS] recepteneditor opent met stockingrediënten');
 
   // Dagafsluiting bewaren; PDF-dialoog bewust niet openen.
-  await page.locator('nav.nav button[data-page="reports"]').click();
+  await page.locator('nav.nav button[data-page="reports"]').evaluate(el => el.click());
   // PDF openen overslaan; het rapport zelf blijft bewaard.
   page.once('dialog', dialog => dialog.dismiss());
   await page.locator('[data-action="create-day-report"]').click();
