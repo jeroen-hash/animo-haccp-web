@@ -29,11 +29,10 @@ jobs:
           SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
         run: |
           if [ -z "$SFTP_HOST" ] || [ -z "$SFTP_USER" ] || [ -z "$SFTP_PASS" ]; then
-            echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::SFTP-geheimen ontbreken. Uploaden naar Strato wordt overgeslagen."
-          else
-            echo "present=true" >> "$GITHUB_OUTPUT"
+            echo "::error::SFTP-geheimen ontbreken. Productiepublicatie wordt veilig afgebroken."
+            exit 1
           fi
+          echo "present=true" >> "$GITHUB_OUTPUT"
 
       - name: Controleer releasemigraties zonder de live database te wijzigen
         if: steps.guard.outputs.present == 'true'
