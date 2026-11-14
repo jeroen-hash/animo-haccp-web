@@ -75,7 +75,7 @@ jobs:
           pooler_target = username == "postgres.xwjcwravfeldndwlugai" and host.endswith(".pooler.supabase.com")
           direct_target = username == "postgres" and host == "db.xwjcwravfeldndwlugai.supabase.co"
           if not (pooler_target or direct_target):
-              raise SystemExit("Production migration target guard failed: URL is not an exact live-project pooler or direct endpoint.")
+              raise SystemExit("PRODUCTION_DATABASE_URL does not target live project xwjcwravfeldndwlugai; refusing to connect.")
           if database != "postgres":
               raise SystemExit("Production migration target guard failed: expected the postgres database.")
           query = parse_qs(parsed.query, keep_blank_values=True)
