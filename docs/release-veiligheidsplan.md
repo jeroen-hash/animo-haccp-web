@@ -16,11 +16,11 @@ De goedgekeurde functies uit `feature/phase1-haccp-completion` gecontroleerd naa
 Deze tests zijn nuttig, maar bewijzen op zichzelf geen volledige productiecompatibiliteit of echte end-to-end werking van Stripe, offline synchronisatie en externe AI-verwerking.
 
 ## Releaseblokkade — Supabase-configuratie eerst verifiëren
-De broncode in zowel `main` als de testbranch bevat momenteel de Supabase-projectreferentie `zimzsovvtdmrthrflkgm`. De vastgelegde omgevingsindeling voor de huidige installatie is:
+De broncode op de testbranch bevat de test-Supabase-projectreferentie `zimzsovvtdmrthrflkgm`; de bevestigde liveomgeving is `xwjcwravfeldndwlugai`. De vastgelegde omgevingsindeling voor de huidige installatie is:
 - Live: `xwjcwravfeldndwlugai`
 - Test: `zimzsovvtdmrthrflkgm`
 
-De productie-deployworkflow op `main` kopieert `index.html` rechtstreeks naar `/app`. In de workflow is geen afzonderlijke productieconfiguratie-injectie zichtbaar. Daarom mag deze overdracht **niet** worden samengevoegd of gedeployed voordat de productiebuild aantoonbaar de live Supabase-configuratie gebruikt en de testbuild aantoonbaar uitsluitend het testproject gebruikt.
+De productie-deployworkflow op `main` is nog de oude, onveilige versie. Op de testbranch is nu een wijziging voorbereid die de database-doelcontrole vastzet op het live project en tijdens het bouwen de testconfiguratie omzet naar de bevestigde liveconfiguratie. Die wijziging is nog niet naar `main` samengevoegd of live uitgevoerd. Daarom mag deze overdracht **niet** worden samengevoegd of gedeployed voordat de nieuwe productiebuild aantoonbaar uitsluitend de live Supabase-configuratie gebruikt en de testbuild aantoonbaar uitsluitend het testproject gebruikt.
 
 Ook de testdeployworkflow op `main` heeft een andere/oudere configuratiecontrole dan de workflow op de testbranch. Dit moet eerst eenduidig worden gemaakt.
 
@@ -81,5 +81,12 @@ AI-verwerking, Stripe en e-mail moeten waar nodig met veilige testaccounts en te
 - Controleer na livegang login, data, abonnementen, kernregistraties, PDF's en synchronisatie.
 - Stop de uitrol en herstel de vorige build bij onverwachte fouten of dataverlies.
 
+## Huidige voortgang
+- Op de testbranch is de productie-databaseguard gewijzigd zodat alleen `postgres.xwjcwravfeldndwlugai` als productie-doel wordt geaccepteerd. Een database-URL naar het testproject wordt dus afgewezen vóór migraties.
+- De productiebuild controleert de verwachte bronconfiguratie en zet uitsluitend de gebouwde kopie om naar de bevestigde live Supabase URL en public key. De broncode en testbuild blijven op het testproject.
+- De testworkflow controleert voortaan expliciet deze productieguards.
+- Commit voor de productieworkflow: `716ff170ae867dec485c7b8c654a322821ca88c9`.
+- Commit voor de testworkflowcontroles: `a5e8b0acf5ce297ec179548df7e1ab0c48f4965a`.
+
 ## Huidig besluit
-**NIET KLAAR VOOR LIVE-OVERDRACHT.** De regressietests op de testbranch zijn geslaagd, maar de Supabase-configuratie en productiebuild moeten eerst worden rechtgezet en onafhankelijk geverifieerd. Er is geen live wijziging uitgevoerd.
+**NIET KLAAR VOOR LIVE-OVERDRACHT.** De veiligheidswijzigingen zijn alleen op de testbranch voorbereid. Ze moeten nog door de CI-controles, en de productie database-secret/migratiehistoriek en back-up moeten onafhankelijk geverifieerd worden. Er is geen live wijziging uitgevoerd.
