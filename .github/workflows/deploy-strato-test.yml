@@ -85,7 +85,10 @@ jobs:
           grep -Fq 'supabase migration list --remote=' .github/workflows/deploy-strato.yml
           grep -Fq '20261107014218 hide_inactive_members_from_direct_membership_reads' .github/workflows/deploy-strato.yml
           grep -Fq 'Temporary history-alignment placeholder' .github/workflows/deploy-strato.yml
-          grep -Fq 'postgres.zimzsovvtdmrthrflkgm' .github/workflows/deploy-strato.yml
+          grep -Fq 'postgres.xwjcwravfeldndwlugai' .github/workflows/deploy-strato.yml
+          grep -Fq "const liveUrl = 'https://xwjcwravfeldndwlugai.supabase.co'" .github/workflows/deploy-strato.yml
+          grep -Fq "built.includes(testUrl) || built.includes(testKey)" .github/workflows/deploy-strato.yml
+          grep -Fq 'mirror -R --verbose out/app /app' .github/workflows/deploy-strato.yml
           grep -Fq 'database != "postgres"' .github/workflows/deploy-strato.yml
           grep -Fq 'actions/checkout@v4' .github/workflows/backup-supabase-database.yml
           for migration in 20261111222221 20261111222452 20261111223111 20261112155500 20261112155729 20261112163255 20261112174321; do
