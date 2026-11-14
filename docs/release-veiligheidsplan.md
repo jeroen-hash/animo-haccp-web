@@ -178,3 +178,17 @@ Commit van de aangepaste regressietest: `5aa852700634a05976515bbf94b8b645c59d2fc
 - De eerdere runs op tussenliggende commits faalden op verouderde testverwachtingen; die controles zijn aangepast en de daaropvolgende volledige validatie en testpublicatie zijn geslaagd.
 
 **Actuele status:** de testomgeving is bijgewerkt en de automatische controles zijn groen. De liveomgeving is nog niet bijgewerkt. De volgende stap blijft het uitvoeren van de aparte live dry-run nadat `PRODUCTION_DATABASE_URL` en `PRODUCTION_DATABASE_PASSWORD` aantoonbaar naar hetzelfde live Supabase-project verwijzen.
+
+
+## Extra productie-uitrolbeveiliging — 14 november 2026 (volgorde controles)
+
+Bij verdere inspectie bleek dat de bestaande productieworkflow de SFTP-upload vóór een aantal aanvullende regressiecontroles uitvoerde. Dat is nu aangepast:
+
+- Alle JavaScript-, UBL-, voorraad-, recept- en regressiecontroles worden vóór de SFTP-upload uitgevoerd.
+- De SFTP-upload naar `/landing` en `/app` staat nu als laatste workflowstap.
+- De testworkflow controleert deze volgorde expliciet.
+- De testbranch-validatie is geslaagd op commit `2e5b92d37474a6d6c65c41276db57ba1ffb21b7e` (run [43620646281](https://github.com/jeroen-hash/animo-haccp-web/actions/runs/43620646281)).
+- De testpublicatie op die commit is gestart; de laatste controle toonde de SFTP-upload naar uitsluitend `/test` nog als lopend. De uiteindelijke uploadstatus moet nog worden bevestigd.
+- `main` staat nog steeds op `8a052850844255f67c456e2b10168626ae1d1d32`; de productiebranch is niet gewijzigd.
+
+**Belangrijk:** dit is alleen een wijziging aan de featurebranch-workflows en tests. Er is geen productie-uitrol gestart. De live migratie dry-run wacht nog steeds op correcte GitHub Actions-geheimen voor het live Supabase-project.
