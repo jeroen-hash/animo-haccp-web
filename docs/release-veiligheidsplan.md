@@ -128,3 +128,26 @@ Read-only vergelijking uitgevoerd via de gekoppelde Supabase-projecten. Er zijn 
 
 ### Auditbesluit
 **NO-GO voor live-overdracht op dit moment.** De productiebuild kan worden gemaakt, maar de migratie-preflight is niet compatibel met de huidige live migratiehistoriek. De live database en hosting zijn tijdens deze audit niet gewijzigd.
+
+
+## Overdrachtsvoorbereiding — 14 november 2026 (vervolg)
+
+### Migratie-preflight afgestemd op live
+- De productieworkflow controleert nu de echte livehistoriek: 22 herstelmigraties plus de 7 ANIMO-modulemigraties.
+- De 22 herstelmigraties worden uitsluitend als tijdelijke no-op bestanden in de geïsoleerde releasemap aangemaakt; ze worden niet naar de repository geschreven en niet opnieuw uitgevoerd.
+- De zeven modulemigraties worden uit de repository gekopieerd. De read-only audit bevestigde dat alle zeven versies al in de live migratiehistoriek staan.
+- De oude testhistoriek (20 migraties, waaronder `20261108150151_add_site_host_to_website_visit_events`) is uit de productie-preflight verwijderd. De optionele `site_host`-uitbreiding blijft buiten deze release.
+- Nieuwe test `tests/production-migration-preflight.test.mjs` controleert de 22 live-baselineversies, de zeven moduleversies en dat de aparte verificatieworkflow uitsluitend `db push --dry-run` bevat.
+
+### Validatie
+- De volledige feature-branch regressiesuite is geslaagd op commit `e0e1ca9e45d2fec8d578a62cb8a6bab2a24f858f`.
+- De testdeploy naar uitsluitend `/test` is geslaagd op dezelfde commit.
+- De live migratie dry-run is bewust niet door de doelbeveiliging geraakt: de huidige GitHub Actions secret `PRODUCTION_DATABASE_URL` bevat de testprojectgebruiker `postgres.zimzsovvtdmrthrflkgm`, niet de liveprojectgebruiker. De workflow stopt vóór de databaseverbinding.
+- Er is geen SQL uitgevoerd, geen live migratie toegepast en geen bestand naar `/app` geüpload.
+
+### Nog vereist vóór vrijgave
+1. Vervang in GitHub Actions de secret `PRODUCTION_DATABASE_URL` door de verbindings-URI van het liveproject `xwjcwravfeldndwlugai` (bij voorkeur de Session Pooler-URI, zonder wachtwoord in de URI).
+2. Vervang `PRODUCTION_DATABASE_PASSWORD` door het databasewachtwoord van datzelfde liveproject.
+3. Voer daarna de aparte workflow **ANIMO live migraties - alleen dry-run** opnieuw uit. Alleen als de doelcontrole, alle 29 lokale/remote migratieversies en de dry-run slagen, kan de releasekandidaat verder worden beoordeeld.
+
+**Huidig besluit: NO-GO voor livegang.** De verkeerde database-secret is veilig geblokkeerd. De liveapp, live database en map `/app` zijn onaangeroerd gebleven.
