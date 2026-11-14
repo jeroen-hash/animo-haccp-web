@@ -71,12 +71,13 @@ jobs:
               raise SystemExit("Remove the password from PRODUCTION_DATABASE_URL; use PRODUCTION_DATABASE_PASSWORD.")
           username = unquote(parsed.username or "")
           database = unquote(parsed.path.lstrip("/"))
-          if username != "postgres.xwjcwravfeldndwlugai":
-              raise SystemExit("Production migration target guard failed: unexpected Supabase project username.")
+          host = (parsed.hostname or "").lower()
+          pooler_target = username == "postgres.xwjcwravfeldndwlugai" and host.endswith(".pooler.supabase.com")
+          direct_target = username == "postgres" and host == "db.xwjcwravfeldndwlugai.supabase.co"
+          if not (pooler_target or direct_target):
+              raise SystemExit("Production migration target guard failed: URL is not an exact live-project pooler or direct endpoint.")
           if database != "postgres":
               raise SystemExit("Production migration target guard failed: expected the postgres database.")
-          if not parsed.hostname.endswith(".pooler.supabase.com"):
-              raise SystemExit("Production migration target guard failed: expected the Supabase session pooler.")
           query = parse_qs(parsed.query, keep_blank_values=True)
           if query.get("sslmode") and query["sslmode"][0] != "require":
               raise SystemExit("Production database connection must require SSL.")
