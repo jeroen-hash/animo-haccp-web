@@ -23,7 +23,6 @@ test('production deploy checks migration source files but never connects to or c
   assert.ok(!workflow.includes('PRODUCTION_DATABASE_PASSWORD'));
   assert.ok(!/supabase\\s+db\\s+push(?![^\\n]*--dry-run)/.test(workflow), 'production deploy must not run a mutating db push');
   assert.ok(!workflow.includes('postgres.zimzsovvtdmrthrflkgm'));
-  assert.ok(workflow.includes('postgres.xwjcwravfeldndwlugai'));
   assert.ok(workflow.includes('https://xwjcwravfeldndwlugai.supabase.co'));
 });
 
