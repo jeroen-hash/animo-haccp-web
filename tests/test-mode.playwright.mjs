@@ -104,7 +104,7 @@ try {
   await page.locator('#recipeModalLayer.open').waitFor();
   await page.locator('#recipeName').fill('TEST omelet');
   assert.ok(await page.locator('#recipeIngredientEditors select').count(), 'Ingrediëntkeuze ontbreekt in recepteditor');
-  await page.locator('[data-recipe-action="close"]').click();
+  await page.locator('[data-recipe-action="close"]').last().click();
   await page.locator('#recipeModalLayer:not(.open)').waitFor({ state: 'hidden' });
   console.log('[PASS] recepteneditor opent met stockingrediënten');
 
