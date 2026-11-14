@@ -167,3 +167,14 @@ Commit van deze veiligheidsaanpassing: `36ed35ddb85568863e0dd4a10aac7588e9c6478b
 Commit van de aangepaste regressietest: `5aa852700634a05976515bbf94b8b645c59d2fc3`.
 
 **Impact:** uitsluitend workflows, regressietest en documentatie op de testbranch gewijzigd. Geen merge naar `main`, geen upload naar `/app`, geen live databaseverbinding en geen livewijziging.
+
+
+## Validatie na read-only deploy-aanpassing — 14 november 2026
+
+- Featurebranch-validatie geslaagd op commit `1d0345c26b0cb46e52bd27148051a2f307752088` (GitHub Actions run [43609194207](https://github.com/jeroen-hash/animo-haccp-web/actions/runs/43609194207)).
+- Testpublicatie geslaagd op dezelfde commit (run [43609194315](https://github.com/jeroen-hash/animo-haccp-web/actions/runs/43609194315)); de uploadstap richtte zich uitsluitend op `/test`.
+- De productie-deployworkflow heeft nu geen databaseverbinding, geen productie-databasegeheimen en geen muterende `supabase db push`. Dit wordt door een regressietest gecontroleerd.
+- De aparte workflow voor live migratiecontrole blijft een read-only controle met uitsluitend `supabase db push --dry-run`. Deze is nog niet opnieuw uitgevoerd met de juiste live databasegeheimen.
+- De eerdere runs op tussenliggende commits faalden op verouderde testverwachtingen; die controles zijn aangepast en de daaropvolgende volledige validatie en testpublicatie zijn geslaagd.
+
+**Actuele status:** de testomgeving is bijgewerkt en de automatische controles zijn groen. De liveomgeving is nog niet bijgewerkt. De volgende stap blijft het uitvoeren van de aparte live dry-run nadat `PRODUCTION_DATABASE_URL` en `PRODUCTION_DATABASE_PASSWORD` aantoonbaar naar hetzelfde live Supabase-project verwijzen.
