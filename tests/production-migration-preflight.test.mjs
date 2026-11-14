@@ -52,8 +52,11 @@ test('production release remains isolated to the seven verified ANIMO module mig
   }
   assert.ok(workflow.includes('postgres.xwjcwravfeldndwlugai'));
   assert.ok(workflow.includes('https://xwjcwravfeldndwlugai.supabase.co'));
-  assert.ok(workflow.includes('supabase db push --dry-run'));
-  assert.ok(workflow.includes('supabase db push --yes'));
+  assert.ok(workflow.includes('Alle zeven modulemigraties zijn aanwezig.'));
+  assert.ok(workflow.includes('Geen verbinding met live DB en geen SQL/migratie wordt uitgevoerd.'));
+  assert.ok(!/supabase\\s+db\\s+push(?![^\\n]*--dry-run)/.test(workflow), 'production deploy must never run a mutating db push');
+  assert.ok(!workflow.includes('PRODUCTION_DATABASE_PASSWORD'));
+  assert.ok(!workflow.includes('PRODUCTION_DATABASE_URL'));
   assert.ok(!workflow.includes('20261106001055'));
   assert.ok(!workflow.includes('20261108150151'));
   assert.ok(!workflow.includes('postgres.zimzsovvtdmrthrflkgm'));
