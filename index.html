@@ -771,8 +771,7 @@ body:has(#cloudGate:not(.hidden)) .mobile-nav{display:none!important}
 <script id="cloud-auth-bootstrap">
 (function(){
 'use strict';
-// De testomgeving gebruikt uitsluitend lokale sandboxgegevens. Start hier nooit Supabase-auth of cloudacties.
-if(location.hostname==='test.animo-apps.com')return;
+// Test- en productieomgevingen gebruiken hun eigen gepubliceerde Supabase-configuratie.
 const CONFIG_KEY='favv-supabase-public-config-v1';
 const PUBLIC_SUPABASE_CONFIG={url:'https://zimzsovvtdmrthrflkgm.supabase.co',key:'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k'};;
 const get=id=>document.getElementById(id);
@@ -2681,74 +2680,5 @@ window.addEventListener('favv:business-ready',refreshSession);window.addEventLis
 })();
 </script>
 
-<!-- ANIMO TEST ROLE SWITCHER: uitsluitend actief op test.animo-apps.com -->
-<script id="animo-test-role-switcher">
-(function(){
-'use strict';
-if(location.hostname!=='test.animo-apps.com')return;
-const BUSINESS_ID='animo-test-sandbox-local';
-const BUSINESS_KEY='favv-business-v1:'+BUSINESS_ID;
-const ACTIVE_KEY='favv-active-business-v1';
-const ROLE_KEY='animo-test-selected-role';
-const PROFILE={id:BUSINESS_ID,businessName:'ANIMO Testomgeving',enterpriseNumber:'TEST-0000',businessType:'Testomgeving',address:'',phone:'',ownerName:'ANIMO Test',ownerEmail:'test@animo-apps.com',createdAt:'2026-01-01T00:00:00.000Z'};
-const previousBusiness=localStorage.getItem(ACTIVE_KEY);
-localStorage.setItem(ACTIVE_KEY,BUSINESS_ID);
-if(previousBusiness!==BUSINESS_ID&&!sessionStorage.getItem('animo-test-sandbox-ready')){
-  sessionStorage.setItem('animo-test-sandbox-ready','1');
-  if(!localStorage.getItem(BUSINESS_KEY))localStorage.setItem(BUSINESS_KEY,JSON.stringify(PROFILE));
-  location.reload();
-  return;
-}
-try{
-  localStorage.setItem(ACTIVE_KEY,BUSINESS_ID);
-  if(!localStorage.getItem(BUSINESS_KEY))localStorage.setItem(BUSINESS_KEY,JSON.stringify(PROFILE));
-}catch(error){console.warn('ANIMO testomgeving kon lokale opslag niet initialiseren.',error)}
-window.FAVVTestMode=true;
-window.FAVVTestModeInfo={businessId:BUSINESS_ID,localOnly:true,subscriptionBypass:true};
-const style=document.createElement('style');
-style.textContent=`
-#cloudGate{display:none!important}
-#animo-test-role-panel{position:fixed;z-index:12000;right:12px;bottom:12px;width:min(340px,calc(100vw - 24px));padding:12px;border:1px solid #cbd5d1;border-radius:14px;background:#fff;color:#17352d;box-shadow:0 8px 30px rgba(0,0,0,.18);font:14px/1.4 system-ui,sans-serif}
-#animo-test-role-panel strong{display:block;font-size:14px;margin-bottom:4px}
-#animo-test-role-panel p{font-size:12px;margin:0 0 9px;color:#52645e}
-#animo-test-role-panel .roles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-#animo-test-role-panel button{border:1px solid #b8c8c1;border-radius:9px;background:#f5f8f6;color:#17352d;padding:9px 4px;font-weight:650;font-size:12px}
-#animo-test-role-panel button[aria-pressed=true]{background:#176b50;color:#fff;border-color:#176b50}
-#animo-test-role-panel .foot{margin-top:8px;font-size:11px;color:#64756e}
-body{padding-bottom:76px}
-@media(max-width:600px){#animo-test-role-panel{right:8px;bottom:8px;width:calc(100vw - 16px)}}
-`;
-document.head.appendChild(style);
-const panel=document.createElement('aside');
-panel.id='animo-test-role-panel';
-panel.innerHTML='<strong>ANIMO · Testmodus</strong><p>Lokale testsessie · geen e-mail, wachtwoord, betaling of cloudwijzigingen.</p><div class="roles"><button type="button" data-role="owner">Eigenaar</button><button type="button" data-role="manager">Manager</button><button type="button" data-role="employee">Medewerker</button></div><div class="foot">Testgegevens blijven apart op dit toestel en in deze browser.</div>';
-document.body.appendChild(panel);
-function activate(role){
-  if(!['owner','manager','employee'].includes(role))role='owner';
-  sessionStorage.setItem(ROLE_KEY,role);
-  const user={id:'animo-test-'+role,email:'test-'+role+'@animo.invalid',user_metadata:{full_name:role==='owner'?'Test Eigenaar':role==='manager'?'Test Manager':'Test Medewerker'}};
-  const business={id:BUSINESS_ID,name:PROFILE.businessName,enterprise_number:PROFILE.enterpriseNumber,role};
-  window.FAVVCloudSync=null;
-  window.FAVVCloudBusiness=business;
-  window.FAVVCloudUser=user;
-  window.FAVVCloudRole=role;
-  // In test mode the subscription check is intentionally local and always allows access.
-  window.refreshSubscriptionStatus=async()=>({accessAllowed:true,status:'test',isTestMode:true});
-  if(typeof window.FAVVStartSupabaseSession==='function')window.FAVVStartSupabaseSession(user,business);
-  const title=panel.querySelector('strong');
-  if(title)title.textContent='ANIMO · Testmodus — '+(role==='owner'?'Eigenaar':role==='manager'?'Manager':'Medewerker');
-  panel.querySelectorAll('[data-role]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.role===role)));
-  document.querySelectorAll('.manager-only').forEach(el=>el.style.display=role==='employee'?'none':'');
-  window.FAVVApplyCloudRole?.(role);
-  const roleLabel=document.getElementById('sidebarRole');
-  if(roleLabel)roleLabel.textContent=role==='owner'?'Eigenaar (test)':role==='manager'?'Manager (test)':'Medewerker (test)';
-}
-panel.addEventListener('click',event=>{
-  const button=event.target.closest('button[data-role]');
-  if(button)activate(button.dataset.role);
-});
-const role=sessionStorage.getItem(ROLE_KEY)||'owner';
-activate(role);
-})();
-</script>
+
 </body></html>
