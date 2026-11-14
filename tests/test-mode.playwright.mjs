@@ -63,7 +63,7 @@ try {
   for (let i = 0; i < navCount; i++) {
     const button = navButtons.nth(i);
     const pageId = await button.getAttribute('data-page');
-    await button.click();
+    await button.evaluate(el => el.click());
     await page.locator(`#${pageId}.page.active`).waitFor({ state: 'visible', timeout: 5000 });
     assert.ok(await page.locator(`#${pageId} h1`).count(), `Paginatitel ontbreekt voor ${pageId}`);
   }
