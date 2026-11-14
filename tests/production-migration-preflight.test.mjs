@@ -34,8 +34,8 @@ const moduleVersions = [
 ];
 
 function manifests() {
-  return [...workflow.matchAll(/done <<'REMOTE_MIGRATIONS'\\n([\\s\\S]*?)\\n\\s*REMOTE_MIGRATIONS/g)]
-    .map(match => match[1].trim().split('\\n').map(line => line.trim()).filter(Boolean));
+  return [...workflow.matchAll(/done <<'REMOTE_MIGRATIONS'\n([\s\S]*?)\n\s*REMOTE_MIGRATIONS/g)]
+    .map(match => match[1].trim().split('\n').map(line => line.trim()).filter(Boolean));
 }
 
 test('production preflight matches the actual 22-migration live recovery history', () => {
