@@ -60,12 +60,12 @@ jobs:
           import { readFileSync, writeFileSync } from 'node:fs';
           import { spawnSync } from 'node:child_process';
           const html = readFileSync('out/app/index.html', 'utf8');
-          const scripts = [...html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)];
+          const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
           let checked = 0;
           for (const match of scripts) {
             const attrs = match[1] || '';
-            const type = (attrs.match(/\\btype=["']([^"']+)["']/i) || [])[1] || '';
-            if (type && !/^(text\\/javascript|application\\/javascript|module)$/i.test(type)) continue;
+            const type = (attrs.match(/\btype=["']([^"']+)["']/i) || [])[1] || '';
+            if (type && !/^(text\/javascript|application\/javascript|module)$/i.test(type)) continue;
             const source = match[2] || '';
             if (!source.trim()) continue;
             const file = '/tmp/animo-prod-build-' + checked + '.js';
