@@ -39,11 +39,11 @@ try {
   for (const item of expected) {
     await page.locator(`#animo-test-role-panel button[data-role="${item.role}"]`).click();
     await page.waitForTimeout(250);
-    const actual = (await page.locator('#sidebarRole').innerText()).trim();
+    const actual = (await page.locator('#sidebarRole').evaluate(el => el.textContent)).trim();
     assert.equal(actual, item.label, `Roltekst voor ${item.role} is fout: ${actual}`);
     const management = page.locator('[data-page="management"].manager-only').first();
     if (await management.count()) {
-      assert.equal(await management.isVisible(), item.visible, `Beheerrechten fout voor ${item.role}`);
+      assert.equal(await management.evaluate(el => getComputedStyle(el).display !== 'none'), item.visible, `Beheerrechten fout voor ${item.role}`);
     }
     const selected = await page.locator(`#animo-test-role-panel button[data-role="${item.role}"]`).getAttribute('aria-pressed');
     assert.equal(selected, 'true', `Rolknop ${item.role} is niet geselecteerd`);
