@@ -47,6 +47,7 @@ test("saved day report snapshots include the allergen register", () => {
   const result = vm.runInNewContext(source + "; reportSnapshot()", {
     state: { cleaning: [], temperatures: [], dishes },
     clone: value => JSON.parse(JSON.stringify(value)),
+    localDay: () => "2026-11-13",
     Date
   });
   assert.deepEqual(JSON.parse(JSON.stringify(result.dishes)), dishes);

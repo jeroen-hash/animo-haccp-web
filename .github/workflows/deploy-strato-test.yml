@@ -5,9 +5,12 @@ on:
     branches:
       - feature/voedselverspilling-module
       - feature/menurendabiliteit-module
+      - feature/animo-ai-test-integration
+      - feature/phase1-haccp-completion
     paths:
       - 'index.html'
       - 'sw.js'
+      - 'tests/**/*.mjs'
       - '*.mjs'
       - 'images/**'
       - '.github/workflows/deploy-strato-test.yml'
@@ -50,54 +53,87 @@ jobs:
           echo "Bestanden voor test.animo-apps.com:"
           find out/test -maxdepth 2 -type f -print
 
-      - name: Testconfiguratie uitsluitend in testbuild injecteren
+      - name: Testconfiguratie controleren (nooit productie injecteren)
         if: steps.guard.outputs.present == 'true'
         run: |
           set -euo pipefail
-          test -f index.html
-          test -f sw.js
-          test -d images
           node --input-type=module <<'NODE'
-          import { readFileSync, writeFileSync } from 'node:fs';
+          import { readFileSync } from 'node:fs';
           const file = 'out/test/index.html';
-          const source = readFileSync(file, 'utf8');
-          const productionConfig = "const PUBLIC_SUPABASE_CONFIG={url:'https://zimzsovvtdmrthrflkgm.supabase.co',key:'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k'};;";
-          const testConfig = "const PUBLIC_SUPABASE_CONFIG={url:'https://xwjcwravfeldndwlugai.supabase.co',key:'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI'};;";
-          const productionUrl = 'https://zimzsovvtdmrthrflkgm.supabase.co';
-          const testUrl = 'https://xwjcwravfeldndwlugai.supabase.co';
-          const productionKey = 'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k';
-          const testKey = 'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI';
-          if (!source.includes(productionConfig)) throw new Error('Productieconfiguratie niet exact gevonden; testdeploy afgebroken.');
-          let testBuild = source.replace(productionConfig, testConfig);
-          // Ook eventuele losse productie-endpoints (zoals bezoekregistratie) uitsluitend in de testkopie omzetten.
-          testBuild = testBuild.split(productionUrl).join(testUrl);
-          testBuild = testBuild.split(productionKey).join(testKey);
-          writeFileSync(file, testBuild);
           const built = readFileSync(file, 'utf8');
-          if (!built.includes(testUrl) || !built.includes(testKey) || built.includes(productionUrl) || built.includes(productionKey)) {
-            throw new Error('Testbuild bevat nog productieconfiguratie of mist de testconfiguratie.');
+          const testUrl = 'https://zimzsovvtdmrthrflkgm.supabase.co';
+          const testKey = 'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k';
+          const liveUrl = 'https://xwjcwravfeldndwlugai.supabase.co';
+          const liveKey = 'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI';
+          if (!built.includes(testUrl) || !built.includes(testKey)) {
+            throw new Error('De testbuild mist de bevestigde Supabase-testconfiguratie.');
+          }
+          if (built.includes(liveUrl) || built.includes(liveKey)) {
+            throw new Error('Live Supabase-configuratie gevonden in testbuild. Publicatie afgebroken.');
           }
           NODE
-          echo "Broncode behoudt productieconfiguratie; alleen out/test/index.html gebruikt de testdatabase."
+          echo "Testbuild gebruikt uitsluitend Supabase-testproject zimzsovvtdmrthrflkgm; liveproject xwjcwravfeldndwlugai is uitgesloten."
 
       - name: Release- en back-upworkflow controleren
         run: |
           set -euo pipefail
           grep -Fq 'cp ./*.mjs out/app/' .github/workflows/deploy-strato.yml
           grep -Fq 'mirror -R --verbose out/app /app' .github/workflows/deploy-strato.yml
-          grep -Fq 'supabase/setup-cli@v3' .github/workflows/deploy-strato.yml
-          grep -Fq 'supabase db push --dry-run --yes --remote=' .github/workflows/deploy-strato.yml
-          grep -Fq 'supabase db push --yes --remote=' .github/workflows/deploy-strato.yml
-          grep -Fq 'supabase migration list --remote=' .github/workflows/deploy-strato.yml
-          grep -Fq '20261107014218 hide_inactive_members_from_direct_membership_reads' .github/workflows/deploy-strato.yml
-          grep -Fq 'Temporary history-alignment placeholder' .github/workflows/deploy-strato.yml
-          grep -Fq 'postgres.zimzsovvtdmrthrflkgm' .github/workflows/deploy-strato.yml
-          grep -Fq 'database != "postgres"' .github/workflows/deploy-strato.yml
+          grep -Fq "const liveUrl = 'https://xwjcwravfeldndwlugai.supabase.co'" .github/workflows/deploy-strato.yml
+          grep -Fq "built.includes(testUrl) || built.includes(testKey)" .github/workflows/deploy-strato.yml
+          grep -Fq 'Controleer releasemigraties zonder de live database te wijzigen' .github/workflows/deploy-strato.yml
+          grep -Fq 'Geen verbinding met live DB en geen SQL/migratie wordt uitgevoerd.' .github/workflows/deploy-strato.yml
+          if grep -Eq 'supabase[[:space:]]+db[[:space:]]+push' .github/workflows/deploy-strato.yml; then
+            echo "::error::Productiedeploy mag geen database-migraties uitvoeren."
+            exit 1
+          fi
+          if grep -Eq 'PRODUCTION_DATABASE_(URL|PASSWORD)' .github/workflows/deploy-strato.yml; then
+            echo "::error::Productiedeploy mag geen live databasegeheimen gebruiken."
+            exit 1
+          fi
           grep -Fq 'actions/checkout@v4' .github/workflows/backup-supabase-database.yml
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const workflow = readFileSync('.github/workflows/deploy-strato.yml', 'utf8');
+          const upload = workflow.indexOf('      - name: Uploaden via SFTP');
+          const finalValidation = workflow.lastIndexOf('      - name: Validate UBL unit dropdown mobile change handling');
+          if (upload < 0 || finalValidation < 0 || upload < finalValidation) {
+            throw new Error('Production SFTP upload must occur only after all validation steps.');
+          }
+          if (workflow.slice(upload).split('\n').slice(1).some(line => line.startsWith('      - name: '))) {
+            throw new Error('No workflow step may run after the production SFTP upload.');
+          }
+          NODE
           for migration in 20261111222221 20261111222452 20261111223111 20261112155500 20261112155729 20261112163255 20261112174321; do
             grep -Fq "$migration" .github/workflows/deploy-strato.yml
           done
-          node --test tests/database-backup-retention.test.mjs tests/service-worker-cache.test.mjs
+          for file in ./*.mjs; do
+            node --check "$file"
+          done
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { spawnSync } from 'node:child_process';
+          const html = readFileSync('index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+          let checked = 0;
+          for (const match of scripts) {
+            const attrs = match[1] || '';
+            const type = (attrs.match(/\btype=["']([^"']+)["']/i) || [])[1] || '';
+            if (type && !/^(text\/javascript|application\/javascript|module)$/i.test(type)) continue;
+            const source = match[2] || '';
+            if (!source.trim()) continue;
+            const path = '/tmp/animo-inline-' + checked + '.js';
+            writeFileSync(path, source);
+            const result = spawnSync(process.execPath, ['--check', path], { encoding: 'utf8' });
+            if (result.status !== 0) {
+              process.stderr.write(result.stderr || result.stdout || 'Inline script syntax error');
+              process.exit(result.status || 1);
+            }
+            checked++;
+          }
+          console.log('Inline scripts syntax checked:', checked);
+          NODE
+          node --test tests/*.test.mjs
 
       - name: Uploaden naar uitsluitend /test
         if: steps.guard.outputs.present == 'true'
@@ -127,4 +163,4 @@ jobs:
           bye
           LFTP
 
-# Trigger test-only publication for the latest menu profitability branch revision.
+# Trigger test-only publication for phase 1 HACCP modules.

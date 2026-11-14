@@ -1,0 +1,52 @@
+name: ANIMO testmodus - browsercontrole
+
+on:
+  push:
+    branches:
+      - feature/phase1-haccp-completion
+    paths:
+      - 'index.html'
+      - 'tests/test-mode.playwright.mjs'
+      - '.github/workflows/test-mode-browser.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-restored-login:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Repository ophalen
+        uses: actions/checkout@v4
+
+      - name: Node.js instellen
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Playwright en Chromium installeren
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: Wachten tot testdeploy beschikbaar is
+        run: |
+          for attempt in $(seq 1 18); do
+            if curl --fail --silent --show-error https://test.animo-apps.com/ -o /tmp/animo-test.html; then
+              if grep -q 'cloudLoginForm' /tmp/animo-test.html && ! grep -q 'ANIMO TEST ROLE SWITCHER' /tmp/animo-test.html; then
+                echo "Testversie met gewone login is gepubliceerd."
+                exit 0
+              fi
+            fi
+            echo "Testdeploy nog niet zichtbaar (poging $attempt/18)."
+            sleep 10
+          done
+          echo "::error::De gepubliceerde testversie met gewone login werd niet gevonden."
+          exit 1
+
+      - name: Test gewone e-mail- en wachtwoordlogin
+        env:
+          ANIMO_TEST_URL: https://test.animo-apps.com
+        run: node tests/test-mode.playwright.mjs

@@ -17,12 +17,12 @@ test("food waste UI is wired in while source and test deployment keep separate S
   assert.match(app, /<script type="module" src="\.\/voedselverspilling-ui\.mjs"><\/script>/);
   assert.match(ui, /const mobileNav = document\.querySelector\("\.mobile-nav"\)/);
   assert.match(ui, /foodWasteMobileNav/);
-  assert.match(app, /class="mobile-nav"/);
+  assert.match(app, /class="nav"/);
   assert.match(app, /PUBLIC_SUPABASE_CONFIG=\{url:'https:\/\/zimzsovvtdmrthrflkgm\.supabase\.co'/);
   assert.doesNotMatch(app, /PUBLIC_SUPABASE_CONFIG=\{url:'https:\/\/xwjcwravfeldndwlugai\.supabase\.co'/);
-  assert.match(testDeploy, /const productionConfig = "const PUBLIC_SUPABASE_CONFIG=\{url:'https:\/\/zimzsovvtdmrthrflkgm\.supabase\.co'/);
-  assert.match(testDeploy, /const testConfig = "const PUBLIC_SUPABASE_CONFIG=\{url:'https:\/\/xwjcwravfeldndwlugai\.supabase\.co'/);
-  assert.ok(testDeploy.indexOf("Testbestanden voorbereiden") < testDeploy.indexOf("Testconfiguratie uitsluitend in testbuild injecteren"));
+  assert.match(testDeploy, /const testUrl = 'https:\/\/zimzsovvtdmrthrflkgm\.supabase\.co'/);
+  assert.match(testDeploy, /const liveUrl = 'https:\/\/xwjcwravfeldndwlugai\.supabase\.co'/);
+  assert.ok(testDeploy.indexOf("Testbestanden voorbereiden") < testDeploy.indexOf("Testconfiguratie controleren (nooit productie injecteren)"));
   assert.match(testDeploy, /mirror -R --verbose out\/test \/test/);
 });
 

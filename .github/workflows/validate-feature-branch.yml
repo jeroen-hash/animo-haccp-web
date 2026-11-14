@@ -1,0 +1,419 @@
+name: Validate ANIMO HACCP offline code
+
+on:
+  push:
+    branches: [feature/phase1-haccp-completion]
+    paths:
+      - 'index.html'
+      - 'supabase/functions/subscription-status/index.ts'
+      - 'tests/subscription-access-entitlements.test.mjs'
+      - 'tests/offline-access-window.test.mjs'
+      - 'tests/offline-outbox-race.test.mjs'
+      - 'tests/service-worker-cache.test.mjs'
+      - 'tests/stock-state-normalization.test.mjs'
+      - 'tests/brussels-timezone.test.mjs'
+      - 'tests/haccp-report-printing.test.mjs'
+      - 'tests/storage-backup-manifest.test.mjs'
+      - 'tests/storage-restore-target-guard.test.mjs'
+      - 'scripts/restore-supabase-storage.mjs'
+      - '.github/workflows/restore-supabase-storage-to-recovery.yml'
+      - 'scripts/backup-supabase-storage.mjs'
+      - 'scripts/verify-storage-backup.mjs'
+      - '.github/workflows/backup-supabase-storage.yml'
+      - '.github/workflows/backup-supabase-database.yml'
+      - 'scripts/select-expired-database-backups.mjs'
+      - 'tests/database-backup-retention.test.mjs'
+      - 'supabase/functions/stripe-webhook/index.ts'
+      - 'supabase/functions/process-delivery-note/index.ts'
+      - 'sw.js'
+      - 'supabase/migrations/**'
+      - '.github/workflows/validate-offline.yml'
+      - '.github/workflows/validate-feature-branch.yml'
+      - '.github/workflows/deploy-strato.yml'
+      - '.github/workflows/deploy-strato-test.yml'
+      - 'docs/release-veiligheidsplan.md'
+      - 'tests/production-migration-preflight.test.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  syntax-and-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate database backup retention selection (no remote deletion)
+        run: node --test tests/database-backup-retention.test.mjs
+      - name: Validate Stripe webhook subscription ordering guard
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const source = fs.readFileSync('supabase/functions/stripe-webhook/index.ts', 'utf8');
+          const start = source.indexOf('function shouldIgnoreSubscriptionOverwrite(');
+          const end = source.indexOf('async function saveSubscription(', start);
+          if (start < 0 || end < 0) throw new Error('Stripe subscription ordering guard is missing.');
+          const helper = source.slice(start, end).replaceAll(': string | null', '').replaceAll(': number | null', '').replaceAll(': string', '').replaceAll(': number', '');
+          vm.runInNewContext(helper + `
+            const cases = [
+              ['late event from older subscription is ignored', 'sub-newer', 200, 'sub-older', 100, true],
+              ['new subscription can replace an older one', 'sub-older', 100, 'sub-newer', 200, false],
+              ['same subscription ID can receive updates', 'sub-current', 200, 'sub-current', 200, false],
+              ['empty subscription row accepts first subscription', null, null, 'sub-first', 100, false],
+              ['equal timestamps from different IDs are treated as stale', 'sub-current', 100, 'sub-other', 100, true]
+            ];
+            for (const [label, currentId, currentCreated, incomingId, incomingCreated, expected] of cases) {
+              const actual = shouldIgnoreSubscriptionOverwrite(currentId, currentCreated, incomingId, incomingCreated);
+              if (actual !== expected) throw new Error(label + ': expected ' + expected + ', got ' + actual);
+            }
+          `);
+          console.log('Stripe subscription ordering guard: 5 cases passed.');
+          if (!source.includes('await stripe.subscriptions.retrieve(currentSubscriptionId)')) throw new Error('Current Stripe subscription creation time is not verified.');
+          if (!source.includes('if (\n    currentSubscriptionId &&')) throw new Error('Stripe webhook ordering guard is not applied before upsert.');
+          console.log('Stripe webhook ordering lookup and guard placement passed.');
+          NODE
+      - name: Validate delivery parser business isolation
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const fn = fs.readFileSync('supabase/functions/process-delivery-note/index.ts', 'utf8');
+          if (!html.includes("functions.invoke('process-delivery-note',{body:{...payload,businessId}})")) {
+            throw new Error('Frontend must send the explicitly selected business ID to the delivery parser.');
+          }
+          if (!fn.includes('const requestedBusinessId = String(body?.businessId ?? "").trim()')) {
+            throw new Error('Delivery parser must require an explicit business ID.');
+          }
+          if (!fn.includes('.eq("business_id", requestedBusinessId)') || !fn.includes('.eq("user_id", user.id)') || !fn.includes('.eq("active", true)')) {
+            throw new Error('Delivery parser membership must be scoped to the requested business and authenticated user.');
+          }
+          if (!fn.includes('if (!membership)')) throw new Error('Delivery parser must reject users without active membership in the selected business.');
+          console.log('Delivery parser business isolation checks passed.');
+          NODE
+      - name: Validate subscription billing data access
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const status = fs.readFileSync('supabase/functions/subscription-status/index.ts', 'utf8');
+          const policy = fs.readFileSync('supabase/migrations/20261106230000_restrict_subscription_row_reads.sql', 'utf8');
+          const membershipCheck = status.indexOf('if (allowedMemberships.length === 0)');
+          const adminClient = status.indexOf('const supabaseAdmin = createClient(');
+          const subscriptionRead = status.indexOf('.from("subscriptions")');
+          if (!status.includes('Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")')) throw new Error('Subscription status endpoint must use the server-side service role key.');
+          if (membershipCheck < 0 || adminClient < membershipCheck || subscriptionRead < adminClient) throw new Error('Subscription data is read before membership/business authorization.');
+          if (!status.includes('const customerId = billingAllowed') || !status.includes('const subscriptionId = billingAllowed') || !status.includes('const priceId = billingAllowed')) throw new Error('Stripe billing identifiers must remain owner/manager-only in the endpoint response.');
+          for (const marker of ['for select', 'to authenticated', "bm.role in ('owner', 'manager')", 'bm.active is true']) {
+            if (!policy.toLowerCase().includes(marker)) throw new Error('Subscription SELECT policy is missing: ' + marker);
+          }
+          console.log('Subscription billing data access and owner/manager policy checks passed.');
+          NODE
+      - name: Validate standalone allergen and day-report PDF exports
+        run: node --test tests/haccp-report-printing.test.mjs
+      - name: Validate subscription access entitlements
+        run: node --test tests/subscription-access-entitlements.test.mjs
+      - name: Validate offline access expiry
+        run: node --test tests/offline-access-window.test.mjs
+
+      - name: Validate offline outbox persistence and race safety
+        run: node --test tests/offline-outbox-race.test.mjs
+      - name: Validate service worker cache lifecycle and API isolation
+        run: node --test tests/service-worker-cache.test.mjs
+      - name: Validate inline JavaScript and service worker
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
+            .map(match => match[1])
+            .filter(source => source.trim());
+          if (scripts.length < 2) throw new Error('Expected both application inline scripts.');
+          scripts.forEach((source, index) => new vm.Script(source, { filename: `index-inline-${index + 1}.js` }));
+          const worker = fs.readFileSync('sw.js', 'utf8');
+          new vm.Script(worker, { filename: 'sw.js' });
+          const required = [
+            'function queueOfflineSnapshot',
+            'async function readOfflineSnapshot',
+            'save_app_data_if_unchanged',
+            'FAVVSyncConflict',
+            'hasPersistedAuth',
+            'FAVVRememberOfflineSession',
+            'const synced=await saveCloudState(r.data)',
+            'if(synced)window.__favvPendingOutbox=null',
+            'return true;'
+          ];
+          for (const marker of required) {
+            if (!html.includes(marker)) throw new Error(`Missing offline safety marker: ${marker}`);
+          }
+          for (const apiPath of ['/rest/v1/', '/auth/v1/', '/functions/v1/', '/storage/v1/']) {
+            if (!worker.includes(apiPath)) throw new Error(`Service worker must explicitly bypass ${apiPath}`);
+          }
+          if (!worker.includes('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2')) {
+            throw new Error('Supabase SDK cache entry is missing.');
+          }
+          console.log(`Validated ${scripts.length} inline scripts, service worker, and offline safety guards.`);
+          const extract = (signature, nextSignature) => {
+            const from = html.indexOf(signature);
+            const to = html.indexOf(nextSignature, from);
+            if (from < 0 || to < 0) throw new Error(`Temperature helper not found: ${signature}`);
+            return html.slice(from, to);
+          };
+          const temperatureHelpers = [
+            extract('function tempOk', 'function localDay'),
+            extract('function temperatureDirection', 'function actionForTemperature'),
+            extract('function actionForTemperature', 'function syncTemperatureActions'),
+            extract('function syncTemperatureActions', 'function updateActionBadge'),
+            extract('function updateActionBadge', 'function renderTemperatureActions')
+          ].join('\n');
+          const temperatureContext = {
+            state: { temperatures: [], temperatureActions: [] },
+            currentUser: { name: 'CI test' },
+            id: (() => { let n = 0; return prefix => prefix + (++n); })(),
+            updateActionBadge: () => {},
+            $: () => null
+          };
+          vm.runInNewContext(temperatureHelpers + `
+            const cases = [
+              [{type:'Koeling',value:6,min:0,max:5}, false, 'Te hoog'],
+              [{type:'Diepvries',value:-19,min:'',max:-20}, false, 'Te hoog'],
+              [{type:'Koeling',value:8,min:'',max:''}, false, 'Te hoog'],
+              [{type:'Diepvries',value:-17,min:'',max:''}, false, 'Te hoog'],
+              [{type:'Koeling',value:4,min:0,max:5}, true, '']
+            ];
+            for (const [reading, expectedOk, expectedDirection] of cases) {
+              if (tempOk(reading) !== expectedOk) throw new Error('Wrong temperature status for ' + JSON.stringify(reading));
+              if (!expectedOk && temperatureDirection(reading) !== expectedDirection) {
+                throw new Error('Wrong deviation direction for ' + JSON.stringify(reading));
+              }
+            }
+            state.temperatures = [{id:'t-1',device:'Testkoeling',type:'Koeling',value:6,date:'2026-11-06T12:00',min:0,max:5}];
+            syncTemperatureActions();
+            if (state.temperatureActions.length !== 1 || state.temperatureActions[0].direction !== 'Te hoog' || state.temperatureActions[0].min !== 0 || state.temperatureActions[0].max !== 5) {
+              throw new Error('Custom-limit deviation did not create a correctly classified action.');
+            }
+            syncTemperatureActions();
+            if (state.temperatureActions.length !== 1) throw new Error('Repeated sync created duplicate corrective actions.');
+          `, temperatureContext);
+          console.log('Temperature deviation thresholds, action creation, and duplicate prevention tests passed.');
+          (async () => {
+            const start = html.indexOf('async function readOfflineSnapshot');
+            const end = html.indexOf('function offlineNotice', start);
+            if (start < 0 || end < 0) throw new Error('Offline queue helpers could not be isolated for tests.');
+            const values = new Map();
+            const storage = {
+              getItem: key => values.has(key) ? values.get(key) : null,
+              setItem: (key, value) => values.set(key, String(value)),
+              removeItem: key => values.delete(key)
+            };
+            const context = {
+              localStorage: storage,
+              cloudBusiness: { id: 'offline-test-business' },
+              cloudRowUpdatedAt: 'cloud-version-1',
+              openOfflineDb: () => Promise.reject(new Error('IndexedDB disabled in fallback test')),
+              setStatus: () => {},
+              console
+            };
+            const testSource = html.slice(start, end) + `
+              (async () => {
+                const first = await queueOfflineSnapshot({ value: 1 });
+                const second = await queueOfflineSnapshot({ value: 2 });
+                if (first.baseUpdatedAt !== 'cloud-version-1' || second.baseUpdatedAt !== 'cloud-version-1') {
+                  throw new Error('Offline edits did not preserve their original cloud base.');
+                }
+                await clearOfflineSnapshot('offline-test-business', first.queuedAt);
+                let queued = JSON.parse(localStorage.getItem('animo-offline-outbox:offline-test-business'));
+                if (queued?.data?.value !== 2) throw new Error('An older save removed a newer local snapshot.');
+                await rebaseOfflineSnapshot('offline-test-business', first.queuedAt, 'cloud-version-2');
+                queued = JSON.parse(localStorage.getItem('animo-offline-outbox:offline-test-business'));
+                if (queued?.baseUpdatedAt !== 'cloud-version-2') throw new Error('Newer local snapshot was not rebased.');
+                await clearOfflineSnapshot('offline-test-business', second.queuedAt);
+                if (localStorage.getItem('animo-offline-outbox:offline-test-business') !== null) {
+                  throw new Error('Successfully synchronized snapshot remained queued.');
+                }
+                const recovered = await queueOfflineSnapshot({ value: 3 }, 'original-dirty-base');
+                if (recovered.baseUpdatedAt !== 'original-dirty-base') {
+                  throw new Error('Recovered dirty marker did not preserve its original cloud base.');
+                }
+                await clearOfflineSnapshot('offline-test-business', recovered.queuedAt);
+              })()
+            `;
+            await vm.runInNewContext(testSource, context);
+            console.log('Offline queue fallback, version preservation, conditional clearing, and rebasing tests passed.');
+          })().catch(error => { console.error(error); process.exitCode = 1; });
+          NODE
+
+      - name: Validate legacy stock state collection defaults
+        run: node --test tests/stock-state-normalization.test.mjs
+
+      - name: Validate Brussels timezone and temperature registration timestamps
+        run: node --test tests/brussels-timezone.test.mjs
+
+      - name: Validate UBL-only stock import (AI disabled)
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const upload = html.match(/<input id="deliveryFile"[^>]*>/)?.[0] || '';
+          if (!upload.includes('accept=".xml,.ubl,application/xml,text/xml,application/ubl+xml"')) throw new Error('Stock import picker must accept only UBL/XML.');
+          if (upload.includes('application/pdf') || upload.includes('image/')) throw new Error('PDF/image upload must remain disabled.');
+          const start = html.indexOf('async function scanDelivery(){');
+          const end = html.indexOf('function confirmDelivery()', start);
+          if (start < 0 || end < 0) throw new Error('Stock import handler could not be isolated.');
+          const handler = html.slice(start, end);
+          if (!handler.includes('if(!isXml)')) throw new Error('Non-UBL files must be rejected.');
+          if (handler.includes('window.FAVVProcessDeliveryNote(')) throw new Error('AI/PDF parser must not be invoked by stock upload.');
+          if (!handler.includes('await scanUblFile(file)')) throw new Error('UBL processing path is missing.');
+          console.log('UBL-only stock import guard passed; AI/PDF parser cannot be invoked from stock upload.');
+          NODE
+
+      - name: Validate manual stock batch adjustments
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const extract = (start, end) => {
+            const a = html.indexOf(start);
+            const b = html.indexOf(end, a);
+            if (a < 0 || b < 0) throw new Error('Missing stock helper: ' + start);
+            return html.slice(a, b).trim();
+          };
+          const sorted = extract('function sortedBatches(product){', 'function applyPriceVisibility');
+          const sync = extract('function syncProductQuantity(product){', 'function expiryInfo');
+          const consume = extract('function consumeBatches(product,amount,reason){', 'function applyPriceVisibility');
+          const adjust = extract('function adjustStock(productId){', 'function deleteStock');
+          const context = {
+            state: { stock: [{ id: 'p1', name: 'Eieren', unit: 'stuks', quantity: 4, batches: [{ id: 'old', quantity: 4, expiryDate: '2026-12-01', receivedAt: '2026-11-01' }] }] },
+            prompt: (() => { const values = ['3', '2026-12-05']; return () => values.shift(); })(),
+            alert: message => { throw new Error('Unexpected alert: ' + message); },
+            id: prefix => prefix + '-new',
+            stockMovement: () => {},
+            stockSave: () => { context.saved = true; }
+          };
+          vm.runInNewContext(sorted + ';' + sync + ';' + consume + ';' + adjust + `
+            const before = state.stock[0].quantity;
+            adjustStock('p1');
+            if (state.stock[0].quantity !== before + 3) throw new Error('Manual stock addition did not increase total stock.');
+            if (state.stock[0].batches.length !== 2) throw new Error('Manual stock addition did not create a batch.');
+            if (state.stock[0].batches[1].expiryDate !== '2026-12-05') throw new Error('Expiry date was not saved on the new batch.');
+          `, context);
+          if (!context.saved) throw new Error('Manual stock addition did not save.');
+          console.log('Manual stock addition test passed: quantity, expiry batch, and save.');
+          NODE
+
+      - name: Validate UBL stock unit normalization
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const start = html.indexOf('function prepareDeliveryRows(rows){');
+          const end = html.indexOf('function confirmDelivery()', start);
+          const unitStart = html.indexOf('function recipeUnitInfo(unit)');
+          const unitEnd = html.indexOf('function saveRecipe(e)', unitStart);
+          const matchStart = html.indexOf('function findStockMatch(');
+          const matchEnd = html.indexOf('function renderDeliveryReview()', matchStart);
+          if ([start,end,unitStart,unitEnd,matchStart,matchEnd].some(x => x < 0)) throw new Error('UBL unit normalization helpers missing.');
+          const matchLineEnd = html.indexOf(String.fromCharCode(10), matchStart);
+          const source = html.slice(unitStart,unitEnd) + html.slice(matchStart,matchLineEnd) + html.slice(start,end);
+          const context = { state:{stock:[{id:'eggs',name:'Eieren',unit:'kg',code:'',quantity:0}]}, normalizeStockName:x=>String(x||'').toLowerCase().replace(/s$/,'') };
+          vm.runInNewContext(source + `
+            const grams = prepareDeliveryRows([{name:'Eieren',quantity:500,unit:'g',lineTotal:2.5}]);
+            if (Math.abs(grams[0].stockQuantity - 0.5) > 0.000001) throw new Error('500 g must normalize to 0.5 kg.');
+            let rejected = false;
+            try { prepareDeliveryRows([{name:'Eieren',quantity:2,unit:'dozen',lineTotal:10}]); } catch(e) { rejected = /Eenheid komt niet overeen/.test(e.message); }
+            if (!rejected) throw new Error('Incompatible package units must be rejected.');
+            console.log('UBL unit normalization passed: 500 g -> 0.5 kg; incompatible package unit rejected.');
+          `,context);
+          NODE
+
+      - name: Validate recipe unit-cost and quantity calculations
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const unitStart = html.indexOf('function unitCost(product)');
+          const unitEnd = html.indexOf('function renderStockUnitCostPreview()', unitStart);
+          const stockStart = html.indexOf('function normalizedIngredientAmount(');
+          const stockEnd = html.indexOf('function recipeSnapshot(', stockStart);
+          if (stockStart < 0 || stockEnd < 0) throw new Error('Recipe portion and stock helpers could not be isolated.');
+          const recipeStart = html.indexOf('function recipeUnitInfo(unit)');
+          const recipeEnd = html.indexOf('function saveRecipe(e)', recipeStart);
+          const costStart = html.indexOf('function recipeCost(recipe)');
+          const costEnd = html.indexOf('function recipeSnapshot(recipe', costStart);
+          if ([unitStart, unitEnd, recipeStart, recipeEnd, costStart, costEnd].some(x => x < 0)) {
+            throw new Error('Recipe cost helpers could not be isolated.');
+          }
+          const source = html.slice(unitStart, unitEnd) + html.slice(recipeStart, recipeEnd) + html.slice(stockStart, stockEnd) + html.slice(costStart, costEnd);
+          const context = { state: { stock: [] }, stockById: id => context.state.stock.find(x => x.id === id) };
+          vm.runInNewContext(source + `
+            const eggs = { id: 'eggs', name: 'Eieren', unit: 'stuks', purchaseQuantity: 10, purchasePrice: 5 };
+            if (Math.abs(unitCost(eggs) - 0.5) > 0.000001) throw new Error('10 eggs for €5 must cost €0.50 per egg.');
+            state.stock = [eggs];
+            eggs.quantity = 9;
+            const recipe = { yield: 1, ingredients: [{ stockId: 'eggs', quantity: 5, unit: 'stuks' }] };
+            if (Math.abs(recipeCost(recipe) - 2.5) > 0.000001) throw new Error('5 eggs must cost €2.50.');
+            if (Math.abs(convertRecipeQuantity(5, 'eieren', 'stuks') - 5) > 0.000001) throw new Error('Egg-to-piece conversion must preserve quantity.');
+            if (Math.abs(convertRecipeQuantity(0.5, 'kg', 'g') - 500) > 0.000001) throw new Error('Kilogram-to-gram conversion failed.');
+            if (Math.abs(convertRecipeQuantity(250, 'g', 'kg') - 0.25) > 0.000001) throw new Error('Gram-to-kilogram conversion failed.');
+            if (Math.abs(convertRecipeQuantity(75, 'cl', 'ml') - 750) > 0.000001) throw new Error('Centiliter-to-milliliter conversion failed.');
+            if (convertRecipeQuantity(1, 'kg', 'liter') !== null) throw new Error('Incompatible mass and volume units must be rejected.');
+            if (convertRecipeQuantity(2, 'doos', 'doos') !== 2 || convertRecipeQuantity(2, 'doos', 'fles') !== null) throw new Error('Custom units must match exactly.');
+            const tenPortionRecipe = { yield: 10, ingredients: [{ stockId: 'eggs', quantity: 10, unit: 'stuks' }] };
+            if (Math.abs(normalizedIngredientAmount(tenPortionRecipe.ingredients[0], 5, tenPortionRecipe.yield) - 5) > 0.000001) throw new Error('Half-batch ingredient quantity is incorrect.');
+            if (Math.abs(normalizedIngredientAmount(tenPortionRecipe.ingredients[0], 20, tenPortionRecipe.yield) - 20) > 0.000001) throw new Error('Double-batch ingredient quantity is incorrect.');
+            if (Math.abs(recipeShortages(tenPortionRecipe, 20)[0].shortage - 11) > 0.000001) throw new Error('Scaled stock shortage is incorrect.');
+            if (recipeShortages(tenPortionRecipe, 5).length !== 0) throw new Error('A sufficiently stocked half-batch should be available.');
+          `, context);
+          console.log('Recipe cost tests passed: 10 eggs €5 => €0.50/egg; 5 eggs => €2.50; unit conversions passed.');
+          NODE
+
+      - name: Validate encrypted Storage backup manifest
+        run: node --test tests/storage-backup-manifest.test.mjs
+      - name: Validate isolated Storage recovery target guard
+        run: node --test tests/storage-restore-target-guard.test.mjs
+
+      - name: Validate legacy stock batches and safe recipe consumption
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const extract = (start, end) => {
+            const a = html.indexOf(start);
+            const b = html.indexOf(end, a);
+            if (a < 0 || b < 0) throw new Error('Missing stock production helper: ' + start);
+            return html.slice(a, b);
+          };
+          const normalize = extract('function normalizeStockBatchData(products){', 'function sortedBatches(product){');
+          const sorted = extract('function sortedBatches(product){', 'function expiryInfo(product){');
+          const sync = extract('function syncProductQuantity(product){', 'function expiryInfo(product){');
+          const consume = extract('function consumeBatches(product,amount,reason){', 'function applyPriceVisibility');
+          const movements = [];
+          const context = {
+            stockMovement: (product, delta, reason) => movements.push({ productId: product.id, delta, reason })
+          };
+          vm.runInNewContext(normalize + sorted + sync + consume + `
+            const [legacy] = normalizeStockBatchData([{id:'old-eggs',name:'Eieren',unit:'stuks',quantity:5,expiryDate:'2026-12-01'}]);
+            if (legacy.quantity !== 5 || legacy.batches.length !== 1 || legacy.batches[0].quantity !== 5) {
+              throw new Error('Legacy cloud stock without batches must be migrated without losing quantity.');
+            }
+            if (!consumeBatches(legacy, 2, 'Bereiding test')) throw new Error('Valid stock consumption should succeed.');
+            if (Math.abs(legacy.quantity - 3) > 0.000001 || Math.abs(legacy.batches[0].quantity - 3) > 0.000001) {
+              throw new Error('Stock and batch quantity must both decrease by the consumed amount.');
+            }
+            if (consumeBatches(legacy, 4, 'Too much')) throw new Error('Consumption above available batches must be rejected.');
+            if (Math.abs(legacy.quantity - 3) > 0.000001) throw new Error('Rejected consumption must not change stock.');
+          `, context);
+          if (movements.length !== 1 || movements[0].delta !== -2) {
+            throw new Error('Only successful stock consumption may create a stock movement.');
+          }
+          console.log('Legacy stock batch migration and safe consumption tests passed.');
+          NODE
+      - name: Validate production migration preflight against live history
+        run: node --test tests/production-migration-preflight.test.mjs
+      - name: Run all isolated application regression tests
+        run: node --test tests/*.test.mjs

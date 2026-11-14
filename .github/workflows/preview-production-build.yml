@@ -1,0 +1,130 @@
+name: ANIMO productiebuild voorbereiden (zonder publiceren)
+
+on:
+  push:
+    branches: [feature/phase1-haccp-completion]
+    paths:
+      - 'index.html'
+      - 'landing.html'
+      - 'onboarding-form.html'
+      - 'admin-dashboard.html'
+      - 'onboarding-dashboard.html'
+      - 'onboarding-*.js'
+      - 'wachtwoord-vergeten.html'
+      - 'sw.js'
+      - '*.mjs'
+      - 'images/**'
+      - '.github/workflows/preview-production-build.yml'
+      - '.github/workflows/deploy-strato.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-only:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository ophalen
+        uses: actions/checkout@v4
+
+      - name: Volledige productiebuild samenstellen (geen migraties of upload)
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf out
+          mkdir -p out/app/images out/landing/images
+          cp index.html sw.js out/app/
+          cp ./*.mjs out/app/
+          cp -r images/. out/app/images/
+          cp landing.html out/landing/index.html
+          cp -r images/. out/landing/images/
+          cp onboarding-form.html out/landing/onboarding-form.html
+          cp onboarding-form.html out/app/onboarding-form.html
+          for f in privacy.html algemene-voorwaarden.html verwerkersovereenkomst.html; do
+            if [ -f "$f" ]; then cp "$f" "out/landing/$f"; fi
+          done
+          for f in admin-dashboard.html onboarding-dashboard.html wachtwoord-vergeten.html; do
+            if [ -f "$f" ]; then cp "$f" "out/app/$f"; fi
+          done
+          for f in onboarding-*.js; do
+            if [ -f "$f" ]; then cp "$f" out/app/; fi
+          done
+
+          node --input-type=module <<'NODE'
+          import { readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
+          import { join } from 'node:path';
+          const root = 'out';
+          const testUrl = 'https://zimzsovvtdmrthrflkgm.supabase.co';
+          const testKey = 'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k';
+          const liveUrl = 'https://xwjcwravfeldndwlugai.supabase.co';
+          const liveKey = 'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI';
+          const walk = dir => {
+            for (const name of readdirSync(dir)) {
+              const file = join(dir, name);
+              if (statSync(file).isDirectory()) { walk(file); continue; }
+              let value = readFileSync(file, 'utf8');
+              value = value.split(testUrl).join(liveUrl).split(testKey).join(liveKey);
+              if (value.includes(testUrl) || value.includes(testKey) || value.includes('test.animo-apps.com')) {
+                throw new Error('Testconfiguratie of testhost gevonden in productiebuild: ' + file);
+              }
+              writeFileSync(file, value);
+            }
+          };
+          walk(root);
+          const app = readFileSync('out/app/index.html', 'utf8');
+          if (!app.includes(liveUrl) || !app.includes(liveKey)) throw new Error('Live Supabase-configuratie ontbreekt in de app.');
+          for (const file of ['out/landing/index.html','out/landing/onboarding-form.html','out/app/onboarding-form.html']) {
+            const value = readFileSync(file, 'utf8');
+            if (!value.includes(liveUrl) || !value.includes(liveKey)) throw new Error('Live Supabase-configuratie ontbreekt in ' + file);
+          }
+          console.log('App, landing en onboarding gebruiken uitsluitend de live Supabase-configuratie.');
+          NODE
+
+      - name: Syntaxcontroles op alle gebouwde bestanden
+        run: |
+          set -euo pipefail
+          for file in out/app/*.mjs; do node --check "$file"; done
+          node --input-type=module <<'NODE'
+          import { readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
+          import { join } from 'node:path';
+          import { spawnSync } from 'node:child_process';
+          const htmlFiles = [];
+          const walk = dir => {
+            for (const name of readdirSync(dir)) {
+              const file = join(dir, name);
+              if (statSync(file).isDirectory()) walk(file);
+              else if (file.endsWith('.html')) htmlFiles.push(file);
+            }
+          };
+          walk('out');
+          let checked = 0;
+          for (const htmlFile of htmlFiles) {
+            const html = readFileSync(htmlFile, 'utf8');
+            const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+            for (const match of scripts) {
+              const attrs = match[1] || '';
+              const type = (attrs.match(/\btype=["']([^"']+)["']/i) || [])[1] || '';
+              if (type && !/^(text\/javascript|application\/javascript|module)$/i.test(type)) continue;
+              const source = match[2] || '';
+              if (!source.trim()) continue;
+              const file = '/tmp/animo-prod-build-' + checked + '.js';
+              writeFileSync(file, source);
+              const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
+              if (result.status !== 0) {
+                process.stderr.write(result.stderr || result.stdout || 'Inline script syntaxfout in ' + htmlFile);
+                process.exit(result.status || 1);
+              }
+              checked++;
+            }
+          }
+          console.log('Gebouwde inline scripts syntax gecontroleerd:', checked, 'in', htmlFiles.length, 'HTML-bestanden.');
+          NODE
+
+      - name: Volledige productiepreview als controle-artifact bewaren
+        uses: actions/upload-artifact@v4
+        with:
+          name: animo-haccp-production-preview
+          path: out/
+          if-no-files-found: error
+          retention-days: 7

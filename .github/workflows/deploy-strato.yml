@@ -29,142 +29,36 @@ jobs:
           SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
         run: |
           if [ -z "$SFTP_HOST" ] || [ -z "$SFTP_USER" ] || [ -z "$SFTP_PASS" ]; then
-            echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::SFTP-geheimen ontbreken. Uploaden naar Strato wordt overgeslagen."
-          else
-            echo "present=true" >> "$GITHUB_OUTPUT"
+            echo "::error::SFTP-geheimen ontbreken. Productiepublicatie wordt veilig afgebroken."
+            exit 1
           fi
+          echo "present=true" >> "$GITHUB_OUTPUT"
 
-      - name: Supabase CLI installeren
-        if: steps.guard.outputs.present == 'true'
-        uses: supabase/setup-cli@v3
-
-      - name: Alleen de zeven ANIMO-modulemigraties naar productie toepassen
+      - name: Controleer releasemigraties zonder de live database te wijzigen
         if: steps.guard.outputs.present == 'true'
         shell: bash
-        env:
-          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
-          DATABASE_PASSWORD: ${{ secrets.PRODUCTION_DATABASE_PASSWORD }}
         run: |
           set -euo pipefail
-          test -n "$DATABASE_URL"
-          test -n "$DATABASE_PASSWORD"
-          release_dir="$RUNNER_TEMP/animo-module-release"
-          mkdir -p "$release_dir"
-          cd "$release_dir"
-          supabase init
-          mkdir -p supabase/migrations
-          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261111222221_create_food_waste_entries.sql supabase/migrations/
-          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261111222452_tighten_food_waste_table_grants.sql supabase/migrations/
-          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261111223111_harden_food_waste_audit_and_index.sql supabase/migrations/
-          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261112155500_create_menu_profitability_private_data.sql supabase/migrations/
-          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261112155729_allow_manager_updates_menu_profitability_data.sql supabase/migrations/
-          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261112163255_add_atomic_menu_profitability_manager_save.sql supabase/migrations/
-          cp "$GITHUB_WORKSPACE"/supabase/migrations/20261112174321_correct_food_waste_comment_and_index_menu_profitability_creator.sql supabase/migrations/
-          ANIMO_PRODUCTION_DB_URL="$(python3 - <<'PY'
-          import os
-          from urllib.parse import parse_qs, quote, unquote, urlencode, urlsplit, urlunsplit
-          parsed = urlsplit(os.environ["DATABASE_URL"])
-          if parsed.scheme not in ("postgres", "postgresql") or not parsed.hostname:
-              raise SystemExit("Production database URL is not a PostgreSQL URI.")
-          if parsed.password:
-              raise SystemExit("Remove the password from PRODUCTION_DATABASE_URL; use PRODUCTION_DATABASE_PASSWORD.")
-          username = unquote(parsed.username or "")
-          database = unquote(parsed.path.lstrip("/"))
-          if username != "postgres.zimzsovvtdmrthrflkgm":
-              raise SystemExit("Production migration target guard failed: unexpected Supabase project username.")
-          if database != "postgres":
-              raise SystemExit("Production migration target guard failed: expected the postgres database.")
-          if not parsed.hostname.endswith(".pooler.supabase.com"):
-              raise SystemExit("Production migration target guard failed: expected the Supabase session pooler.")
-          query = parse_qs(parsed.query, keep_blank_values=True)
-          if query.get("sslmode") and query["sslmode"][0] != "require":
-              raise SystemExit("Production database connection must require SSL.")
-          query["sslmode"] = ["require"]
-          netloc = f"{quote(username, safe='')}:{quote(os.environ['DATABASE_PASSWORD'], safe='')}@{parsed.hostname}"
-          if parsed.port:
-              netloc += f":{parsed.port}"
-          print(urlunsplit((parsed.scheme, netloc, parsed.path, urlencode(query, doseq=True), parsed.fragment)))
-          PY
-          )"
-          echo "::add-mask::$ANIMO_PRODUCTION_DB_URL"
-          echo "Controleer eerst de bestaande productiemigratiehistoriek."
-          supabase migration list --remote="$ANIMO_PRODUCTION_DB_URL" | tee "$RUNNER_TEMP/animo-remote-migration-history.txt"
-          while IFS=' ' read -r version migration_name; do
-            [ -n "$version" ] || continue
-            grep -Fq "$version" "$RUNNER_TEMP/animo-remote-migration-history.txt" || {
-              echo "::error::Verwachte bestaande productiemigratie ontbreekt: $version. Geen placeholder of nieuwe migratie wordt toegepast."
-              exit 1
-            }
-          done <<'REMOTE_MIGRATIONS'
-          20261106001055 start_trial_for_new_businesses
-          20261106001128 harden_security_definer_function_grants
-          20261106162137 scope_business_member_list
-          20261106171810 enforce_subscription_access_for_business_data
-          20261106172309 move_subscription_gate_to_private_schema
-          20261106192207 add_admin_website_analytics
-          20261106193712 add_safe_app_data_compare_and_swap
-          20261106200126 ensure_monotonic_app_data_sync_version
-          20261106222804 restrict_business_entitlement_updates
-          20261106222938 index_foreign_keys_and_optimize_rls_policies
-          20261106223037 gate_member_directory_by_subscription
-          20261106223128 secure_business_onboarding_intake_access
-          20261106223137 fix_onboarding_intake_upsert_qualification
-          20261106230040 restrict_subscription_row_reads
-          20261107014131 revoke_anon_access_internal_tables
-          20261107014218 hide_inactive_members_from_direct_membership_reads
-          20261107014559 enforce_subscription_access_for_onboarding_storage
-          20261107102332 add_onboarding_invoice_reporting
-          20261107102603 add_onboarding_invoice_reporting
-          20261108150151 add_site_host_to_website_visit_events
-          REMOTE_MIGRATIONS
-          # Temporary no-op files align the isolated release bundle with migrations
-          # already recorded on production. The preflight above proves every version
-          # exists remotely; these files are skipped and are never committed.
-          while IFS=' ' read -r version migration_name; do
-            [ -n "$version" ] || continue
-            placeholder="supabase/migrations/${version}_${migration_name}.sql"
-            if [ ! -f "$placeholder" ]; then
-              cat > "$placeholder" <<'SQL'
-          -- Already applied on production before this isolated module release.
-          -- Temporary history-alignment placeholder; db push must skip this version.
-          select 1;
-          SQL
-            fi
-          done <<'REMOTE_MIGRATIONS'
-          20261106001055 start_trial_for_new_businesses
-          20261106001128 harden_security_definer_function_grants
-          20261106162137 scope_business_member_list
-          20261106171810 enforce_subscription_access_for_business_data
-          20261106172309 move_subscription_gate_to_private_schema
-          20261106192207 add_admin_website_analytics
-          20261106193712 add_safe_app_data_compare_and_swap
-          20261106200126 ensure_monotonic_app_data_sync_version
-          20261106222804 restrict_business_entitlement_updates
-          20261106222938 index_foreign_keys_and_optimize_rls_policies
-          20261106223037 gate_member_directory_by_subscription
-          20261106223128 secure_business_onboarding_intake_access
-          20261106223137 fix_onboarding_intake_upsert_qualification
-          20261106230040 restrict_subscription_row_reads
-          20261107014131 revoke_anon_access_internal_tables
-          20261107014218 hide_inactive_members_from_direct_membership_reads
-          20261107014559 enforce_subscription_access_for_onboarding_storage
-          20261107102332 add_onboarding_invoice_reporting
-          20261107102603 add_onboarding_invoice_reporting
-          20261108150151 add_site_host_to_website_visit_events
-          REMOTE_MIGRATIONS
-          echo "Controleer welke uitsluitend modulemigraties klaarstaan voor productie..."
-          supabase db push --dry-run --yes --remote="$ANIMO_PRODUCTION_DB_URL"
-          echo "Pas de zeven modulemigraties toe; alle andere bestaande productiemigraties blijven buiten deze geïsoleerde release."
-          supabase db push --yes --remote="$ANIMO_PRODUCTION_DB_URL"
-          supabase migration list --remote="$ANIMO_PRODUCTION_DB_URL" | tee "$RUNNER_TEMP/animo-module-migration-list.txt"
-          for version in 20261111222221 20261111222452 20261111223111 20261112155500 20261112155729 20261112163255 20261112174321; do
-            grep -Fq "$version" "$RUNNER_TEMP/animo-module-migration-list.txt" || {
-              echo "::error::Productiemigratie ontbreekt na db push: $version"
+          # De database-audit bevestigde dat deze zeven modulemigraties al in live geregistreerd zijn.
+          # Deze deploy controleert alleen dat de bronbestanden aanwezig zijn; ze worden niet opnieuw toegepast.
+          for migration in \
+            20261111222221_create_food_waste_entries.sql \
+            20261111222452_tighten_food_waste_table_grants.sql \
+            20261111223111_harden_food_waste_audit_and_index.sql \
+            20261112155500_create_menu_profitability_private_data.sql \
+            20261112155729_allow_manager_updates_menu_profitability_data.sql \
+            20261112163255_add_atomic_menu_profitability_manager_save.sql \
+            20261112174321_correct_food_waste_comment_and_index_menu_profitability_creator.sql; do
+            test -f "supabase/migrations/$migration" || {
+              echo "::error::Releasemigratie ontbreekt in de repository: $migration"
               exit 1
             }
           done
-          unset DATABASE_URL DATABASE_PASSWORD ANIMO_PRODUCTION_DB_URL
+          echo "Alle zeven modulemigraties zijn aanwezig. Geen verbinding met live DB en geen SQL/migratie wordt uitgevoerd."
+          if grep -Eq 'postgres\\.zimzsovvtdmrthrflkgm' .github/workflows/deploy-strato.yml; then
+            echo "::error::Testdatabaseverwijzing gevonden in productie-workflow."
+            exit 1
+          fi
 
       - name: Mappen voor landing en app klaarzetten
         if: steps.guard.outputs.present == 'true'
@@ -215,6 +109,31 @@ jobs:
 
           # App
           cp index.html out/app/index.html
+          # De broncode blijft op de testbranch/testconfig staan. Alleen de productiebuild
+          # krijgt hier de bevestigde live Supabase-configuratie.
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const file = 'out/app/index.html';
+          let built = readFileSync(file, 'utf8');
+          const testUrl = 'https://zimzsovvtdmrthrflkgm.supabase.co';
+          const testKey = 'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k';
+          const liveUrl = 'https://xwjcwravfeldndwlugai.supabase.co';
+          const liveKey = 'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI';
+          const sourceConfig = "const PUBLIC_SUPABASE_CONFIG={url:'" + testUrl + "',key:'" + testKey + "'};;";
+          const liveConfig = "const PUBLIC_SUPABASE_CONFIG={url:'" + liveUrl + "',key:'" + liveKey + "'};;";
+          if (!built.includes(sourceConfig)) {
+            throw new Error('Verwachte testbronconfiguratie ontbreekt. Productiebuild afgebroken.');
+          }
+          built = built.replace(sourceConfig, liveConfig);
+          built = built.split(testUrl).join(liveUrl);
+          built = built.split(testKey).join(liveKey);
+          if (!built.includes(liveConfig) || !built.includes(liveUrl) || !built.includes(liveKey) ||
+              built.includes(testUrl) || built.includes(testKey)) {
+            throw new Error('Productiebuild bevat onjuiste of gemengde Supabase-configuratie.');
+          }
+          writeFileSync(file, built);
+          console.log('Productiebuild gebruikt uitsluitend het bevestigde live Supabase-project.');
+          NODE
           cp sw.js out/app/sw.js
           for f in admin-dashboard.html onboarding-form.html onboarding-dashboard.html wachtwoord-vergeten.html; do
             if [ -f "$f" ]; then cp "$f" "out/app/$f"; fi
@@ -224,6 +143,44 @@ jobs:
           done
           # App-modules (food waste, menu profitability and shared helpers).
           cp ./*.mjs out/app/
+
+          # Zet alle gepubliceerde HTML/JS-bestanden om naar het live Supabase-project.
+          # Dit geldt ook voor landing- en onboardingpagina's, niet alleen de hoofdapp.
+          node --input-type=module <<'NODE'
+          import { readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
+          import { join } from 'node:path';
+          const root = 'out';
+          const testUrl = 'https://zimzsovvtdmrthrflkgm.supabase.co';
+          const testKey = 'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k';
+          const liveUrl = 'https://xwjcwravfeldndwlugai.supabase.co';
+          const liveKey = 'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI';
+          const walk = dir => {
+            for (const name of readdirSync(dir)) {
+              const file = join(dir, name);
+              if (statSync(file).isDirectory()) { walk(file); continue; }
+              let value = readFileSync(file, 'utf8');
+              if (!value.includes(testUrl) && !value.includes(testKey)) continue;
+              value = value.split(testUrl).join(liveUrl).split(testKey).join(liveKey);
+              if (value.includes(testUrl) || value.includes(testKey)) {
+                throw new Error('Test-Supabase-configuratie gevonden in ' + file);
+              }
+              writeFileSync(file, value);
+            }
+          };
+          walk(root);
+          const assertClean = dir => {
+            for (const name of readdirSync(dir)) {
+              const file = join(dir, name);
+              if (statSync(file).isDirectory()) { assertClean(file); continue; }
+              const value = readFileSync(file, 'utf8');
+              if (value.includes(testUrl) || value.includes(testKey)) {
+                throw new Error('Test-Supabase-configuratie staat nog in ' + file);
+              }
+            }
+          };
+          assertClean(root);
+          console.log('Alle gepubliceerde bestanden gebruiken uitsluitend de live Supabase-configuratie.');
+          NODE
 
           echo "== Te uploaden: landing =="
           ls -la out/landing
@@ -235,41 +192,6 @@ jobs:
         run: |
           echo "Verwijzingen naar het oude domein in de te uploaden bestanden:"
           grep -rIn "freelance-animo" out || echo "Geen gevonden."
-
-      - name: Uploaden via SFTP
-        if: steps.guard.outputs.present == 'true'
-        env:
-          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
-          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
-          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
-        run: |
-          set -e
-          sudo apt-get update -y
-          sudo apt-get install -y lftp
-          # Controleer de STRATO SSH-hostkey tegen de fingerprint die
-          # tijdens de eerste SFTP-verbinding in FileZilla is waargenomen.
-          mkdir -p "$HOME/.ssh"
-          chmod 700 "$HOME/.ssh"
-          ssh-keyscan -T 15 -p 22 -t ed25519 "$SFTP_HOST" > "$RUNNER_TEMP/strato_known_hosts" 2>/dev/null
-          test -s "$RUNNER_TEMP/strato_known_hosts"
-          ACTUAL_FINGERPRINT="$(ssh-keygen -lf "$RUNNER_TEMP/strato_known_hosts" -E sha256 | awk '{print $2}')"
-          EXPECTED_FINGERPRINT="SHA256:1gx2w8Rtv3wCgi7Jh8myf/KVd72cRQbow03UP8P095Q"
-          if [ "$ACTUAL_FINGERPRINT" != "$EXPECTED_FINGERPRINT" ]; then
-            echo "::error::STRATO SSH-hostkey fingerprint komt niet overeen. Upload afgebroken."
-            exit 1
-          fi
-          chmod 600 "$RUNNER_TEMP/strato_known_hosts"
-          # Alleen uploaden, nooit verwijderen op de server. SSH weigert
-          # elke hostkey die niet overeenkomt met de gecontroleerde key.
-          lftp -e "set sftp:connect-program 'ssh -a -x -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/strato_known_hosts'" -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<'LFTP'
-          set net:max-retries 3
-          set net:timeout 30
-          mirror -R --verbose out/landing /landing
-          # Publiceer de app afzonderlijk op de documentroot van app.animo-apps.com.
-          # Geen --delete: bestaande bestanden worden niet automatisch verwijderd.
-          mirror -R --verbose out/app /app
-          bye
-          LFTP
 
       - name: Validate atomic recipe stock consumption
         run: |
@@ -386,3 +308,39 @@ jobs:
           if (!html.includes('function convertRecipeQuantity(')) throw new Error('Shared unit conversion helper is missing.');
           console.log('UBL mobile change-handler test passed.');
           NODE
+
+      # Upload is deliberately the final step: every syntax and regression check must pass first.
+      - name: Uploaden via SFTP
+        if: steps.guard.outputs.present == 'true'
+        env:
+          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
+          SFTP_USER: ${{ secrets.STRATO_SFTP_USER }}
+          SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
+        run: |
+          set -e
+          sudo apt-get update -y
+          sudo apt-get install -y lftp
+          # Controleer de STRATO SSH-hostkey tegen de fingerprint die
+          # tijdens de eerste SFTP-verbinding in FileZilla is waargenomen.
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          ssh-keyscan -T 15 -p 22 -t ed25519 "$SFTP_HOST" > "$RUNNER_TEMP/strato_known_hosts" 2>/dev/null
+          test -s "$RUNNER_TEMP/strato_known_hosts"
+          ACTUAL_FINGERPRINT="$(ssh-keygen -lf "$RUNNER_TEMP/strato_known_hosts" -E sha256 | awk '{print $2}')"
+          EXPECTED_FINGERPRINT="SHA256:1gx2w8Rtv3wCgi7Jh8myf/KVd72cRQbow03UP8P095Q"
+          if [ "$ACTUAL_FINGERPRINT" != "$EXPECTED_FINGERPRINT" ]; then
+            echo "::error::STRATO SSH-hostkey fingerprint komt niet overeen. Upload afgebroken."
+            exit 1
+          fi
+          chmod 600 "$RUNNER_TEMP/strato_known_hosts"
+          # Alleen uploaden, nooit verwijderen op de server. SSH weigert
+          # elke hostkey die niet overeenkomt met de gecontroleerde key.
+          lftp -e "set sftp:connect-program 'ssh -a -x -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/strato_known_hosts'" -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<'LFTP'
+          set net:max-retries 3
+          set net:timeout 30
+          mirror -R --verbose out/landing /landing
+          # Publiceer de app afzonderlijk op de documentroot van app.animo-apps.com.
+          # Geen --delete: bestaande bestanden worden niet automatisch verwijderd.
+          mirror -R --verbose out/app /app
+          bye
+          LFTP

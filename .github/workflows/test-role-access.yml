@@ -1,0 +1,69 @@
+name: ANIMO testomgeving - rol- en browsertests
+
+on:
+  workflow_dispatch:
+  # Bewust niet gekoppeld aan productie- of main-deploys.
+
+permissions:
+  contents: read
+
+jobs:
+  role-browser-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Repository ophalen
+        uses: actions/checkout@v4
+
+      - name: Node.js instellen
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Playwright installeren
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: Vereiste testaccounts controleren
+        env:
+          OWNER_EMAIL: ${{ secrets.ANIMO_TEST_OWNER_EMAIL }}
+          OWNER_PASSWORD: ${{ secrets.ANIMO_TEST_OWNER_PASSWORD }}
+          OWNER_PIN: ${{ secrets.ANIMO_TEST_OWNER_PIN }}
+          MANAGER_EMAIL: ${{ secrets.ANIMO_TEST_MANAGER_EMAIL }}
+          MANAGER_PASSWORD: ${{ secrets.ANIMO_TEST_MANAGER_PASSWORD }}
+          MANAGER_PIN: ${{ secrets.ANIMO_TEST_MANAGER_PIN }}
+          EMPLOYEE_EMAIL: ${{ secrets.ANIMO_TEST_EMPLOYEE_EMAIL }}
+          EMPLOYEE_PASSWORD: ${{ secrets.ANIMO_TEST_EMPLOYEE_PASSWORD }}
+          EMPLOYEE_PIN: ${{ secrets.ANIMO_TEST_EMPLOYEE_PIN }}
+        run: |
+          set -euo pipefail
+          for name in OWNER_EMAIL OWNER_PASSWORD OWNER_PIN MANAGER_EMAIL MANAGER_PASSWORD MANAGER_PIN EMPLOYEE_EMAIL EMPLOYEE_PASSWORD EMPLOYEE_PIN; do
+            if [ -z "${!name}" ]; then
+              echo "::error::GitHub Secret ontbreekt voor testrol: $name"
+              exit 1
+            fi
+          done
+
+      - name: Eigenaar, manager en medewerker testen op uitsluitend de testsite
+        env:
+          ANIMO_TEST_URL: https://test.animo-apps.com
+          ANIMO_TEST_OWNER_EMAIL: ${{ secrets.ANIMO_TEST_OWNER_EMAIL }}
+          ANIMO_TEST_OWNER_PASSWORD: ${{ secrets.ANIMO_TEST_OWNER_PASSWORD }}
+          ANIMO_TEST_OWNER_PIN: ${{ secrets.ANIMO_TEST_OWNER_PIN }}
+          ANIMO_TEST_MANAGER_EMAIL: ${{ secrets.ANIMO_TEST_MANAGER_EMAIL }}
+          ANIMO_TEST_MANAGER_PASSWORD: ${{ secrets.ANIMO_TEST_MANAGER_PASSWORD }}
+          ANIMO_TEST_MANAGER_PIN: ${{ secrets.ANIMO_TEST_MANAGER_PIN }}
+          ANIMO_TEST_EMPLOYEE_EMAIL: ${{ secrets.ANIMO_TEST_EMPLOYEE_EMAIL }}
+          ANIMO_TEST_EMPLOYEE_PASSWORD: ${{ secrets.ANIMO_TEST_EMPLOYEE_PASSWORD }}
+          ANIMO_TEST_EMPLOYEE_PIN: ${{ secrets.ANIMO_TEST_EMPLOYEE_PIN }}
+        run: node tests/role-access.playwright.mjs
+
+      - name: Foutschermen bewaren
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: animo-test-role-failures
+          path: role-test-*-failure.png
+          if-no-files-found: ignore
+          retention-days: 7
