@@ -7,7 +7,7 @@ import {
 import {
   deductFoodWasteStock,
   reverseFoodWasteStock
-} from "./voedselverspilling-stock.mjs";
+} from "./voedselverspilling-stock.mjs?v=20261114-testfix";
 import { syncFoodWasteQueue } from "./voedselverspilling-sync.mjs";
 
 const TABLE = "food_waste_entries";
