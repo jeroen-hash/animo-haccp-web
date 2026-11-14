@@ -90,3 +90,41 @@ AI-verwerking, Stripe en e-mail moeten waar nodig met veilige testaccounts en te
 
 ## Huidig besluit
 **NIET KLAAR VOOR LIVE-OVERDRACHT.** De veiligheidswijzigingen zijn alleen op de testbranch voorbereid. Ze moeten nog door de CI-controles, en de productie database-secret/migratiehistoriek en back-up moeten onafhankelijk geverifieerd worden. Er is geen live wijziging uitgevoerd.
+
+
+## Database-audit — 14 november 2026
+
+Read-only vergelijking uitgevoerd via de gekoppelde Supabase-projecten. Er zijn geen SQL-wijzigingen uitgevoerd.
+
+### Migratiehistoriek
+- Live project `xwjcwravfeldndwlugai`: 29 migraties.
+- Testproject `zimzsovvtdmrthrflkgm`: 27 migraties.
+- Slechts 7 migraties delen dezelfde versie/naam.
+- Live heeft 22 migraties uit een eigen recovery/rebuild-traject; test heeft 20 andere basis-/SaaS-migraties.
+- Beide projecten hebben de 7 HACCP-modulemigraties voor voedselverspilling en menurendabiliteit geregistreerd.
+
+**Belangrijk:** de huidige productie-deployworkflow bevat een preflight die 20 migraties uit de testhistoriek verwacht (waaronder `20261108150151 add_site_host_to_website_visit_events`). Die versies ontbreken in de live migratiehistoriek. De workflow zal dus veilig afbreken vóór `supabase db push`; dit is een bevestigde releaseblokkade, geen reden om de ontbrekende migraties blind als reeds toegepast te registreren.
+
+### Schema, functies en beveiliging
+- Beide databases hebben 13 tabellen in `public`.
+- Kolommen, defaults, constraints en indexes zijn gelijk, behalve één test-only uitbreiding aan `public.website_visit_events`: kolom `site_host`, bijhorende CHECK-constraint en index.
+- Beide hebben dezelfde 22 functies in `public`/ `private` en dezelfde 23 RLS-policies.
+- Van de functies verschilt alleen de definitie-hash van `public.get_platform_website_analytics()`; de testversie filtert op `site_host` en verwacht de extra kolom.
+- De Supabase security-advisors tonen dezelfde bestaande meldingen in beide projecten: onder meer RLS-tabellen zonder policies, SECURITY DEFINER-functies die voor authenticated uitvoerbaar zijn en uitgeschakelde gelekte-wachtwoordbescherming. Dit moet inhoudelijk beoordeeld worden; niet blind policies of grants wijzigen.
+
+### Gegevensomvang (alleen aantallen)
+- Live: 1 zaak, 1 lidmaatschap, 1 app_data-record, 51 auditregels, 6 voedselverspillingsregistraties, 1 menurendabiliteitsrecord.
+- Test: 7 zaken, 11 lidmaatschappen, 7 app_data-records, 450 auditregels, 3 voedselverspillingsregistraties, 1 menurendabiliteitsrecord.
+- Test bevat daarnaast test-/onboarding-/analyticsgegevens die niet in dezelfde aantallen op live staan.
+
+**Besluit:** databases niet kopiëren, niet samenvoegen en geen testdata naar live overzetten. Het gelijke schema betekent niet dat de data of migratiegeschiedenis uitwisselbaar is. De enige zichtbare structurele uitbreiding (`site_host`) moet afzonderlijk worden beoordeeld en als zelfstandige additive wijziging worden gepland als productie-analytics die nodig heeft.
+
+### Volgende veilige stappen
+1. Productie-deployworkflow aanpassen zodat de preflight de echte live migratiehistoriek herkent en alleen aantoonbaar nog ontbrekende, additive wijzigingen behandelt.
+2. De `site_host`-uitbreiding apart beoordelen; eerst vaststellen of de productiewebsite die analyticsfunctie nodig heeft.
+3. Back-up van live database én Storage onafhankelijk verifiëren.
+4. Een productie-gelijkwaardige kopie gebruiken voor regressietests.
+5. Pas daarna een releasekandidaat beoordelen. Geen merge of upload naar `main`/`/app` zonder afzonderlijke expliciete goedkeuring.
+
+### Auditbesluit
+**NO-GO voor live-overdracht op dit moment.** De productiebuild kan worden gemaakt, maar de migratie-preflight is niet compatibel met de huidige live migratiehistoriek. De live database en hosting zijn tijdens deze audit niet gewijzigd.
