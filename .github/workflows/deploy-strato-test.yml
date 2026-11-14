@@ -83,7 +83,7 @@ jobs:
           grep -Fq 'supabase db push --dry-run --yes --remote=' .github/workflows/deploy-strato.yml
           grep -Fq 'supabase db push --yes --remote=' .github/workflows/deploy-strato.yml
           grep -Fq 'supabase migration list --remote=' .github/workflows/deploy-strato.yml
-          grep -Fq '20261107014218 hide_inactive_members_from_direct_membership_reads' .github/workflows/deploy-strato.yml
+          grep -Fq '20261107215657 snapshot_legacy_public_data_before_recovery_rebuild' .github/workflows/deploy-strato.yml
           grep -Fq 'Temporary history-alignment placeholder' .github/workflows/deploy-strato.yml
           grep -Fq 'postgres.xwjcwravfeldndwlugai' .github/workflows/deploy-strato.yml
           grep -Fq "const liveUrl = 'https://xwjcwravfeldndwlugai.supabase.co'" .github/workflows/deploy-strato.yml
