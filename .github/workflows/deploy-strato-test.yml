@@ -92,6 +92,18 @@ jobs:
             exit 1
           fi
           grep -Fq 'actions/checkout@v4' .github/workflows/backup-supabase-database.yml
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const workflow = readFileSync('.github/workflows/deploy-strato.yml', 'utf8');
+          const upload = workflow.indexOf('      - name: Uploaden via SFTP');
+          const finalValidation = workflow.lastIndexOf('      - name: Validate UBL unit dropdown mobile change handling');
+          if (upload < 0 || finalValidation < 0 || upload < finalValidation) {
+            throw new Error('Production SFTP upload must occur only after all validation steps.');
+          }
+          if (workflow.slice(upload).includes('      - name: ')) {
+            throw new Error('No workflow step may run after the production SFTP upload.');
+          }
+          NODE
           for migration in 20261111222221 20261111222452 20261111223111 20261112155500 20261112155729 20261112163255 20261112174321; do
             grep -Fq "$migration" .github/workflows/deploy-strato.yml
           done
