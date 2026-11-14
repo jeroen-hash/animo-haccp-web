@@ -39,7 +39,7 @@ jobs:
         if: steps.guard.outputs.present == 'true'
         uses: supabase/setup-cli@v3
 
-      - name: Alleen de zeven ANIMO-modulemigraties naar productie toepassen
+      - name: Controleer livehistoriek en pas uitsluitend ontbrekende ANIMO-modulemigraties toe
         if: steps.guard.outputs.present == 'true'
         shell: bash
         env:
@@ -88,7 +88,7 @@ jobs:
           PY
           )"
           echo "::add-mask::$ANIMO_PRODUCTION_DB_URL"
-          echo "Controleer eerst de bestaande productiemigratiehistoriek."
+          echo "Controleer eerst de bestaande live-migratiehistoriek (22 herstelmigraties + 7 ANIMO-modulemigraties)."
           supabase migration list --remote="$ANIMO_PRODUCTION_DB_URL" | tee "$RUNNER_TEMP/animo-remote-migration-history.txt"
           while IFS=' ' read -r version migration_name; do
             [ -n "$version" ] || continue
@@ -97,30 +97,32 @@ jobs:
               exit 1
             }
           done <<'REMOTE_MIGRATIONS'
-          20261106001055 start_trial_for_new_businesses
-          20261106001128 harden_security_definer_function_grants
-          20261106162137 scope_business_member_list
-          20261106171810 enforce_subscription_access_for_business_data
-          20261106172309 move_subscription_gate_to_private_schema
-          20261106192207 add_admin_website_analytics
-          20261106193712 add_safe_app_data_compare_and_swap
-          20261106200126 ensure_monotonic_app_data_sync_version
-          20261106222804 restrict_business_entitlement_updates
-          20261106222938 index_foreign_keys_and_optimize_rls_policies
-          20261106223037 gate_member_directory_by_subscription
-          20261106223128 secure_business_onboarding_intake_access
-          20261106223137 fix_onboarding_intake_upsert_qualification
-          20261106230040 restrict_subscription_row_reads
-          20261107014131 revoke_anon_access_internal_tables
-          20261107014218 hide_inactive_members_from_direct_membership_reads
-          20261107014559 enforce_subscription_access_for_onboarding_storage
-          20261107102332 add_onboarding_invoice_reporting
-          20261107102603 add_onboarding_invoice_reporting
-          20261108150151 add_site_host_to_website_visit_events
+20261107215657 snapshot_legacy_public_data_before_recovery_rebuild
+20261107215721 snapshot_legacy_database_object_definitions
+20261107215940 archive_legacy_haccp_tables_before_saas_recovery_rebuild
+20261107220001 rebuild_saas_core_tables_in_recovery_environment
+20261107220027 restore_saas_indexes_rls_and_core_access_helpers
+20261107220100 restore_saas_account_and_app_data_rpc_functions
+20261107220126 restore_onboarding_and_website_rpc_functions
+20261107220143 restore_platform_dashboard_billing_and_onboarding_rpcs
+20261107220204 restore_complete_onboarding_activation_rpc
+20261107220214 restore_business_default_app_state_trigger
+20261107220302 add_legacy_onboarding_activation_rpc_compatibility
+20261107220329 harden_recovery_rpc_grants_and_archive_legacy_functions
+20261107220741 restore_private_onboarding_storage_buckets_and_policies
+20261107220809 harden_archived_haccp_seed_function_search_path
+20261107220934 align_website_visit_identity_with_production
+20261107221010 sync_exact_live_onboarding_activation_functions
+20261107221015 sync_exact_live_rpc_functions_batch_1
+20261107221018 sync_exact_live_rpc_functions_batch_2
+20261107221020 sync_exact_live_rpc_functions_batch_3
+20261107221023 sync_exact_live_rpc_functions_batch_4
+20261107221027 sync_exact_live_onboarding_rpc_functions_final_batch
+20261107221035 sync_exact_private_business_access_function
           REMOTE_MIGRATIONS
-          # Temporary no-op files align the isolated release bundle with migrations
-          # already recorded on production. The preflight above proves every version
-          # exists remotely; these files are skipped and are never committed.
+          # Temporary no-op files align the isolated release bundle with the 22 recovery migrations
+          # already recorded on the live database. The preflight above verifies every live
+          # recovery version; these files are skipped and are never committed.
           while IFS=' ' read -r version migration_name; do
             [ -n "$version" ] || continue
             placeholder="supabase/migrations/${version}_${migration_name}.sql"
@@ -132,26 +134,28 @@ jobs:
           SQL
             fi
           done <<'REMOTE_MIGRATIONS'
-          20261106001055 start_trial_for_new_businesses
-          20261106001128 harden_security_definer_function_grants
-          20261106162137 scope_business_member_list
-          20261106171810 enforce_subscription_access_for_business_data
-          20261106172309 move_subscription_gate_to_private_schema
-          20261106192207 add_admin_website_analytics
-          20261106193712 add_safe_app_data_compare_and_swap
-          20261106200126 ensure_monotonic_app_data_sync_version
-          20261106222804 restrict_business_entitlement_updates
-          20261106222938 index_foreign_keys_and_optimize_rls_policies
-          20261106223037 gate_member_directory_by_subscription
-          20261106223128 secure_business_onboarding_intake_access
-          20261106223137 fix_onboarding_intake_upsert_qualification
-          20261106230040 restrict_subscription_row_reads
-          20261107014131 revoke_anon_access_internal_tables
-          20261107014218 hide_inactive_members_from_direct_membership_reads
-          20261107014559 enforce_subscription_access_for_onboarding_storage
-          20261107102332 add_onboarding_invoice_reporting
-          20261107102603 add_onboarding_invoice_reporting
-          20261108150151 add_site_host_to_website_visit_events
+20261107215657 snapshot_legacy_public_data_before_recovery_rebuild
+20261107215721 snapshot_legacy_database_object_definitions
+20261107215940 archive_legacy_haccp_tables_before_saas_recovery_rebuild
+20261107220001 rebuild_saas_core_tables_in_recovery_environment
+20261107220027 restore_saas_indexes_rls_and_core_access_helpers
+20261107220100 restore_saas_account_and_app_data_rpc_functions
+20261107220126 restore_onboarding_and_website_rpc_functions
+20261107220143 restore_platform_dashboard_billing_and_onboarding_rpcs
+20261107220204 restore_complete_onboarding_activation_rpc
+20261107220214 restore_business_default_app_state_trigger
+20261107220302 add_legacy_onboarding_activation_rpc_compatibility
+20261107220329 harden_recovery_rpc_grants_and_archive_legacy_functions
+20261107220741 restore_private_onboarding_storage_buckets_and_policies
+20261107220809 harden_archived_haccp_seed_function_search_path
+20261107220934 align_website_visit_identity_with_production
+20261107221010 sync_exact_live_onboarding_activation_functions
+20261107221015 sync_exact_live_rpc_functions_batch_1
+20261107221018 sync_exact_live_rpc_functions_batch_2
+20261107221020 sync_exact_live_rpc_functions_batch_3
+20261107221023 sync_exact_live_rpc_functions_batch_4
+20261107221027 sync_exact_live_onboarding_rpc_functions_final_batch
+20261107221035 sync_exact_private_business_access_function
           REMOTE_MIGRATIONS
           echo "Controleer welke uitsluitend modulemigraties klaarstaan voor productie..."
           supabase db push --dry-run --yes --remote="$ANIMO_PRODUCTION_DB_URL"
