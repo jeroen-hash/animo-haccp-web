@@ -71,7 +71,7 @@ jobs:
               raise SystemExit("Remove the password from PRODUCTION_DATABASE_URL; use PRODUCTION_DATABASE_PASSWORD.")
           username = unquote(parsed.username or "")
           database = unquote(parsed.path.lstrip("/"))
-          if username != "postgres.zimzsovvtdmrthrflkgm":
+          if username != "postgres.xwjcwravfeldndwlugai":
               raise SystemExit("Production migration target guard failed: unexpected Supabase project username.")
           if database != "postgres":
               raise SystemExit("Production migration target guard failed: expected the postgres database.")
@@ -215,6 +215,31 @@ jobs:
 
           # App
           cp index.html out/app/index.html
+          # De broncode blijft op de testbranch/testconfig staan. Alleen de productiebuild
+          # krijgt hier de bevestigde live Supabase-configuratie.
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const file = 'out/app/index.html';
+          let built = readFileSync(file, 'utf8');
+          const testUrl = 'https://zimzsovvtdmrthrflkgm.supabase.co';
+          const testKey = 'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k';
+          const liveUrl = 'https://xwjcwravfeldndwlugai.supabase.co';
+          const liveKey = 'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI';
+          const sourceConfig = "const PUBLIC_SUPABASE_CONFIG={url:'" + testUrl + "',key:'" + testKey + "'};;";
+          const liveConfig = "const PUBLIC_SUPABASE_CONFIG={url:'" + liveUrl + "',key:'" + liveKey + "'};;";
+          if (!built.includes(sourceConfig)) {
+            throw new Error('Verwachte testbronconfiguratie ontbreekt. Productiebuild afgebroken.');
+          }
+          built = built.replace(sourceConfig, liveConfig);
+          built = built.split(testUrl).join(liveUrl);
+          built = built.split(testKey).join(liveKey);
+          if (!built.includes(liveConfig) || !built.includes(liveUrl) || !built.includes(liveKey) ||
+              built.includes(testUrl) || built.includes(testKey)) {
+            throw new Error('Productiebuild bevat onjuiste of gemengde Supabase-configuratie.');
+          }
+          writeFileSync(file, built);
+          console.log('Productiebuild gebruikt uitsluitend het bevestigde live Supabase-project.');
+          NODE
           cp sw.js out/app/sw.js
           for f in admin-dashboard.html onboarding-form.html onboarding-dashboard.html wachtwoord-vergeten.html; do
             if [ -f "$f" ]; then cp "$f" "out/app/$f"; fi
