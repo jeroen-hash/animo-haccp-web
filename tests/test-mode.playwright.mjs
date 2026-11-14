@@ -8,17 +8,13 @@ try {
   const context = await browser.newContext();
   const page = await context.newPage();
   const pageErrors = [];
-  const supabaseRequests = [];
   page.on('pageerror', error => pageErrors.push(error.message));
-  page.on('request', request => {
-    if (/\.supabase\.co\//i.test(request.url())) supabaseRequests.push(request.url());
-  });
 
   let loaded = false;
   for (let attempt = 1; attempt <= 5; attempt++) {
     try {
       await page.goto(baseURL, { waitUntil: 'domcontentloaded', timeout: 45000 });
-      await page.locator('#animo-test-role-panel').waitFor({ state: 'visible', timeout: 12000 });
+      await page.locator('#cloudLoginForm').waitFor({ state: 'visible', timeout: 15000 });
       loaded = true;
       break;
     } catch (error) {
@@ -26,103 +22,26 @@ try {
       await page.waitForTimeout(5000);
     }
   }
-  assert.equal(loaded, true, 'Testrolpaneel verschijnt niet op de testwebsite');
-  await page.locator('#dashboard.page.active').waitFor({ state: 'visible', timeout: 20000 });
-  assert.match(await page.locator('#animo-test-role-panel').innerText(), /geen e-mail, wachtwoord, betaling of cloudwijzigingen/i);
+  assert.equal(loaded, true, 'Normaal e-mail/wachtwoord-aanmeldscherm verschijnt niet');
+  assert.equal(await page.locator('#animo-test-role-panel').count(), 0, 'Tijdelijke rolkeuze is nog zichtbaar');
+  assert.equal(await page.locator('#cloudSetup').evaluate(el => el.classList.contains('cloud-hidden')), true,
+    'De eenmalige Supabase-instelling wordt onverwacht getoond');
+  assert.equal(await page.locator('#cloudEmail').getAttribute('type'), 'email');
+  assert.equal(await page.locator('#cloudPassword').getAttribute('type'), 'password');
+  assert.equal(await page.locator('#cloudLoginForm button[type="submit"]').innerText(), 'Aanmelden');
+  assert.equal(await page.locator('#cloudOpenPasswordReset').isVisible(), true, 'Wachtwoordherstel ontbreekt');
+  assert.equal(await page.locator('#cloudOpenSignup').isVisible(), true, 'Registratielink ontbreekt');
 
-  const expected = [
-    { role: 'owner', label: 'Eigenaar (test)', visible: true },
-    { role: 'manager', label: 'Manager (test)', visible: true },
-    { role: 'employee', label: 'Medewerker (test)', visible: false },
-  ];
-
-  for (const item of expected) {
-    await page.locator(`#animo-test-role-panel button[data-role="${item.role}"]`).click();
-    await page.waitForTimeout(250);
-    const actualRole = await page.evaluate(() => window.FAVVCloudRole);
-    assert.equal(actualRole, item.role, `Actieve testrol is fout: ${actualRole}`);
-    const panelTitle = await page.locator('#animo-test-role-panel strong').innerText();
-    const expectedTitle = item.label.replace(' (test)', '').toLowerCase();
-    assert.ok(panelTitle.toLowerCase().includes(expectedTitle), `Rolpaneel toont verkeerde rol: ${panelTitle}`);
-    const management = page.locator('[data-page="management"].manager-only').first();
-    if (await management.count()) {
-      assert.equal(await management.evaluate(el => getComputedStyle(el).display !== 'none'), item.visible, `Beheerrechten fout voor ${item.role}`);
-    }
-    const selected = await page.locator(`#animo-test-role-panel button[data-role="${item.role}"]`).getAttribute('aria-pressed');
-    assert.equal(selected, 'true', `Rolknop ${item.role} is niet geselecteerd`);
-    console.log(`[PASS] ${item.label}: actieve rol, rolpaneel en zichtbaarheid beheer gecontroleerd`);
-  }
-
-
-  // Functionele smoke-test op uitsluitend de lokale testsandbox.
-  // Geen echte gebruikers, betalingen of cloudopslag worden aangeraakt.
-  await page.locator('#animo-test-role-panel button[data-role="owner"]').click();
-  const navButtons = page.locator('nav.nav button.nav-btn[data-page]');
-  const navCount = await navButtons.count();
-  assert.ok(navCount >= 10, `Verwacht minstens 10 navigatieonderdelen, gevonden: ${navCount}`);
-  for (let i = 0; i < navCount; i++) {
-    const button = navButtons.nth(i);
-    const pageId = await button.getAttribute('data-page');
-    await button.evaluate(el => el.click());
-    await page.locator(`#${pageId}.page.active`).waitFor({ state: 'visible', timeout: 5000 });
-    assert.ok(await page.locator(`#${pageId} h1`).count(), `Paginatitel ontbreekt voor ${pageId}`);
-  }
-  console.log(`[PASS] ${navCount} navigatiepagina's openen zonder fout`);
-
-  // Temperatuurregistratie bewaren en terugvinden.
-  await page.locator('nav.nav button[data-page="temperatures"]').evaluate(el => el.click());
-  await page.locator('[data-action="new-temperature"]').click();
-  await page.locator('#modalLayer.open').waitFor();
-  await page.locator('#fDevice').fill('TEST-koelkast');
-  await page.locator('#fType').selectOption('Koeling');
-  await page.locator('#fValue').fill('4.2');
-  await page.locator('#modalForm button[type="submit"]').click();
-  await page.locator('#modalLayer:not(.open)').waitFor({ state: 'hidden' });
-  assert.match(await page.locator('#temperatureList').innerText(), /TEST-koelkast/);
-  console.log('[PASS] temperatuurmeting lokaal bewaren en terugvinden');
-
-  // Stockproduct met verpakking, aankoopprijs en voorraadbatch bewaren.
-  await page.locator('nav.nav button[data-page="stock"]').evaluate(el => el.click());
-  await page.locator('[data-stock-action="new-product"]').click();
-  await page.locator('#stockProductModal.open').waitFor();
-  await page.locator('#stockProductName').fill('TEST eieren');
-  await page.locator('#stockProductUnit').selectOption('stuks');
-  await page.locator('#stockProductMinimum').fill('2');
-  await page.locator('#stockProductPurchaseQty').fill('10');
-  await page.locator('#stockProductPurchasePrice').fill('5');
-  await page.locator('[data-stock-action="add-batch"]').click();
-  await page.locator('#stockBatchEditors input[data-batch-field="quantity"]').last().fill('10');
-  await page.locator('#stockProductForm button[type="submit"]').click();
-  await page.locator('#stockProductModal:not(.open)').waitFor({ state: 'hidden' });
-  assert.match(await page.locator('#stockList').innerText(), /TEST eieren/);
-  assert.match(await page.locator('#stockUnitCostPreview').innerText().catch(()=>''), /0,50|0\.50/);
-  console.log('[PASS] stockproduct, batch en verpakkingskost lokaal bewaren');
-
-  // Receptenmodule openen en de editor controleren met de nieuw aangemaakte stock.
-  await page.locator('nav.nav button[data-page="recipes"]').evaluate(el => el.click());
-  await page.locator('[data-recipe-action="new"]').click();
-  await page.locator('#recipeModalLayer.open').waitFor();
-  await page.locator('#recipeName').fill('TEST omelet');
-  assert.ok(await page.locator('#recipeIngredientEditors select').count(), 'Ingrediëntkeuze ontbreekt in recepteditor');
-  await page.locator('[data-recipe-action="close"]').last().click();
-  await page.locator('#recipeModalLayer:not(.open)').waitFor({ state: 'hidden' });
-  console.log('[PASS] recepteneditor opent met stockingrediënten');
-
-  // Dagafsluiting bewaren; PDF-dialoog bewust niet openen.
-  await page.locator('nav.nav button[data-page="reports"]').evaluate(el => el.click());
-  // PDF openen overslaan; het rapport zelf blijft bewaard.
-  page.once('dialog', dialog => dialog.dismiss());
-  await page.locator('[data-action="create-day-report"]').click();
-  await page.waitForTimeout(300);
-  assert.match(await page.locator('#reportHistory').innerText(), /Dagrapport/);
-  console.log('[PASS] dagrapport bewaren en historiek tonen');
-
-  const activeBusiness = await page.evaluate(() => localStorage.getItem('favv-active-business-v1'));
-  assert.equal(activeBusiness, 'animo-test-sandbox-local', 'De actieve zaak is niet de lokale testsandbox');
-  assert.deepEqual(supabaseRequests, [], 'De testomgeving stuurde verzoeken naar Supabase');
+  const config = await page.evaluate(() => JSON.parse(localStorage.getItem('favv-supabase-public-config-v1') || 'null'));
+  assert.equal(config?.url, 'https://zimzsovvtdmrthrflkgm.supabase.co', 'Testapp gebruikt niet het afgesproken testproject');
+  assert.ok(config?.key?.startsWith('sb_publishable_'), 'Veilige publieke Supabase-sleutel ontbreekt');
   assert.deepEqual(pageErrors, [], `JavaScript-fouten: ${pageErrors.join('; ')}`);
   await context.close();
-  console.log('[PASS] lokale sandbox actief; geen Supabase-verzoeken; geen JavaScript-fouten');
+  console.log('[PASS] gewone login met e-mailadres en wachtwoord zichtbaar');
+  console.log('[PASS] tijdelijke rolkeuze verwijderd');
+  console.log('[PASS] wachtwoordherstel en nieuwe-klantregistratie beschikbaar');
+  console.log('[PASS] testapp gebruikt uitsluitend het afgesproken Supabase-testproject');
+  console.log('[PASS] geen JavaScript-fouten bij laden');
 } catch (error) {
   failures.push(error);
   console.error('[FAIL]', error.stack || error.message);
@@ -130,4 +49,4 @@ try {
   await browser.close();
 }
 if (failures.length) process.exit(1);
-console.log('Alle ANIMO testmodus-browsertests geslaagd.');
+console.log('Alle ANIMO test-login-browsertests geslaagd.');
