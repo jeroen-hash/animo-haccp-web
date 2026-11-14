@@ -151,3 +151,19 @@ Read-only vergelijking uitgevoerd via de gekoppelde Supabase-projecten. Er zijn 
 3. Voer daarna de aparte workflow **ANIMO live migraties - alleen dry-run** opnieuw uit. Alleen als de doelcontrole, alle 29 lokale/remote migratieversies en de dry-run slagen, kan de releasekandidaat verder worden beoordeeld.
 
 **Huidig besluit: NO-GO voor livegang.** De verkeerde database-secret is veilig geblokkeerd. De liveapp, live database en map `/app` zijn onaangeroerd gebleven.
+
+
+
+## Veiligheidsaanpassing productie-deploy — 14 november 2026
+
+- De read-only database-audit bevestigde dat de zeven ANIMO-modulemigraties al in de live migratiehistoriek staan.
+- Daarom is de automatische databaseverbinding en de muterende `supabase db push --yes` uit de productie-deployworkflow verwijderd.
+- De productie-deploy controleert nu uitsluitend of de zeven migratiebestanden in de releasebron aanwezig zijn. Hij maakt geen verbinding met de live database en voert geen SQL uit.
+- De aparte workflow `ANIMO live migraties - alleen dry-run` blijft beschikbaar om, na correctie van de GitHub databasegeheimen, alleen de live migratiehistoriek en een dry-run te controleren.
+- Een dry-run die migraties wil toepassen blijft een blokkade; er wordt niets automatisch gerepareerd of toegepast.
+- De testbranch-regressietest controleert nu expliciet dat de productie-deploy geen muterende `db push` en geen productie-databasegeheimen gebruikt.
+
+Commit van deze veiligheidsaanpassing: `36ed35ddb85568863e0dd4a10aac7588e9c6478b`.
+Commit van de aangepaste regressietest: `5aa852700634a05976515bbf94b8b645c59d2fc3`.
+
+**Impact:** uitsluitend workflows, regressietest en documentatie op de testbranch gewijzigd. Geen merge naar `main`, geen upload naar `/app`, geen live databaseverbinding en geen livewijziging.
