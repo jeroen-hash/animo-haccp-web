@@ -188,7 +188,7 @@ Bij verdere inspectie bleek dat de bestaande productieworkflow de SFTP-upload v√
 - De SFTP-upload naar `/landing` en `/app` staat nu als laatste workflowstap.
 - De testworkflow controleert deze volgorde expliciet.
 - De testbranch-validatie is geslaagd op commit `2e5b92d37474a6d6c65c41276db57ba1ffb21b7e` (run [43620646281](https://github.com/jeroen-hash/animo-haccp-web/actions/runs/43620646281)).
-- De testpublicatie op die commit is gestart; de laatste controle toonde de SFTP-upload naar uitsluitend `/test` nog als lopend. De uiteindelijke uploadstatus moet nog worden bevestigd.
+- De testpublicatie op commit `2e5b92d37474a6d6c65c41276db57ba1ffb21b7e` is inmiddels geslaagd (run [43620646183](https://github.com/jeroen-hash/animo-haccp-web/actions/runs/43620646183)); de upload richtte zich uitsluitend op `/test`.
 - `main` staat nog steeds op `8a052850844255f67c456e2b10168626ae1d1d32`; de productiebranch is niet gewijzigd.
 
 **Belangrijk:** dit is alleen een wijziging aan de featurebranch-workflows en tests. Er is geen productie-uitrol gestart. De live migratie dry-run wacht nog steeds op correcte GitHub Actions-geheimen voor het live Supabase-project.
