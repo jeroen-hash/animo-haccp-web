@@ -145,6 +145,44 @@ jobs:
           # App-modules (food waste, menu profitability and shared helpers).
           cp ./*.mjs out/app/
 
+          # Zet alle gepubliceerde HTML/JS-bestanden om naar het live Supabase-project.
+          # Dit geldt ook voor landing- en onboardingpagina's, niet alleen de hoofdapp.
+          node --input-type=module <<'NODE'
+          import { readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
+          import { join } from 'node:path';
+          const root = 'out';
+          const testUrl = 'https://zimzsovvtdmrthrflkgm.supabase.co';
+          const testKey = 'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k';
+          const liveUrl = 'https://xwjcwravfeldndwlugai.supabase.co';
+          const liveKey = 'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI';
+          const walk = dir => {
+            for (const name of readdirSync(dir)) {
+              const file = join(dir, name);
+              if (statSync(file).isDirectory()) { walk(file); continue; }
+              let value = readFileSync(file, 'utf8');
+              if (!value.includes(testUrl) && !value.includes(testKey)) continue;
+              value = value.split(testUrl).join(liveUrl).split(testKey).join(liveKey);
+              if (value.includes(testUrl) || value.includes(testKey)) {
+                throw new Error('Test-Supabase-configuratie gevonden in ' + file);
+              }
+              writeFileSync(file, value);
+            }
+          };
+          walk(root);
+          const assertClean = dir => {
+            for (const name of readdirSync(dir)) {
+              const file = join(dir, name);
+              if (statSync(file).isDirectory()) { assertClean(file); continue; }
+              const value = readFileSync(file, 'utf8');
+              if (value.includes(testUrl) || value.includes(testKey)) {
+                throw new Error('Test-Supabase-configuratie staat nog in ' + file);
+              }
+            }
+          };
+          assertClean(root);
+          console.log('Alle gepubliceerde bestanden gebruiken uitsluitend de live Supabase-configuratie.');
+          NODE
+
           echo "== Te uploaden: landing =="
           ls -la out/landing
           echo "== Te uploaden: app =="
@@ -156,7 +194,7 @@ jobs:
           echo "Verwijzingen naar het oude domein in de te uploaden bestanden:"
           grep -rIn "freelance-animo" out || echo "Geen gevonden."
 
-- name: Validate atomic recipe stock consumption
+      - name: Validate atomic recipe stock consumption
         run: |
           node <<'NODE'
           const fs = require('node:fs');
