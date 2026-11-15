@@ -1,5 +1,5 @@
 'use strict';
-const CACHE='animo-haccp-shell-v7';
+const CACHE='animo-haccp-shell-v8';
 const SHELL=['./','./index.html'];
 const SUPABASE_SDK='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
 self.addEventListener('install',event=>{
@@ -28,10 +28,9 @@ self.addEventListener('fetch',event=>{
   if(url.origin!==self.location.origin)return;
   if(url.pathname.includes('/rest/v1/')||url.pathname.includes('/auth/v1/')||url.pathname.includes('/functions/v1/')||url.pathname.includes('/storage/v1/'))return;
   if(request.mode==='navigate'){
-    event.respondWith(fetch(request).then(response=>{
-      if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put('./index.html',copy))}
-      return response;
-    }).catch(()=>caches.match('./index.html').then(response=>response||caches.match('./'))));
+    // App-shell en auth callback altijd vers ophalen; een oude gecachete HTML-pagina
+    // mag nooit een wachtwoordherstel-link naar het gewone loginformulier laten terugvallen.
+    event.respondWith(fetch(new Request(request,{cache:'no-store'})).catch(()=>caches.match('./index.html').then(response=>response||caches.match('./'))));
     return;
   }
   if(/\.(?:js|mjs|css|png|jpg|jpeg|svg|webp|woff2?)$/i.test(url.pathname)){
