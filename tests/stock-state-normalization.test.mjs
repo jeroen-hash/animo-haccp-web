@@ -91,3 +91,16 @@ test("singular and plural packaging units match without mixing different package
   `;
   vm.runInNewContext(script, {});
 });
+
+
+test("AI-declared recipe allergens are displayed and retained when a recipe is edited", () => {
+  const helper = extract("function recipeAllergens(recipe){", "function recipeCost(recipe){");
+  const script = helper + `
+    const recipe = { allergens: ["Eieren"], ingredients: [{ stockId: "onions" }] };
+    const names = recipeAllergens(recipe);
+    if (!names.includes("Eieren")) throw new Error("AI-declared egg allergen must be displayed");
+    if (!names.includes("Mosterd")) throw new Error("Known stock allergens must also remain visible");
+  `;
+  vm.runInNewContext(script, { stockById: id => id === "onions" ? { allergens: ["Mosterd"] } : null });
+  assert.ok(html.includes("allergens:Array.isArray(existingRecipe?.allergens)?clone(existingRecipe.allergens):[]"), "Manual edits must preserve allergens added by ANIMO AI.");
+});
