@@ -135,7 +135,7 @@ jobs:
           console.log('Productiebuild gebruikt uitsluitend het bevestigde live Supabase-project.');
           NODE
           cp sw.js out/app/sw.js
-          for f in admin-dashboard.html onboarding-form.html onboarding-dashboard.html wachtwoord-vergeten.html; do
+          for f in admin-dashboard.html admin-password-reset.html onboarding-form.html onboarding-dashboard.html wachtwoord-vergeten.html; do
             if [ -f "$f" ]; then cp "$f" "out/app/$f"; fi
           done
           for f in onboarding-*.js; do
