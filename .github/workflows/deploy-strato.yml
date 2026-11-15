@@ -109,27 +109,19 @@ jobs:
 
           # App
           cp index.html out/app/index.html
-          # De broncode blijft op de testbranch/testconfig staan. Alleen de productiebuild
-          # krijgt hier de bevestigde live Supabase-configuratie.
+          # Het project animo-haccp-test is door de eigenaar bevestigd als de live productieomgeving.
+          # De productiebuild behoudt daarom deze Supabase-configuratie ongewijzigd.
           node --input-type=module <<'NODE'
           import { readFileSync, writeFileSync } from 'node:fs';
           const file = 'out/app/index.html';
           let built = readFileSync(file, 'utf8');
-          const testUrl = 'https://zimzsovvtdmrthrflkgm.supabase.co';
-          const testKey = 'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k';
-          const liveUrl = 'https://xwjcwravfeldndwlugai.supabase.co';
-          const liveKey = 'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI';
-          const sourceConfig = "const PUBLIC_SUPABASE_CONFIG={url:'" + testUrl + "',key:'" + testKey + "'};;";
+          const liveUrl = 'https://zimzsovvtdmrthrflkgm.supabase.co';
+          const liveKey = 'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k';
           const liveConfig = "const PUBLIC_SUPABASE_CONFIG={url:'" + liveUrl + "',key:'" + liveKey + "'};;";
-          if (!built.includes(sourceConfig)) {
-            throw new Error('Verwachte testbronconfiguratie ontbreekt. Productiebuild afgebroken.');
-          }
-          built = built.replace(sourceConfig, liveConfig);
-          built = built.split(testUrl).join(liveUrl);
-          built = built.split(testKey).join(liveKey);
           if (!built.includes(liveConfig) || !built.includes(liveUrl) || !built.includes(liveKey) ||
-              built.includes(testUrl) || built.includes(testKey)) {
-            throw new Error('Productiebuild bevat onjuiste of gemengde Supabase-configuratie.');
+              built.includes('https://xwjcwravfeldndwlugai.supabase.co') ||
+              built.includes('sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI')) {
+            throw new Error('Productiebuild gebruikt niet het bevestigde live Supabase-project animo-haccp-test.');
           }
           writeFileSync(file, built);
           console.log('Productiebuild gebruikt uitsluitend het bevestigde live Supabase-project.');
@@ -150,36 +142,22 @@ jobs:
           import { readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
           import { join } from 'node:path';
           const root = 'out';
-          const testUrl = 'https://zimzsovvtdmrthrflkgm.supabase.co';
-          const testKey = 'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k';
-          const liveUrl = 'https://xwjcwravfeldndwlugai.supabase.co';
-          const liveKey = 'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI';
-          const walk = dir => {
+          const liveUrl = 'https://zimzsovvtdmrthrflkgm.supabase.co';
+          const liveKey = 'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k';
+          const wrongUrl = 'https://xwjcwravfeldndwlugai.supabase.co';
+          const wrongKey = 'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI';
+          const assertLive = dir => {
             for (const name of readdirSync(dir)) {
               const file = join(dir, name);
-              if (statSync(file).isDirectory()) { walk(file); continue; }
-              let value = readFileSync(file, 'utf8');
-              if (!value.includes(testUrl) && !value.includes(testKey)) continue;
-              value = value.split(testUrl).join(liveUrl).split(testKey).join(liveKey);
-              if (value.includes(testUrl) || value.includes(testKey)) {
-                throw new Error('Test-Supabase-configuratie gevonden in ' + file);
-              }
-              writeFileSync(file, value);
-            }
-          };
-          walk(root);
-          const assertClean = dir => {
-            for (const name of readdirSync(dir)) {
-              const file = join(dir, name);
-              if (statSync(file).isDirectory()) { assertClean(file); continue; }
+              if (statSync(file).isDirectory()) { assertLive(file); continue; }
               const value = readFileSync(file, 'utf8');
-              if (value.includes(testUrl) || value.includes(testKey)) {
-                throw new Error('Test-Supabase-configuratie staat nog in ' + file);
+              if (value.includes(wrongUrl) || value.includes(wrongKey)) {
+                throw new Error('Verkeerde Supabase-configuratie gevonden in ' + file);
               }
             }
           };
-          assertClean(root);
-          console.log('Alle gepubliceerde bestanden gebruiken uitsluitend de live Supabase-configuratie.');
+          assertLive(root);
+          console.log('Alle gepubliceerde bestanden behouden het bevestigde live Supabase-project animo-haccp-test: ' + liveUrl);
           NODE
 
           echo "== Te uploaden: landing =="
