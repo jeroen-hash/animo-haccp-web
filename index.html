@@ -1319,7 +1319,7 @@ get('cloudResetRequestForm').addEventListener('submit',async e=>{
   message.textContent='Even geduld...';
   message.className='cloud-message show ok';
   try{
-    const redirectTo=location.origin+location.pathname;
+    const redirectTo=location.origin+location.pathname+'?type=recovery';
     const {error}=await cloudClient.auth.resetPasswordForEmail(email,{redirectTo});
     if(error)throw error;
     message.textContent='Als dit e-mailadres bij ANIMO HACCP bekend is, is een herstelmail verstuurd. Controleer ook de spammap.';
