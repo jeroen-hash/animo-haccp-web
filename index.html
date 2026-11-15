@@ -775,7 +775,7 @@ body:has(#cloudGate:not(.hidden)) .mobile-nav{display:none!important}
 const CONFIG_KEY='favv-supabase-public-config-v1';
 const PUBLIC_SUPABASE_CONFIG={url:'https://zimzsovvtdmrthrflkgm.supabase.co',key:'sb_publishable_Cgh3XIJouxoWHgwWCT84rA_jkZMU14k'};;
 const get=id=>document.getElementById(id);
-let cloudClient=null,cloudBusiness=null,saveTimer=null,pendingPasswordFlow=null;
+let cloudClient=null,cloudBusiness=null,saveTimer=null,pendingPasswordFlow=null,passwordRecoveryEventPending=false;
 async function logPlatformError(source,message,details={}){
   try{
     if(!cloudClient)return;
@@ -1245,7 +1245,7 @@ async function initClient(config){
     if(signupRequested)setSignupMessage('De beveiligde registratieverbinding kon niet worden geladen. Vernieuw de pagina of probeer het opnieuw.','error');
     return false;
   }
-  cloudClient=window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});cloudClient.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'&&session){showPasswordSetup('recovery');setStatus('Nieuw wachtwoord vereist')}});const {data,error}=await cloudClient.auth.getSession();if(error){if(isNetworkUnavailable(error)){try{const meta=JSON.parse(localStorage.getItem(OFFLINE_SESSION_KEY)||'null');const hasPersistedAuth=Object.keys(localStorage).some(key=>/^sb-.+-auth-token$/.test(key));if(meta?.userId&&hasPersistedAuth&&bootOfflineFromCache({id:meta.userId,email:meta.userEmail||''}))return true}catch(offlineError){console.warn('Offline sessieherstel na auth-netwerkfout niet mogelijk',offlineError)}}if(signupRequested){showSignup();setSignupMessage('De registratieverbinding kon niet worden gecontroleerd. Controleer je internetverbinding en probeer opnieuw.','error')}else{setMessage(error.message);showLogin()}return true}const linkType=authLinkType();if(data.session&&(linkType==='recovery'||linkType==='invite')){showPasswordSetup(linkType);setStatus(linkType==='invite'?'Accountactivatie vereist':'Nieuw wachtwoord vereist');history.replaceState(null,document.title,location.pathname);return true}if(data.session){
+  cloudClient=window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});cloudClient.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'&&session){passwordRecoveryEventPending=true;showPasswordSetup('recovery');setStatus('Nieuw wachtwoord vereist')}});const {data,error}=await cloudClient.auth.getSession();await new Promise(resolve=>setTimeout(resolve,0));if(error){if(isNetworkUnavailable(error)){try{const meta=JSON.parse(localStorage.getItem(OFFLINE_SESSION_KEY)||'null');const hasPersistedAuth=Object.keys(localStorage).some(key=>/^sb-.+-auth-token$/.test(key));if(meta?.userId&&hasPersistedAuth&&bootOfflineFromCache({id:meta.userId,email:meta.userEmail||''}))return true}catch(offlineError){console.warn('Offline sessieherstel na auth-netwerkfout niet mogelijk',offlineError)}}if(signupRequested){showSignup();setSignupMessage('De registratieverbinding kon niet worden gecontroleerd. Controleer je internetverbinding en probeer opnieuw.','error')}else{setMessage(error.message);showLogin()}return true}const linkType=authLinkType();if(data.session&&(linkType==='recovery'||linkType==='invite'||passwordRecoveryEventPending)){showPasswordSetup(linkType);setStatus(linkType==='invite'?'Accountactivatie vereist':'Nieuw wachtwoord vereist');history.replaceState(null,document.title,location.pathname);return true}if(data.session){
   try{
     await finishPendingBusinessRegistration();
     const prepared=await prepareCloudSession(data.session.user,{attempts:3,delay:500});
@@ -1319,7 +1319,7 @@ get('cloudResetRequestForm').addEventListener('submit',async e=>{
   message.textContent='Even geduld...';
   message.className='cloud-message show ok';
   try{
-    const redirectTo=location.origin+location.pathname;
+    const redirectTo=location.origin+location.pathname+'?type=recovery';
     const {error}=await cloudClient.auth.resetPasswordForEmail(email,{redirectTo});
     if(error)throw error;
     message.textContent='Als dit e-mailadres bij ANIMO HACCP bekend is, is een herstelmail verstuurd. Controleer ook de spammap.';
