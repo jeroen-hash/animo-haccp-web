@@ -177,7 +177,7 @@ jobs:
             await ensureDir(sftp, remote);
             for (const entry of await readdir(local, { withFileTypes: true })) {
               const src = path.join(local, entry.name);
-              const dst = remote.replace(/\\/$/, '') + '/' + entry.name;
+              const dst = (remote.endsWith('/') ? remote.slice(0, -1) : remote) + '/' + entry.name;
               if (entry.isDirectory()) await uploadDir(sftp, src, dst);
               else if (entry.isFile()) await call(sftp, 'fastPut', src, dst);
             }
