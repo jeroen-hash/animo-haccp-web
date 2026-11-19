@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="nl-BE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#14543b">
+<meta name="robots" content="noindex,nofollow">
+<title>Productfiche · ANIMO HACCP</title>
+<style>
+:root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#18352a;background:#f3f6f3}
+*{box-sizing:border-box}body{margin:0;padding:24px 16px}.wrap{max-width:620px;margin:32px auto}.brand{font-size:13px;font-weight:800;letter-spacing:.13em;color:#527a65;margin:0 0 14px}.card{background:#fff;border:1px solid #dce7df;border-radius:18px;padding:24px;box-shadow:0 8px 30px #153d2910}h1{font-size:26px;line-height:1.2;margin:0 0 8px;overflow-wrap:anywhere}.intro{color:#607368;margin:0 0 22px;font-size:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{background:#f5f8f5;border-radius:12px;padding:14px;min-width:0}.field.wide{grid-column:1/-1}.label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#688071;font-weight:700;margin-bottom:6px}.value{font-size:15px;font-weight:650;overflow-wrap:anywhere;white-space:pre-wrap}.notice{font-size:12px;color:#687a70;line-height:1.5;margin:18px 0 0}.batch{font-family:ui-monospace,monospace;font-size:13px}@media(max-width:420px){.grid{grid-template-columns:1fr}.field.wide{grid-column:auto}}
+</style>
+</head>
+<body><main class="wrap"><p class="brand">ANIMO HACCP</p><section class="card" id="content" aria-live="polite"><p class="intro">Productfiche wordt geladen…</p></section></main>
+<script>
+(()=>{
+ const q=new URLSearchParams(location.search);
+ const get=(key)=>q.get(key)||'';
+ const esc=(value)=>String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+ const fields=[['Bereid / geopend op',get('m')],['Te gebruiken tot',get('e')],['Bewaarwijze',get('s')],['Verantwoordelijke',get('r')],['Batchnummer',get('b')]];
+ const content=document.getElementById('content');
+ if(!get('p')||!get('n')){content.innerHTML='<h1>Productfiche niet gevonden</h1><p class="intro">Deze QR-code bevat geen geldige productgegevens. Vraag een nieuw etiket aan via ANIMO HACCP.</p>';return}
+ content.innerHTML='<h1>'+esc(get('n'))+'</h1><p class="intro">Productinformatie uit ANIMO HACCP</p><div class="grid">'+fields.map(([label,value],i)=>'<div class="field'+(i===4?' wide':'')+'"><span class="label">'+esc(label)+'</span><div class="value'+(i===4?' batch':'')+'">'+(value?esc(value):'Niet opgegeven')+'</div></div>').join('')+(get('o')?'<div class="field wide"><span class="label">Opmerking / allergenen</span><div class="value">'+esc(get('o'))+'</div></div>':'')+'</div><p class="notice">Deze productfiche is alleen-lezen. Controleer het fysieke etiket en de actuele toestand van het product. Een datum op zichzelf garandeert niet dat een product veilig is.</p>';
+ const today=new Date().toLocaleDateString('sv-SE');
+ if(get('e')&&get('e')<today){const box=document.createElement('div');box.className='field wide';box.style.cssText='margin-top:12px;background:#fff0ed;color:#9b3022';box.textContent='Let op: de opgegeven gebruiksdatum is verstreken.';content.querySelector('.grid').appendChild(box)}
+})();
+</script></body></html>
