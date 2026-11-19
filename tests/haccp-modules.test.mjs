@@ -19,7 +19,7 @@ test("HACCP records are part of the existing persisted business state", () => {
   assert.match(html, /haccpRecords:\[\]/);
   assert.match(html, /target\.haccpRecords=Array\.isArray\(target\.haccpRecords\)/);
   assert.match(html, /state\.haccpRecords\.unshift\(/);
-  assert.match(html, /persist\\(\\);form\\.reset\\(\\)/);
+  assert.ok(html.includes('persist();form.reset();'), 'Saving a HACCP record must persist and reset the form');
 });
 
 test("all modules have dedicated structured fields and the daily report captures them", () => {
