@@ -2461,8 +2461,8 @@ function renderHaccpModules(){
  root.innerHTML=HACCP_MODULES.map(module=>{
   const rows=(state.haccpRecords||[]).filter(r=>r.category===module.id).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
   const fields=module.fields.map(([label,type,options])=>{const name=haccpFieldName(label),id='hm-'+module.id+'-'+module.fields.findIndex(x=>x[0]===label);let control='';
-   if(type==='select')control='<select id="'+id+'" name="'+esc(name)+'" required><option value="">Kies...</option>'+options.split('|').map(v=>'<option>'+esc(v)+'</option>').join('')+'</select>';
-   else if(type==='textarea')control='<textarea id="'+id+'" name="'+esc(name)+'" rows="2" required></textarea>';
+   if(type==='select')control='<select id="'+id+'" name="'+esc(name)+'"><option value="">Kies...</option>'+options.split('|').map(v=>'<option>'+esc(v)+'</option>').join('')+'</select>';
+   else if(type==='textarea')control='<textarea id="'+id+'" name="'+esc(name)+'" rows="2"></textarea>';
    else control='<input id="'+id+'" name="'+esc(name)+'" type="'+type+'" '+(type==='number'?'step="0.1"':'')+'>';
    return '<div class="field"><label for="'+id+'">'+esc(label)+' *</label>'+control+'</div>';
   }).join('');
