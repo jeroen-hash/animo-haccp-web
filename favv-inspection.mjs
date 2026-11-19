@@ -101,24 +101,24 @@ function renderList(){
 window.FAVVInspectionReportHtml=function(months){
  const end=new Date(),start=months==='all'?null:new Date(end.getFullYear(),end.getMonth()-Number(months),end.getDate(),0,0,0,0),all=records().filter(r=>!start||new Date(r.date||r.createdAt)>=start).sort((a,b)=>new Date(a.date||a.createdAt)-new Date(b.date||b.createdAt));
  const summary='<section class="section"><h2 class="section-title">FAVV-inspectiedossier · samenvatting</h2><p>Overzicht van registraties binnen de gekozen periode. Een ontbrekende registratie betekent niet automatisch een wettelijke tekortkoming; toepasselijkheid hangt af van de activiteiten en het autocontrolesysteem.</p><table><thead><tr><th>Onderdeel</th><th>Registraties</th><th>Open controlepunten</th><th>Niet van toepassing</th></tr></thead><tbody>'+CATEGORIES.map(c=>{const rows=all.filter(r=>r.category===c.id);return '<tr><td>'+esc(c.name)+'</td><td>'+rows.length+'</td><td>'+rows.reduce((n,r)=>n+(r.status==='open'?1:0)+(r.checks||[]).filter(x=>x.status==='open').length,0)+'</td><td>'+rows.filter(r=>r.status==='na').length+'</td></tr>'}).join('')+'</tbody></table></section>';
- const st=state();
+ const st=state(),applicability=st.inspectionApplicability&&typeof st.inspectionApplicability==='object'?st.inspectionApplicability:{};
  const evidenceRows=[
-  ['Temperatuurregistraties',(st.temperatures||[]).length,[]],
-  ['Reinigingsplan en uitvoering',(st.cleaning||[]).length,[]],
-  ['Afwijkingen en corrigerende acties',(st.temperatureActions||[]).length,[]],
-  ['Allergeneninformatie',(st.dishes||[]).length,[]],
-  ['Goederenontvangst',(st.goodsReceipts||[]).length+(st.deliveries||[]).length,[]],
-  ['Traceerbaarheid',(st.goodsReceipts||[]).length+(st.stockMovements||[]).length,['traceability']],
-  ['Productbeheer en etikettering',(st.stock||[]).length,['product-management']],
-  ['Bereidingscontroles',0,['preparation']],
-  ['Ongediertepreventie',(st.pestLogs||[]).length,[]],
-  ['Onderhoud en kalibratie',0,['maintenance']],
-  ['Persoonlijke hygiëne en opleiding',0,['staff']],
-  ['Water en afvalbeheer',0,['water-waste']],
-  ['Klachten en terugroepingen',0,['complaints-recall']],
-  ['HACCP-plan en procedures',0,['haccp-plan']]
- ].map(([name,base,keys])=>{const related=all.filter(r=>keys.includes(r.category));const open=related.reduce((n,r)=>n+(r.status==='open'?1:0)+(r.checks||[]).filter(x=>x.status==='open').length,0);const evidence=base+related.length;const na=related.length>0&&related.every(r=>r.status==='na'||(r.checks||[]).length>0&&r.checks.every(x=>x.status==='na'));return {name,evidence,open,na}});
- const coverage='<section class="section"><h2 class="section-title">FAVV · volledigheid van bewijs</h2><p>Automatische indicatie op basis van bestaande registraties en inspectieregistraties in de gekozen periode. Geen bewijs gevonden is geen automatische vaststelling van een wettelijke tekortkoming. Beoordeel toepasselijkheid volgens de activiteiten van de zaak.</p><table><thead><tr><th>Aandachtspunt</th><th>Registraties gevonden</th><th>Open punten</th><th>Gemotiveerd NVT</th></tr></thead><tbody>'+evidenceRows.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+x.evidence+'</td><td>'+x.open+'</td><td>'+(x.na?'Ja':'—')+'</td></tr>').join('')+'</tbody></table></section>';
+  ['temperatures','Temperatuurregistraties',(st.temperatures||[]).length,[]],
+  ['cleaning','Reinigingsplan en uitvoering',(st.cleaning||[]).length,[]],
+  ['deviations','Afwijkingen en corrigerende acties',(st.temperatureActions||[]).length,[]],
+  ['allergens','Allergeneninformatie',(st.dishes||[]).length,[]],
+  ['receiving','Goederenontvangst',(st.goodsReceipts||[]).length+(st.deliveries||[]).length,[]],
+  ['traceability','Traceerbaarheid',(st.goodsReceipts||[]).length+(st.stockMovements||[]).length,['traceability']],
+  ['products','Productbeheer en etikettering',(st.stock||[]).length,['product-management']],
+  ['preparation','Bereidingscontroles',0,['preparation']],
+  ['pests','Ongediertepreventie',(st.pestLogs||[]).length,[]],
+  ['maintenance','Onderhoud en kalibratie',0,['maintenance']],
+  ['staff','Persoonlijke hygiëne en opleiding',0,['staff']],
+  ['water-waste','Water en afvalbeheer',0,['water-waste']],
+  ['complaints-recall','Klachten en terugroepingen',0,['complaints-recall']],
+  ['haccp-plan','HACCP-plan en procedures',0,['haccp-plan']]
+ ].map(([id,name,base,keys])=>{const related=all.filter(r=>keys.includes(r.category));const open=related.reduce((n,r)=>n+(r.status==='open'?1:0)+(r.checks||[]).filter(x=>x.status==='open').length,0);const choice=applicability[id]||{};const stateLabel=choice.status==='na'&&choice.reason?'Niet van toepassing':choice.status==='applicable'?'Van toepassing':'Nog te beoordelen';return {name,evidence:base+related.length,open,stateLabel,reason:choice.reason||''}});
+ const coverage='<section class="section"><h2 class="section-title">FAVV · volledigheid van bewijs</h2><p>Automatische indicatie op basis van bestaande registraties en inspectieregistraties in de gekozen periode. Bestaande registraties worden als aantallen getoond en zijn niet allemaal inhoudelijk beoordeeld. Geen bewijs gevonden is geen automatische vaststelling van een wettelijke tekortkoming. Beoordeel toepasselijkheid volgens de activiteiten van de zaak.</p><table><thead><tr><th>Aandachtspunt</th><th>Registraties gevonden</th><th>Open punten</th><th>Toepasselijkheid</th><th>Reden NVT</th></tr></thead><tbody>'+evidenceRows.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+x.evidence+'</td><td>'+x.open+'</td><td>'+esc(x.stateLabel)+'</td><td>'+esc(x.reason||'—')+'</td></tr>').join('')+'</tbody></table></section>';
  return summary+coverage+CATEGORIES.map(c=>{const rows=all.filter(r=>r.category===c.id);let html='<section class="section"><h2 class="section-title">'+esc(c.name)+'</h2><p class="section-note">'+esc(c.hint)+'</p>';
  if(!rows.length)html+='<p>Geen registraties beschikbaar binnen deze periode.</p>';else{html+='<table><thead><tr><th>Datum</th><th>Onderwerp</th><th>Details</th><th>Controlepunten</th><th>Actie / bewijs / status</th></tr></thead><tbody>';
  rows.forEach(r=>{const details=Object.entries(r.details||{}).map(([k,v])=>k+': '+v).join(' · ');const checks=(r.checks||[]).map(x=>x.question+': '+statusName(x.status)+(x.reason?' (reden: '+x.reason+')':'')).join(' | ');const action=[r.action&&'Actie: '+r.action,r.responsible&&'Verantwoordelijke: '+r.responsible,r.evidence&&'Bewijs: '+r.evidence,r.attachment&&'Bijlage: '+r.attachment.name,r.nextDueDate&&'Opvolgdatum: '+r.nextDueDate,r.notes&&'Opmerking: '+r.notes,'Eindstatus: '+statusName(r.status)].filter(Boolean).join(' · ');html+='<tr><td>'+esc(new Date(r.date||r.createdAt).toLocaleString('nl-BE'))+'</td><td><strong>'+esc(r.subject)+'</strong></td><td>'+esc(details||'Niet ingevuld')+'</td><td>'+esc(checks||'Niet ingevuld')+'</td><td>'+esc(action)+'</td></tr>'});html+='</tbody></table>'}return html+'</section>'}).join('');
