@@ -79,7 +79,7 @@ function renderCoverage(){
   return {...x,open,status};
  });
  const totals={covered:rows.filter(x=>x.status==='covered').length,attention:rows.filter(x=>x.status==='attention').length,missing:rows.filter(x=>x.status==='missing').length,na:rows.filter(x=>x.status==='na').length};
- const label={covered:'Bewijs / registratie aanwezig',attention:'Opvolging nodig',missing:'Nog geen bewijs gevonden',na:'Gemotiveerd niet van toepassing'};
+ const label={covered:'Registratie gevonden · controleer inhoud',attention:'Opvolging nodig',missing:'Nog geen bewijs gevonden',na:'Gemotiveerd niet van toepassing'};
  box.innerHTML='<div class="grid">'+
  '<div class="card c3" style="padding:12px"><strong>Bewijs aanwezig</strong><div class="metric">'+totals.covered+'</div></div>'+
  '<div class="card c3" style="padding:12px"><strong>Opvolging nodig</strong><div class="metric">'+totals.attention+'</div></div>'+
