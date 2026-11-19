@@ -58,7 +58,7 @@ jobs:
         if: steps.guard.outputs.present == 'true'
         run: |
           set -euo pipefail
-          node --test tests/haccp-report-printing.test.mjs tests/service-worker-cache.test.mjs
+          node --test tests/haccp-report-printing.test.mjs tests/haccp-modules.test.mjs tests/service-worker-cache.test.mjs
 
       - name: Testconfiguratie controleren (nooit productie injecteren)
         if: steps.guard.outputs.present == 'true'
