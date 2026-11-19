@@ -123,7 +123,7 @@ jobs:
             const type = (attrs.match(/\btype=["']([^"']+)["']/i) || [])[1] || '';
             if (type && !/^(text\/javascript|application\/javascript|module)$/i.test(type)) continue;
             const source = match[2] || '';
-            if (/<script\\b/i.test(source)) continue;
+            if (/<script\b/i.test(source)) continue;
             if (!source.trim()) continue;
             const path = '/tmp/animo-inline-' + checked + '.js';
             writeFileSync(path, source);
