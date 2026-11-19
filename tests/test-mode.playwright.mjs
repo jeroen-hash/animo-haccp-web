@@ -33,8 +33,9 @@ try {
   assert.equal(await page.locator('#cloudOpenSignup').isVisible(), true, 'Registratielink ontbreekt');
 
   const config = await page.evaluate(() => JSON.parse(localStorage.getItem('favv-supabase-public-config-v1') || 'null'));
-  assert.equal(config?.url, 'https://zimzsovvtdmrthrflkgm.supabase.co', 'Testapp gebruikt niet het afgesproken testproject');
-  assert.ok(config?.key?.startsWith('sb_publishable_'), 'Veilige publieke Supabase-sleutel ontbreekt');
+  assert.equal(config?.url, 'https://xwjcwravfeldndwlugai.supabase.co', 'Testapp gebruikt niet het afgesproken testproject');
+  assert.notEqual(config?.url, 'https://zimzsovvtdmrthrflkgm.supabase.co', 'WAARSCHUWING: live Supabase-project mag nooit door de testapp worden gebruikt');
+  assert.equal(config?.key, 'sb_publishable_nMuGFmDa34Xm1HQ21kTK9A_uZIRtapI', 'De afgesproken publieke testsleutel ontbreekt of is gewijzigd');
   assert.deepEqual(pageErrors, [], `JavaScript-fouten: ${pageErrors.join('; ')}`);
   await context.close();
   console.log('[PASS] gewone login met e-mailadres en wachtwoord zichtbaar');
