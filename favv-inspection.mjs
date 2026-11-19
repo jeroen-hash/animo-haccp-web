@@ -52,8 +52,41 @@ async function save(e){
 }
 function renderLinkedRecords(){const box=$('inspectionLinkedRecords');if(!box)return;const groups=[{name:'Temperatuurmetingen',count:(state().temperatures||[]).length,page:'temperatures'},{name:'Reinigingsregistraties',count:(state().cleaning||[]).length,page:'cleaning'},{name:'Goederenontvangsten',count:(state().goodsReceipts||[]).length,page:'goods-receipts'},{name:'Ongediertecontroles',count:(state().pestLogs||[]).length,page:'pest-control'},{name:'Voorraadartikelen',count:(state().stock||[]).length,page:'stock'},{name:'Temperatuuracties',count:(state().temperatureActions||[]).length,page:'actions'}];box.innerHTML='<div class="grid">'+groups.map(g=>'<div class="card c4" style="padding:12px"><strong>'+esc(g.name)+'</strong><div class="metric">'+g.count+'</div><button class="btn secondary small" type="button" data-ir-goto="'+g.page+'">Open onderdeel</button></div>').join('')+'</div>';box.querySelectorAll('[data-ir-goto]').forEach(b=>b.addEventListener('click',()=>{const target=document.querySelector('[data-page="'+b.dataset.irGoto+'"]');if(target)target.click();else alert('Open '+b.dataset.irGoto+' via het hoofdmenu.')}))}
 function renderCoverage(){
- const box=$('inspectionCoverage');if(!box)return;const all=records(),rows=CATEGORIES.map(c=>{const list=all.filter(r=>r.category===c.id),open=list.reduce((n,r)=>n+(r.checks||[]).filter(x=>x.status==='open').length+(r.status==='open'?1:0),0),na=list.filter(r=>r.status==='na').length;return {c,list,open,na}});
- box.innerHTML='<div class="grid">'+rows.map(({c,list,open,na})=>'<div class="card c4" style="padding:13px"><strong>'+esc(c.name)+'</strong><div class="metric">'+list.length+'</div><div class="item-sub">Registraties · '+open+' open controlepunt(en) · '+na+' keer niet van toepassing</div><span class="pill '+(open?'warning':'')+'">'+(open?'Opvolging nodig':list.length?'Geregistreerd':'Nog geen registratie')+'</span></div>').join('')+'</div><p class="source-note">Dit is een overzicht van ingevoerde registraties, geen automatische wettelijke conformiteitsverklaring. Laat onderdelen die niet bij je activiteiten horen motiveren en bevestigen in je eigen autocontrolesysteem.</p>';
+ const box=$('inspectionCoverage');if(!box)return;
+ const s=state(),all=records();
+ const count=(key)=>Array.isArray(s[key])?s[key].length:0;
+ const specs=[
+  {id:'temperatures',name:'Temperatuurregistraties',hint:'Koel- en vriestemperaturen en andere relevante temperatuurcontroles',evidence:count('temperatures'),keys:[]},
+  {id:'cleaning',name:'Reinigingsplan en uitvoering',hint:'Reinigingsregistraties en opvolging',evidence:count('cleaning'),keys:[]},
+  {id:'deviations',name:'Afwijkingen en corrigerende acties',hint:'Temperatuuracties en andere geregistreerde opvolging',evidence:count('temperatureActions'),keys:[]},
+  {id:'allergens',name:'Allergeneninformatie',hint:'Gerechten met geregistreerde allergeneninformatie',evidence:count('dishes'),keys:[]},
+  {id:'receiving',name:'Goederenontvangst',hint:'Ontvangsten en leveringsregistraties',evidence:count('goodsReceipts')+count('deliveries'),keys:[]},
+  {id:'traceability',name:'Traceerbaarheid en lotnummers',hint:'Ontvangsten, voorraadbewegingen en inspectieregistraties',evidence:count('goodsReceipts')+count('stockMovements')+all.filter(r=>r.category==='traceability').length,keys:['traceability']},
+  {id:'products',name:'Productbeheer en etikettering',hint:'Voorraadartikelen en product-/datumcontroles',evidence:count('stock')+all.filter(r=>r.category==='product-management').length,keys:['product-management']},
+  {id:'preparation',name:'Bereidingscontroles',hint:'Kerntemperatuur, koelen, ontdooien, heropwarmen en warmhouden',evidence:all.filter(r=>r.category==='preparation').length,keys:['preparation']},
+  {id:'pests',name:'Ongediertepreventie',hint:'Ongediertecontroles',evidence:count('pestLogs'),keys:[]},
+  {id:'maintenance',name:'Onderhoud en meettoestellen',hint:'Onderhoud, defecten en thermometercontrole',evidence:all.filter(r=>r.category==='maintenance').length,keys:['maintenance']},
+  {id:'staff',name:'Persoonlijke hygiëne en opleiding',hint:'Hygiëne-instructies en opleidingsregistraties',evidence:all.filter(r=>r.category==='staff').length,keys:['staff']},
+  {id:'water-waste',name:'Water en afvalbeheer',hint:'Watergeschiktheid, afvalopslag en afvalverwijdering',evidence:all.filter(r=>r.category==='water-waste').length,keys:['water-waste']},
+  {id:'complaints-recall',name:'Klachten en terugroepingen',hint:'Klachten, productblokkering en terugroepacties',evidence:all.filter(r=>r.category==='complaints-recall').length,keys:['complaints-recall']},
+  {id:'haccp-plan',name:'HACCP-plan en procedures',hint:'Gevaren, beheersmaatregelen, bewaking en verificatie',evidence:all.filter(r=>r.category==='haccp-plan').length,keys:['haccp-plan']}
+ ];
+ const rows=specs.map(x=>{
+  const related=all.filter(r=>x.keys.includes(r.category));
+  const open=related.reduce((n,r)=>n+(r.status==='open'?1:0)+(r.checks||[]).filter(c=>c.status==='open').length,0);
+  const hasNa=related.length>0&&related.every(r=>r.status==='na'||(r.checks||[]).length>0&&(r.checks||[]).every(c=>c.status==='na'));
+  const status=open?'attention':hasNa?'na':x.evidence>0?'covered':'missing';
+  return {...x,open,status};
+ });
+ const totals={covered:rows.filter(x=>x.status==='covered').length,attention:rows.filter(x=>x.status==='attention').length,missing:rows.filter(x=>x.status==='missing').length,na:rows.filter(x=>x.status==='na').length};
+ const label={covered:'Bewijs / registratie aanwezig',attention:'Opvolging nodig',missing:'Nog geen bewijs gevonden',na:'Gemotiveerd niet van toepassing'};
+ box.innerHTML='<div class="grid">'+
+ '<div class="card c3" style="padding:12px"><strong>Bewijs aanwezig</strong><div class="metric">'+totals.covered+'</div></div>'+
+ '<div class="card c3" style="padding:12px"><strong>Opvolging nodig</strong><div class="metric">'+totals.attention+'</div></div>'+
+ '<div class="card c3" style="padding:12px"><strong>Geen bewijs gevonden</strong><div class="metric">'+totals.missing+'</div></div>'+
+ '<div class="card c3" style="padding:12px"><strong>Niet van toepassing</strong><div class="metric">'+totals.na+'</div></div></div>'+
+ '<div class="items" style="margin-top:12px">'+rows.map(x=>'<div class="item" style="align-items:flex-start;gap:12px"><div style="flex:1;min-width:0"><strong>'+esc(x.name)+'</strong><div class="item-sub">'+esc(x.hint)+'</div><div class="item-sub">'+x.evidence+' bestaande registratie(s) gevonden'+(x.open?' · '+x.open+' open controlepunt(en)':'')+'</div></div><span class="pill '+(x.status==='attention'?'warning':'')+'">'+label[x.status]+'</span></div>').join('')+'</div>'+
+ '<p class="source-note">Automatische indicatie op basis van gegevens die ANIMO kan terugvinden. “Geen bewijs gevonden” betekent niet automatisch dat je wettelijk niet in orde bent. Beoordeel per activiteit welke punten van toepassing zijn en voeg ontbrekend bewijs toe. Een NVT-status telt alleen als de registratie dit motiveert.</p>';
 }
 function renderList(){
  const box=$('inspectionRecordList');if(!box)return;const filter=$('irFilter')?.value||'',list=records().filter(r=>!filter||r.category===filter).sort((a,b)=>new Date(b.date)-new Date(a.date));
