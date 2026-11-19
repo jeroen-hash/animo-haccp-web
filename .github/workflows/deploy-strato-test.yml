@@ -151,8 +151,7 @@ jobs:
           SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
         run: |
           set -euo pipefail
-          sudo apt-get update -y -o Acquire::Retries=5
-          sudo apt-get install -y -o Acquire::Retries=5 lftp
+          timeout 120s sudo apt-get install -y lftp
           mkdir -p "$HOME/.ssh"
           chmod 700 "$HOME/.ssh"
           ssh-keyscan -T 15 -p 22 -t ed25519 "$SFTP_HOST" > "$RUNNER_TEMP/strato_known_hosts" 2>/dev/null
