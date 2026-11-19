@@ -785,7 +785,7 @@ body:has(#cloudGate:not(.hidden)) .mobile-nav{display:none!important}
   </a>
   <span class="topbar-current" id="topbarCurrentPage">Dashboard</span>
 </header>
-<div class="layout"><div class="nav-backdrop" id="navBackdrop" aria-hidden="true"></div><aside class="sidebar" id="appNavigation" aria-label="Applicatiemenu"><div class="drawer-head"><div class="brand"><div class="mark"><img src="images/animo-icon.png.png" alt="ANIMO HACCP" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;display:block"></div><div><strong>Animo HACCP</strong><small id="brandBusinessName">HACCP-platform</small></div></div><button class="drawer-close" id="navClose" type="button" aria-label="Menu sluiten">×</button></div><nav class="nav" aria-label="Hoofdnavigatie"><button class="nav-btn" data-page="employee-workboard">▦ Werkbord</button><button class="nav-btn active" data-page="dashboard"><span>⌂</span>Dashboard</button><button class="nav-btn" data-page="cleaning"><span>🧹</span>Kuislijst</button><button class="nav-btn" data-page="temperatures"><span>🌡</span>Temperaturen</button><button class="nav-btn" data-page="goods-receipts"><span>📦</span>Ontvangst</button><button class="nav-btn" data-page="actions"><span>!</span>Acties <span id="actionNavCount" class="pill warning" style="display:none;width:auto;margin-left:4px">0</span></button><button class="nav-btn" data-page="allergens"><span>⚠</span>Allergenen</button><button class="nav-btn" data-page="haccp-modules"><span>✓</span>HACCP-plan</button><button class="nav-btn" data-page="pest-control"><span>🪳</span>Ongedierte</button><button class="nav-btn" data-page="stock"><span>▦</span>Stock</button><button class="nav-btn" data-page="product-labels"><span>▣</span>Productetiketten</button><button class="nav-btn" data-page="expiry-management"><span>⌛</span>Houdbaarheid</button><button class="nav-btn manager-only" data-page="invoices"><span>€</span>Facturen</button><button class="nav-btn" data-page="recipes"><span>▤</span>Recepten</button><button class="nav-btn" data-page="reports"><span>▥</span>Rapport</button><button class="nav-btn manager-only" data-page="subscription"><span>€</span>Abonnement</button><button class="nav-btn manager-only" data-page="management"><span>⚙</span>Beheer</button></nav><div class="sidebar-note">Ingelogd als <strong id="sidebarUser">-</strong><br><span id="sidebarRole">-</span><button class="logout-btn" type="button" data-auth-action="logout">Uitloggen</button></div></aside>
+<div class="layout"><div class="nav-backdrop" id="navBackdrop" aria-hidden="true"></div><aside class="sidebar" id="appNavigation" aria-label="Applicatiemenu"><div class="drawer-head"><div class="brand"><div class="mark"><img src="images/animo-icon.png.png" alt="ANIMO HACCP" style="width:100%;height:100%;object-fit:contain;border-radius:inherit;display:block"></div><div><strong>Animo HACCP</strong><small id="brandBusinessName">HACCP-platform</small></div></div><button class="drawer-close" id="navClose" type="button" aria-label="Menu sluiten">×</button></div><nav class="nav" aria-label="Hoofdnavigatie"><button class="nav-btn" data-page="employee-workboard">▦ Werkbord</button><button class="nav-btn active" data-page="dashboard"><span>⌂</span>Dashboard</button><button class="nav-btn" data-page="cleaning"><span>🧹</span>Kuislijst</button><button class="nav-btn" data-page="temperatures"><span>🌡</span>Temperaturen</button><button class="nav-btn" data-page="goods-receipts"><span>📦</span>Ontvangst</button><button class="nav-btn" data-page="actions"><span>!</span>Acties <span id="actionNavCount" class="pill warning" style="display:none;width:auto;margin-left:4px">0</span></button><button class="nav-btn" data-page="allergens"><span>⚠</span>Allergenen</button><button class="nav-btn" data-page="haccp-modules"><span>✓</span>HACCP-plan</button><button class="nav-btn" data-page="pest-control"><span>🪳</span>Ongedierte</button><button class="nav-btn" data-page="stock"><span>▦</span>Stock</button><button class="nav-btn" data-page="product-labels"><span>▣</span>Productetiketten</button><button class="nav-btn" data-page="expiry-management"><span>⌛</span>Houdbaarheid</button><button class="nav-btn manager-only" data-page="invoices"><span>€</span>Facturen</button><button class="nav-btn" data-page="recipes"><span>▤</span>Recepten</button><button class="nav-btn" data-page="reports"><span>▥</span>Rapport</button><button class="nav-btn manager-only" data-page="subscription"><span>€</span>Abonnement</button><button class="nav-btn manager-only" data-page="management"><span>⚙</span>Beheer</button></nav><div class="sidebar-note">Ingelogd als <strong id="sidebarUser">-</strong><br><span id="sidebarRole">-</span><button id="ownerDashboardSwitch" class="logout-btn" type="button" style="display:none;background:#315b4b;margin-top:8px">Wissel dashboard</button><button class="logout-btn" type="button" data-auth-action="logout">Uitloggen</button></div></aside>
 <main class="main">
 <section id="employee-workboard" class="page">
  <div class="page-head"><div><h1>Mijn werkbord</h1><p>Je dagelijkse taken en registraties op één plek</p></div><div class="user" aria-label="Aangemelde medewerker">AN</div></div>
@@ -1027,6 +1027,17 @@ function showResetRequest(){
 function showPasswordSetup(type){hideResetRequest();pendingPasswordFlow=type==='invite'?'invite':'recovery';get('cloudSetup').classList.add('cloud-hidden');get('cloudLoginForm').classList.add('cloud-hidden');get('cloudSignupForm').classList.add('cloud-hidden');get('cloudSessionBox').classList.add('cloud-hidden');get('cloudPasswordSetupForm').classList.remove('cloud-hidden');get('cloudPasswordSetupTitle').textContent=pendingPasswordFlow==='invite'?'Account activeren':'Nieuw wachtwoord instellen';get('cloudPasswordSetupText').textContent=pendingPasswordFlow==='invite'?'Kies een persoonlijk wachtwoord om de uitnodiging te voltooien.':'Kies een nieuw persoonlijk wachtwoord om het account opnieuw te beveiligen.';get('cloudPasswordSetupMessage').className='cloud-message';get('cloudNewPassword').value='';get('cloudNewPasswordConfirm').value='';setTimeout(()=>get('cloudNewPassword').focus(),50)}
 function setSignupMessage(text,type='error'){const el=get('signupMessage');el.textContent=text;el.className='cloud-message show '+type}
 function showSession(user,loading=false){hideResetRequest();hidePasswordSetup();get('cloudSetup').classList.add('cloud-hidden');get('cloudLoginForm').classList.add('cloud-hidden');get('cloudSessionBox').classList.remove('cloud-hidden');get('cloudSessionText').textContent=loading?'ANIMO HACCP wordt geopend...':'Supabase-aanmelding actief voor '+(user.email||'testgebruiker');get('cloudContinue').classList.toggle('cloud-hidden',loading);get('cloudSignOut').classList.toggle('cloud-hidden',loading)}
+function showOwnerDashboardChoice(){
+ if(window.FAVVCloudRole!=='owner')return;
+ let layer=document.getElementById('ownerDashboardChoice');
+ if(!layer){
+  layer=document.createElement('div');layer.id='ownerDashboardChoice';
+  layer.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(10,24,19,.72);display:flex;align-items:center;justify-content:center;padding:18px';
+  layer.innerHTML='<div style="background:#fff;color:#18352a;border-radius:18px;padding:24px;width:min(440px,100%);box-shadow:0 20px 70px #0005"><h2 style="margin:0 0 8px">Waar wil je werken?</h2><p style="margin:0 0 20px;color:#52645b">Kies welke ANIMO HACCP-omgeving je nu wilt openen.</p><button type="button" data-owner-view="full" style="display:block;width:100%;padding:16px;margin:10px 0;border:0;border-radius:12px;background:#173f31;color:white;font-weight:800;text-align:left">Volledig dashboard <small style="display:block;font-weight:400;margin-top:4px">Beheer, voorraad, recepten, prijzen en alle instellingen</small></button><button type="button" data-owner-view="work" style="display:block;width:100%;padding:16px;margin:10px 0;border:1px solid #cbd8d0;border-radius:12px;background:#f2f7f4;color:#173f31;font-weight:800;text-align:left">Medewerkerswerkbord <small style="display:block;font-weight:400;margin-top:4px">Dagelijkse taken en registraties</small></button></div>';
+  layer.addEventListener('click',e=>{const b=e.target.closest('[data-owner-view]');if(!b)return;const view=b.dataset.ownerView;layer.remove();navigate(view==='work'?'employee-workboard':'dashboard')});
+  document.body.appendChild(layer);
+ }else layer.style.display='flex';
+}
 function openLocalApp(){
   const gate=get('cloudGate');
   gate.classList.add('hidden');
@@ -1461,6 +1472,7 @@ async function continueToCloudApp(){
       setStatus('Nieuwe zaak schoon gestart',true);
     }
     openLocalApp();
+    if(window.FAVVCloudRole==='owner')showOwnerDashboardChoice();
   }catch(error){
     // Bij een fout blijven opnieuw proberen of veilig afmelden mogelijk.
     if(sessionUser)showSession(sessionUser,false);
@@ -1551,6 +1563,11 @@ get('cloudSelectBusiness').addEventListener('click',async()=>{
     button.disabled=false;
     button.textContent='Deze zaak openen';
   }
+});
+document.getElementById('ownerDashboardSwitch')?.addEventListener('click',()=>{
+ if(window.FAVVCloudRole!=='owner')return;
+ const active=document.querySelector('.page.active')?.id;
+ navigate(active==='employee-workboard'?'dashboard':'employee-workboard');
 });
 window.FAVVSupabaseSignOut=async()=>{if(cloudClient)await cloudClient.auth.signOut({scope:'local'});window.FAVVCloudUser=null;window.FAVVCloudBusiness=null;window.FAVVCloudRole=null;const gate=get('cloudGate');gate.classList.remove('hidden');gate.removeAttribute('aria-hidden');gate.style.removeProperty('display');gate.style.removeProperty('visibility');gate.style.removeProperty('pointer-events');setStatus('Supabase klaar voor aanmelding');showLogin()};get('cloudSignOut').addEventListener('click',window.FAVVSupabaseSignOut);
 get('cloudOpenSignup').addEventListener('click',showSignup);
@@ -1815,6 +1832,7 @@ window.FAVVStartSupabaseSession=function(user,business){
   currentUser={id:user.id,name:(user.user_metadata?.full_name||user.email||'Gebruiker'),email:user.email||'',role:role==='employee'?'employee':'manager',cloudRole:role,isOwner:role==='owner',active:true};
   businessProfile={id:business.id,businessName:business.name,enterpriseNumber:business.enterprise_number||'',businessType:'Horecazaak',address:'',phone:'',ownerName:'',ownerEmail:'',createdAt:new Date().toISOString()};
   $('authLayer').classList.add('hidden');$('registrationLayer').classList.remove('open');$('recoveryLayer').classList.remove('open');
+  const ownerSwitch=$('ownerDashboardSwitch');if(ownerSwitch)ownerSwitch.style.display=role==='owner'?'block':'none';
   $('sidebarUser').textContent=currentUser.name;$('sidebarRole').textContent=role==='owner'?'Eigenaar':role==='manager'?'Manager':'Medewerker';
   document.querySelectorAll('.manager-only').forEach(el=>el.style.display=role==='employee'?'none':'');
   window.FAVVApplyCloudRole?.(role);updateBusinessUI();applyPriceVisibility();
@@ -1828,7 +1846,7 @@ window.FAVVApplyCloudRole=function(role){
   const employeePages=new Set(['employee-workboard','cleaning','temperatures','goods-receipts','actions','product-labels','recipes']);
   document.querySelectorAll('#appNavigation [data-page]').forEach(el=>{
     const page=el.dataset.page;
-    el.classList.toggle('cloud-employee-hidden',employee?!employeePages.has(page):page==='employee-workboard');
+    el.classList.toggle('cloud-employee-hidden',employee?!employeePages.has(page):(role==='manager'&&page==='employee-workboard'));
     if(!employee&&page==='dashboard')el.classList.add('active');
   });
   document.querySelectorAll('.manager-only').forEach(el=>el.classList.toggle('cloud-employee-hidden',employee));
