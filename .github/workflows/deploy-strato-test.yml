@@ -10,6 +10,7 @@ on:
       - test/favv-inspectiedossier
     paths:
       - 'index.html'
+      - 'product.html'
       - 'sw.js'
       - 'tests/**/*.mjs'
       - '*.mjs'
@@ -48,7 +49,7 @@ jobs:
           set -e
           rm -rf out
           mkdir -p out/test/images
-          cp index.html sw.js out/test/
+          cp index.html product.html sw.js out/test/
           cp ./*.mjs out/test/
           cp -r images/. out/test/images/
           echo "Bestanden voor test.animo-apps.com:"
