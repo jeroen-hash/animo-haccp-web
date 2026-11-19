@@ -143,7 +143,7 @@ jobs:
           console.log('Inline scripts syntax checked:', checked);
           NODE
 
-      - name: Uploaden naar uitsluitend /test
+      - name: Uploaden naar uitsluitend /test via beveiligde SFTP
         if: steps.guard.outputs.present == 'true'
         env:
           SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
@@ -151,23 +151,49 @@ jobs:
           SFTP_PASS: ${{ secrets.STRATO_SFTP_PASSWORD }}
         run: |
           set -euo pipefail
-          timeout 120s sudo apt-get install -y lftp
-          mkdir -p "$HOME/.ssh"
-          chmod 700 "$HOME/.ssh"
-          ssh-keyscan -T 15 -p 22 -t ed25519 "$SFTP_HOST" > "$RUNNER_TEMP/strato_known_hosts" 2>/dev/null
-          test -s "$RUNNER_TEMP/strato_known_hosts"
-          ACTUAL_FINGERPRINT="$(ssh-keygen -lf "$RUNNER_TEMP/strato_known_hosts" -E sha256 | awk '{print $2}')"
-          EXPECTED_FINGERPRINT="SHA256:1gx2w8Rtv3wCgi7Jh8myf/KVd72cRQbow03UP8P095Q"
-          if [ "$ACTUAL_FINGERPRINT" != "$EXPECTED_FINGERPRINT" ]; then
-            echo "::error::STRATO SSH-hostkey fingerprint komt niet overeen. Upload afgebroken."
-            exit 1
-          fi
-          chmod 600 "$RUNNER_TEMP/strato_known_hosts"
-          lftp -e "set sftp:connect-program 'ssh -a -x -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/strato_known_hosts'" -u "$SFTP_USER","$SFTP_PASS" "sftp://$SFTP_HOST:22" <<'LFTP'
-          set net:max-retries 5
-          set net:timeout 45
-          mirror -R --verbose out/test /test
-          bye
-          LFTP
+          npm install --no-save --ignore-scripts --no-audit --no-fund ssh2@1.16.0
+          node --input-type=module <<'NODE'
+          import { createRequire } from 'node:module';
+          import { createHash } from 'node:crypto';
+          import { readdir, stat } from 'node:fs/promises';
+          import path from 'node:path';
+          const require = createRequire(import.meta.url);
+          const { Client } = require('ssh2');
+          const expected = 'SHA256:1gx2w8Rtv3wCgi7Jh8myf/KVd72cRQbow03UP8P095Q';
+          const client = new Client();
+          const localRoot = path.resolve('out/test');
+          const remoteRoot = '/test';
+          const call = (obj, method, ...args) => new Promise((resolve, reject) =>
+            obj[method](...args, (error, value) => error ? reject(error) : resolve(value)));
+          const exists = async (sftp, remote) => {
+            try { await call(sftp, 'stat', remote); return true; } catch { return false; }
+          };
+          const ensureDir = async (sftp, remote) => {
+            if (await exists(sftp, remote)) return;
+            try { await call(sftp, 'mkdir', remote); }
+            catch (error) { if (error.code !== 4) throw error; }
+          };
+          const uploadDir = async (sftp, local, remote) => {
+            await ensureDir(sftp, remote);
+            for (const entry of await readdir(local, { withFileTypes: true })) {
+              const src = path.join(local, entry.name);
+              const dst = remote.replace(/\\/$/, '') + '/' + entry.name;
+              if (entry.isDirectory()) await uploadDir(sftp, src, dst);
+              else if (entry.isFile()) await call(sftp, 'fastPut', src, dst);
+            }
+          };
+          await new Promise((resolve, reject) => {
+            client.on('ready', resolve).on('error', reject).connect({
+              host: process.env.SFTP_HOST, port: 22, username: process.env.SFTP_USER,
+              password: process.env.SFTP_PASS, readyTimeout: 30000,
+              hostVerifier: key => 'SHA256:' + createHash('sha256').update(key).digest('base64').replace(/=+$/, '') === expected
+            });
+          });
+          try {
+            const sftp = await call(client, 'sftp');
+            await uploadDir(sftp, localRoot, remoteRoot);
+            console.log('SFTP-upload naar uitsluitend /test voltooid.');
+          } finally { client.end(); }
+          NODE
 
 # Trigger test-only publication for phase 1 HACCP modules.
