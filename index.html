@@ -1420,7 +1420,7 @@ window.FAVVGetSupabaseClient=()=>cloudClient;
 <script>
 (function(){'use strict';
 const ALLERGENS=['Glutenbevattende granen','Schaaldieren','Eieren','Vis','Aardnoten','Soja','Melk','Noten','Selderij','Mosterd','Sesamzaad','Zwaveldioxide en sulfieten','Lupine','Weekdieren'];
-const DEFAULTS={cleaning:[],temperatures:[],dishes:[],reports:[],stock:[],stockMovements:[],deliveries:[],recipes:[],productions:[],temperatureActions:[],goodsReceipts:[],pestLogs:[],inspectionRecords:[],pestPlan:{plans:[{id:'floor-main',name:'Gelijkvloers',rooms:[],markers:[]}],activePlanId:'floor-main'}};
+const DEFAULTS={cleaning:[],temperatures:[],dishes:[],reports:[],stock:[],stockMovements:[],deliveries:[],recipes:[],productions:[],temperatureActions:[],goodsReceipts:[],pestLogs:[],inspectionRecords:[],inspectionApplicability:{},pestPlan:{plans:[{id:'floor-main',name:'Gelijkvloers',rooms:[],markers:[]}],activePlanId:'floor-main'}};
 // Pest plan is stored per business with its own map and placed control points.
 function normalizeStateCollections(value){
   const target=value&&typeof value==='object'&&!Array.isArray(value)?value:{};
@@ -1470,6 +1470,15 @@ window.FAVVAddInspectionRecord=function(record){
  state.inspectionRecords=Array.isArray(state.inspectionRecords)?state.inspectionRecords:[];
  const clean=clone(record);clean.id=clean.id||id('insp');clean.createdAt=clean.createdAt||new Date().toISOString();clean.recordedBy=clean.recordedBy||currentUser?.name||'Gebruiker';
  state.inspectionRecords.unshift(clean);persist();return clone(clean);
+};
+window.FAVVSetInspectionApplicability=function(categoryId,value){
+ const allowed=['temperatures','cleaning','deviations','allergens','receiving','traceability','products','preparation','pests','maintenance','staff','water-waste','complaints-recall','haccp-plan'];
+ if(!allowed.includes(categoryId)||!value||!['applicable','na'].includes(value.status))throw new Error('Ongeldige toepasselijkheidskeuze.');
+ const reason=String(value.reason||'').trim();
+ if(value.status==='na'&&!reason)throw new Error('Geef een reden op voor niet van toepassing.');
+ normalizeStateCollections(state);state.inspectionApplicability=state.inspectionApplicability&&typeof state.inspectionApplicability==='object'?state.inspectionApplicability:{};
+ state.inspectionApplicability[categoryId]={status:value.status,reason:value.status==='na'?reason:'',updatedAt:new Date().toISOString(),updatedBy:currentUser?.name||'Gebruiker'};
+ persist();return true;
 };
 window.FAVVDeleteInspectionRecord=function(recordId){
  if(!recordId||cloudIsEmployee())throw new Error('Je hebt geen toestemming om deze registratie te verwijderen.');
