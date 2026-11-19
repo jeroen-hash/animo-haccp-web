@@ -2463,7 +2463,7 @@ function renderHaccpModules(){
   const fields=module.fields.map(([label,type,options])=>{const name=haccpFieldName(label),id='hm-'+module.id+'-'+module.fields.findIndex(x=>x[0]===label);let control='';
    if(type==='select')control='<select id="'+id+'" name="'+esc(name)+'" required><option value="">Kies...</option>'+options.split('|').map(v=>'<option>'+esc(v)+'</option>').join('')+'</select>';
    else if(type==='textarea')control='<textarea id="'+id+'" name="'+esc(name)+'" rows="2" required></textarea>';
-   else control='<input id="'+id+'" name="'+esc(name)+'" type="'+type+'" '+(type==='number'?'step="0.1"':'')+' required>';
+   else control='<input id="'+id+'" name="'+esc(name)+'" type="'+type+'" '+(type==='number'?'step="0.1"':'')+'>';
    return '<div class="field"><label for="'+id+'">'+esc(label)+' *</label>'+control+'</div>';
   }).join('');
   return '<div class="card c6" style="margin-bottom:16px"><h3>'+module.title+'</h3><p class="muted">'+module.desc+'</p><form data-haccp-form="'+module.id+'"><div class="grid">'+fields+'</div><div class="actions"><button class="btn" type="submit">Registratie bewaren</button><button class="btn secondary" type="reset">Wissen</button></div></form><div class="items" style="margin-top:14px">'+(rows.length?rows.map(r=>'<div class="item"><div class="item-main"><div><div class="item-title">'+esc(r.title||module.title)+'</div><div class="item-sub">'+esc(formatBrusselsDateTime(r.createdAt))+'</div><div class="item-sub">'+Object.entries(r.fields||{}).slice(0,4).map(([k,v])=>'<strong>'+esc(k)+':</strong> '+esc(v)).join(' · ')+'</div></div></div><div class="actions"><button class="btn secondary small" type="button" data-haccp-edit="'+esc(r.id)+'">Bewerken</button><button class="btn danger small" type="button" data-haccp-delete="'+esc(r.id)+'">Verwijderen</button></div></div>').join(''):'<div class="empty">Nog geen registraties.</div>')+'</div></div>';
@@ -2472,7 +2472,7 @@ function renderHaccpModules(){
 document.addEventListener('submit',e=>{
  const form=e.target.closest('form[data-haccp-form]');if(!form)return;
  e.preventDefault();const module=HACCP_MODULES.find(x=>x.id===form.dataset.haccpForm);if(!module)return;
- const fields=Object.fromEntries(new FormData(form).entries());const title=fields['Product / gerecht']||fields['Toestel / thermometer']||fields['Medewerker']||fields['Onderdeel']||fields['Type melding']||fields['Product']||fields['Processtap']||module.title;
+ const fields=Object.fromEntries(new FormData(form).entries());const primaryField=module.fields[0][0];if(!String(fields[primaryField]||'').trim()){alert('Vul minstens het veld “'+primaryField+'” in.');form.elements.namedItem(primaryField)?.focus();return}const title=fields['Product / gerecht']||fields['Toestel / thermometer']||fields['Medewerker']||fields['Onderdeel']||fields['Type melding']||fields['Product']||fields['Processtap']||module.title;
  state.haccpRecords=Array.isArray(state.haccpRecords)?state.haccpRecords:[];
  const editId=form.dataset.editId;
  if(editId){const existing=state.haccpRecords.find(r=>r.id===editId);if(existing){existing.title=String(title).slice(0,160);existing.fields=fields;existing.updatedAt=new Date().toISOString();}delete form.dataset.editId;}
