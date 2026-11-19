@@ -870,6 +870,7 @@ body:has(#cloudGate:not(.hidden)) .mobile-nav{display:none!important}
 <section id="allergens" class="page"><div class="page-head"><div><h1>Allergenen per gerecht</h1><p>Gerechten zoeken en allergenen duidelijk aan- of uitzetten</p></div><div class="actions"><button class="btn secondary" data-action="print-allergens">Opslaan als PDF</button><button class="btn" data-action="new-dish">+ Nieuw gerecht</button></div></div><div class="card"><div class="toolbar"><input class="search" id="dishSearch" type="search" placeholder="Zoek gerecht of product"><button class="btn secondary" data-action="clear-dish-search">Wissen</button></div><div class="allergen-help"><strong>Duidelijke bediening:</strong> grijs betekent niet aanwezig. Groen met een vinkje betekent aanwezig in het gerecht. Klik op de volledige naam om te wisselen.</div><div id="dishList" class="dish-list"></div></div></section>
 <section id="expiry-management" class="page"><div class="page-head"><div><h1>Houdbaarheid</h1><p>Volg vervallen producten, naderende vervaldatums en batches zonder datum.</p></div></div><div class="stock-summary"><div class="stock-stat"><span class="muted">Vervallen</span><strong id="expiryExpiredCount">0</strong></div><div class="stock-stat"><span class="muted">Binnen 7 dagen</span><strong id="expirySoonCount">0</strong></div><div class="stock-stat"><span class="muted">Geen datum</span><strong id="expiryMissingCount">0</strong></div></div><div class="card"><h3>Vervallen producten</h3><div id="expiryExpiredList" class="items"></div></div><div class="card" style="margin-top:16px"><h3>Vervalt binnen 7 dagen</h3><div id="expirySoonList" class="items"></div></div><div class="card" style="margin-top:16px"><h3>Geen houdbaarheidsdatum</h3><p class="muted">Controleer deze batches en vul waar nodig de datum aan.</p><div id="expiryMissingList" class="items"></div></div></section><section id="stock" class="page"><div class="page-head"><div><h1>Stock</h1><p>UBL-facturen en leveringsbonnen controleren en aan de voorraad toevoegen</p></div><div class="actions"><button class="btn secondary manager-only" data-stock-action="print-stock">Stockoverzicht als PDF</button><button class="btn" data-stock-action="new-product">+ Product toevoegen</button></div></div><div class="stock-summary"><div class="stock-stat"><span class="muted">Producten</span><strong id="stockCount">0</strong></div><div class="stock-stat"><span class="muted">Lage stock</span><strong id="stockLowCount">0</strong></div><div class="stock-stat"><span class="muted">Leveringen</span><strong id="deliveryCount">0</strong></div></div><div class="stock-grid"><div class="card"><h3>Leveringsbon verwerken</h3><div class="upload-zone"><div><strong>Upload een UBL-factuur of gestructureerde leveringsbon</strong><p class="muted">Voorlopig enkel Peppol/UBL XML. PDF- en afbeeldingsherkenning met AI is bewust uitgeschakeld en komt later.</p><input id="deliveryFile" type="file" accept=".xml,.ubl,application/xml,text/xml,application/ubl+xml"><img id="deliveryPreview" class="delivery-preview" alt="Voorbeeld leveringsbon"></div></div><div id="ocrStatus" class="ocr-status" style="display:none"></div><div class="actions" style="margin-top:12px"><button class="btn" type="button" data-stock-action="scan-delivery">Factuur uitlezen</button><button class="btn secondary" type="button" data-stock-action="manual-line">Handmatige regel toevoegen</button></div><div id="deliveryReview"></div></div><div class="card"><div class="toolbar"><input class="search" id="stockSearch" type="search" placeholder="Zoek product"><select id="stockSupplierFilter"><option value="all">Alle leveranciers</option></select><select id="stockFilter"><option value="all">Alle producten</option><option value="low">Lage stock</option></select></div><div id="stockList" class="stock-list"></div></div><div class="card"><h3>Recente stockbewegingen</h3><div id="stockMovements"></div></div></div></section><section id="product-labels" class="page">
 <div class="page-head"><div><h1>Productetiketten</h1><p>Maak traceerbare etiketten met QR-code voor bereide en geopende producten</p></div></div>
+<div id="productLabelScanResult" class="card" style="display:none;margin-bottom:16px"></div>
 <div class="grid">
 <div class="card c5"><h3>Nieuw productetiket</h3><p class="muted">Vul de gegevens in. De houdbaarheidsdatum wordt bewust niet automatisch bepaald.</p>
 <form id="productLabelForm">
@@ -1015,6 +1016,7 @@ function openLocalApp(){
   if(message){message.textContent='';message.className='cloud-message'}
   const status=get('cloudStatus');
   if(status){status.textContent='';status.classList.remove('online');status.hidden=true}
+  handleProductLabelDeepLink();
 }
 function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
 function isNetworkUnavailable(error){if(!navigator.onLine)return true;const message=String(error?.message||error||'').toLowerCase();return error instanceof TypeError||/failed to fetch|fetch failed|failed to send a request|network request failed|networkerror|load failed|connection (?:is )?(?:lost|closed|refused)|internetverbinding|offline/.test(message)}
@@ -2053,6 +2055,23 @@ function consumeBatches(product,amount,reason){
 function applyPriceVisibility(){const manager=currentUser?.role==='manager'&&!cloudIsEmployee();document.querySelectorAll('.manager-price').forEach(el=>el.classList.toggle('manager-price-hidden',!manager))}
 function renderSupplierFilter(){const select=$('stockSupplierFilter'),current=select.value||'all',suppliers=[...new Set(state.stock.map(x=>(x.supplier||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'nl'));select.innerHTML='<option value="all">Alle leveranciers</option><option value="none">Geen leverancier</option>'+suppliers.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');select.value=[...select.options].some(o=>o.value===current)?current:'all'}
 
+function productLabelUrl(x){
+ const target=new URL(location.href);target.search='';target.hash='';target.searchParams.set('label',x.id);return target.toString();
+}
+function handleProductLabelDeepLink(){
+ const params=new URLSearchParams(location.search),labelId=params.get('label');
+ if(!labelId||!currentUser)return;
+ const result=$('productLabelScanResult');
+ navigate('product-labels');
+ const record=(state.productLabels||[]).find(item=>String(item.id)===String(labelId));
+ if(result){
+  result.style.display='block';
+  result.innerHTML=record
+   ? '<h3>Productfiche · '+esc(record.name)+'</h3><p><b>Bereid / geopend:</b> '+esc((record.madeAt||'').replace('T',' '))+'</p><p><b>Te gebruiken tot:</b> '+esc(record.expiryDate)+'</p><p><b>Bewaarwijze:</b> '+esc(record.storage)+'</p><p><b>Verantwoordelijke:</b> '+esc(record.responsible)+'</p><p><b>Batchnummer:</b> '+esc(record.batchId)+'</p>'+(record.notes?'<p><b>Opmerking:</b> '+esc(record.notes)+'</p>':'')
+   : '<h3>Productfiche niet gevonden</h3><p>Dit etiket hoort mogelijk bij een andere horecazaak. Meld je aan bij de juiste zaak en scan de QR-code opnieuw.</p>';
+ }
+ const cleanUrl=new URL(location.href);cleanUrl.searchParams.delete('label');history.replaceState(null,document.title,cleanUrl.pathname+(cleanUrl.search||'')+cleanUrl.hash);
+}
 function renderProductLabels(){
  const select=$('labelProductSelect');if(!select)return;
  const current=select.value||'';
@@ -2063,11 +2082,11 @@ function renderProductLabels(){
  const rows=Array.isArray(state.productLabels)?state.productLabels:[];
  $('productLabelList').innerHTML=rows.length?rows.slice().reverse().map(x=>{
   const payload=['ANIMO HACCP PRODUCTFICHE', 'Product: '+x.name,'Bereid/geopend: '+x.madeAt.replace('T',' '),'Te gebruiken tot: '+x.expiryDate,'Bewaarwijze: '+x.storage,'Verantwoordelijke: '+x.responsible,'Batch: '+x.batchId,x.notes?'Opmerking: '+x.notes:''].filter(Boolean).join('\\n');
-  const qr='https://quickchart.io/qr?size=220&margin=2&text='+encodeURIComponent(payload);
+  const qr='https://quickchart.io/qr?size=220&margin=2&text='+encodeURIComponent(productLabelUrl(x));
   return '<article class="item" style="align-items:flex-start"><div style="flex:1;min-width:0"><strong>'+esc(x.name)+'</strong><div class="item-sub">Bereid/geopend: '+esc(x.madeAt.replace('T',' '))+' · Te gebruiken tot: '+esc(x.expiryDate)+'</div><div class="item-sub">'+esc(x.storage)+' · '+esc(x.responsible)+'</div><div class="item-sub">Batch: '+esc(x.batchId)+'</div><div class="actions" style="margin-top:8px"><button class="btn secondary small" type="button" data-label-print="'+esc(x.id)+'">Etiket afdrukken</button><button class="btn danger small" type="button" data-label-delete="'+esc(x.id)+'">Verwijderen</button></div></div><img src="'+qr+'" alt="QR-code voor '+esc(x.name)+'" width="112" height="112" loading="lazy" style="flex:0 0 112px;border:1px solid #dce5df;border-radius:8px"></article>';
  }).join(''):'<div class="empty">Nog geen productetiketten aangemaakt.</div>';
 }
-function productLabelPayload(x){return ['ANIMO HACCP PRODUCTFICHE','Product: '+x.name,'Bereid/geopend: '+x.madeAt.replace('T',' '),'Te gebruiken tot: '+x.expiryDate,'Bewaarwijze: '+x.storage,'Verantwoordelijke: '+x.responsible,'Batch: '+x.batchId,x.notes?'Opmerking: '+x.notes:''].filter(Boolean).join('\\n')}
+function productLabelPayload(x){return productLabelUrl(x)}
 function printProductLabel(labelId){
  const x=(state.productLabels||[]).find(item=>item.id===labelId);if(!x)return;
  const payload=productLabelPayload(x),qr='https://quickchart.io/qr?size=260&margin=2&text='+encodeURIComponent(payload);
