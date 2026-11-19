@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
 const workerSource = readFileSync(new URL("../sw.js", import.meta.url), "utf8");
-const EXPECTED_CACHE = "animo-haccp-shell-v8";
+const EXPECTED_CACHE = "animo-haccp-shell-v9";
 
 function createWorkerHarness(cacheNames = []) {
   const listeners = new Map();
@@ -32,6 +32,9 @@ test("service worker keeps the current app shell cache and removes obsolete ANIM
     "animo-haccp-shell-v3",
     "animo-haccp-shell-v4",
     "animo-haccp-shell-v5",
+    "animo-haccp-shell-v6",
+    "animo-haccp-shell-v7",
+    "animo-haccp-shell-v8",
     EXPECTED_CACHE,
     "unrelated-cache",
   ]);
@@ -46,6 +49,9 @@ test("service worker keeps the current app shell cache and removes obsolete ANIM
     "animo-haccp-shell-v3",
     "animo-haccp-shell-v4",
     "animo-haccp-shell-v5",
+    "animo-haccp-shell-v6",
+    "animo-haccp-shell-v7",
+    "animo-haccp-shell-v8",
   ]);
   assert.ok(!harness.deleted.includes(EXPECTED_CACHE), "activation must never delete the current app shell");
   assert.ok(!harness.deleted.includes("unrelated-cache"), "activation must not delete caches owned by other apps");
