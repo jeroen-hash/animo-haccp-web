@@ -2377,7 +2377,7 @@ thead th:last-child{border-top-right-radius:7px}
 
 
 
-<script type="module" src="./favv-inspection.mjs"></script>
+<script type="module" src="./favv-inspection.mjs"><\/script>
 </body></html>`}
 function openPrint(title,body){const w=window.open('','_blank');if(!w){alert('Sta pop-ups toe om het PDF-venster te openen.');return}w.document.open();w.document.write(htmlDoc(title,body));w.document.close()}
 function allergenTags(items){return items.length?`<div class="allergen-tags">${items.map(a=>`<span class="tag">${esc(a)}</span>`).join('')}</div>`:'<span class="none">Geen allergenen aangeduid</span>'}
@@ -2723,4 +2723,5 @@ window.addEventListener('favv:business-ready',refreshSession);window.addEventLis
 </script>
 
 
+<script type="module" src="./favv-inspection.mjs"></script>
 </body></html>
