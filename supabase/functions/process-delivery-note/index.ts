@@ -6,6 +6,30 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+
+function removeFinancialFields(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => removeFinancialFields(item));
+  }
+
+  if (value && typeof value === "object") {
+    const output: Record<string, unknown> = {};
+    for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+      const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const financialField =
+        normalizedKey === "total" ||
+        /(price|cost|margin|profit|revenue|turnover|linetotal|invoicetotal|grandtotal|subtotal|tax|vat|discount|payment|payable|receivable|billing|subscription|fee|currency|amounttotal|amountdue|amountpaid|amountremaining)/.test(normalizedKey);
+
+      if (!financialField) {
+        output[key] = removeFinancialFields(nested);
+      }
+    }
+    return output;
+  }
+
+  return value;
+}
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -293,8 +317,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Medewerkers moeten leveringen kunnen registreren, maar ontvangen geen
+    // aankoopprijzen of andere financiële bedragen uit de factuurparser.
+    const responseData = membership.role === "employee"
+      ? removeFinancialFields(parserData) as Record<string, unknown>
+      : parserData;
+
     return jsonResponse({
-      ...parserData,
+      ...responseData,
       businessId: membership.business_id,
       processedBy: user.id,
     });
