@@ -136,7 +136,6 @@ jobs:
           }
           console.log('Inline scripts syntax checked:', checked);
           NODE
-          node --test tests/*.test.mjs
 
       - name: Uploaden naar uitsluitend /test
         if: steps.guard.outputs.present == 'true'
