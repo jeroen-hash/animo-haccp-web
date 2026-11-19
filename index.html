@@ -2461,12 +2461,12 @@ function renderHaccpModules(){
  root.innerHTML=HACCP_MODULES.map(module=>{
   const rows=(state.haccpRecords||[]).filter(r=>r.category===module.id).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
   const fields=module.fields.map(([label,type,options])=>{const name=haccpFieldName(label),id='hm-'+module.id+'-'+module.fields.findIndex(x=>x[0]===label);let control='';
-   if(type==='select')control='<select name="'+esc(name)+'" required><option value="">Kies...</option>'+options.split('|').map(v=>'<option>'+esc(v)+'</option>').join('')+'</select>';
-   else if(type==='textarea')control='<textarea name="'+esc(name)+'" rows="2" required></textarea>';
-   else control='<input name="'+esc(name)+'" type="'+type+'" '+(type==='number'?'step="0.1"':'')+' required>';
+   if(type==='select')control='<select id="'+id+'" name="'+esc(name)+'" required><option value="">Kies...</option>'+options.split('|').map(v=>'<option>'+esc(v)+'</option>').join('')+'</select>';
+   else if(type==='textarea')control='<textarea id="'+id+'" name="'+esc(name)+'" rows="2" required></textarea>';
+   else control='<input id="'+id+'" name="'+esc(name)+'" type="'+type+'" '+(type==='number'?'step="0.1"':'')+' required>';
    return '<div class="field"><label for="'+id+'">'+esc(label)+' *</label>'+control+'</div>';
   }).join('');
-  return '<div class="card c6" style="margin-bottom:16px"><h3>'+module.title+'</h3><p class="muted">'+module.desc+'</p><form data-haccp-form="'+module.id+'"><div class="grid">'+fields+'</div><div class="actions"><button class="btn" type="submit">Registratie bewaren</button><button class="btn secondary" type="reset">Wissen</button></div></form><div class="items" style="margin-top:14px">'+(rows.length?rows.map(r=>'<div class="item"><div class="item-main"><div><div class="item-title">'+esc(r.title||module.title)+'</div><div class="item-sub">'+esc(formatBrusselsDateTime(r.createdAt))+'</div><div class="item-sub">'+Object.entries(r.fields||{}).slice(0,4).map(([k,v])=>'<strong>'+esc(k)+':</strong> '+esc(v)).join(' · ')+'</div></div></div><div class="actions"><button class="btn danger small" type="button" data-haccp-delete="'+esc(r.id)+'">Verwijderen</button></div></div>').join(''):'<div class="empty">Nog geen registraties.</div>')+'</div></div>';
+  return '<div class="card c6" style="margin-bottom:16px"><h3>'+module.title+'</h3><p class="muted">'+module.desc+'</p><form data-haccp-form="'+module.id+'"><div class="grid">'+fields+'</div><div class="actions"><button class="btn" type="submit">Registratie bewaren</button><button class="btn secondary" type="reset">Wissen</button></div></form><div class="items" style="margin-top:14px">'+(rows.length?rows.map(r=>'<div class="item"><div class="item-main"><div><div class="item-title">'+esc(r.title||module.title)+'</div><div class="item-sub">'+esc(formatBrusselsDateTime(r.createdAt))+'</div><div class="item-sub">'+Object.entries(r.fields||{}).slice(0,4).map(([k,v])=>'<strong>'+esc(k)+':</strong> '+esc(v)).join(' · ')+'</div></div></div><div class="actions"><button class="btn secondary small" type="button" data-haccp-edit="'+esc(r.id)+'">Bewerken</button><button class="btn danger small" type="button" data-haccp-delete="'+esc(r.id)+'">Verwijderen</button></div></div>').join(''):'<div class="empty">Nog geen registraties.</div>')+'</div></div>';
  }).join('');
 }
 document.addEventListener('submit',e=>{
@@ -2474,10 +2474,13 @@ document.addEventListener('submit',e=>{
  e.preventDefault();const module=HACCP_MODULES.find(x=>x.id===form.dataset.haccpForm);if(!module)return;
  const fields=Object.fromEntries(new FormData(form).entries());const title=fields['Product / gerecht']||fields['Toestel / thermometer']||fields['Medewerker']||fields['Onderdeel']||fields['Type melding']||fields['Product']||fields['Processtap']||module.title;
  state.haccpRecords=Array.isArray(state.haccpRecords)?state.haccpRecords:[];
- state.haccpRecords.unshift({id:id('hc'),category:module.id,title:String(title).slice(0,160),fields,createdAt:new Date().toISOString(),createdBy:currentUser?.name||'Gebruiker'});
- persist();form.reset();renderHaccpModules();toast('HACCP-registratie bewaard');
+ const editId=form.dataset.editId;
+ if(editId){const existing=state.haccpRecords.find(r=>r.id===editId);if(existing){existing.title=String(title).slice(0,160);existing.fields=fields;existing.updatedAt=new Date().toISOString();}delete form.dataset.editId;}
+ else state.haccpRecords.unshift({id:id('hc'),category:module.id,title:String(title).slice(0,160),fields,createdAt:new Date().toISOString(),createdBy:currentUser?.name||'Gebruiker'});
+ persist();form.reset();const submitButton=form.querySelector('button[type="submit"]');if(submitButton)submitButton.textContent='Registratie bewaren';renderHaccpModules();toast(editId?'HACCP-registratie bijgewerkt':'HACCP-registratie bewaard');
 });
 document.addEventListener('click',e=>{
+ const edit=e.target.closest('[data-haccp-edit]');if(edit){const record=(state.haccpRecords||[]).find(r=>r.id===edit.dataset.haccpEdit);const form=record&&document.querySelector('form[data-haccp-form="'+record.category+'"]');if(!record||!form)return;form.dataset.editId=record.id;Object.entries(record.fields||{}).forEach(([name,value])=>{const control=form.elements.namedItem(name);if(control)control.value=value});const submitButton=form.querySelector('button[type="submit"]');if(submitButton)submitButton.textContent='Wijzigingen bewaren';form.scrollIntoView({behavior:'smooth',block:'center'});return}
  const del=e.target.closest('[data-haccp-delete]');if(del){if(!confirm('Deze HACCP-registratie verwijderen?'))return;state.haccpRecords=(state.haccpRecords||[]).filter(r=>r.id!==del.dataset.haccpDelete);persist();renderHaccpModules();toast('Registratie verwijderd');return}
  const print=e.target.closest('[data-haccp-action="print"]');if(print){printHaccpRecords();return}
 });
