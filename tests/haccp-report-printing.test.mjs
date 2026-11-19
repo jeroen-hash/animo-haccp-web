@@ -62,7 +62,7 @@ test("day report snapshots include only temperature readings from the closing da
       { id: "today", date: "2026-11-13T10:00:00.000Z" }
     ], dishes: [], goodsReceipts: [], pestLogs: [], haccpRecords: [] },
     clone: value => JSON.parse(JSON.stringify(value)),
-    localDay: value => String(value).slice(0, 10),
+    localDay: value => value == null ? "2026-11-13" : String(value).slice(0, 10),
     Date
   });
   assert.deepEqual(JSON.parse(JSON.stringify(result.temperatures.map(x => x.id))), ["today"]);
