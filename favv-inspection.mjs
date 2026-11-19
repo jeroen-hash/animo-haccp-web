@@ -9,7 +9,7 @@ const CATEGORIES=[
 {id:'product-management',name:'Productbeheer en etikettering',hint:'Houdbaarheid, geopende verpakkingen, bewaartermijnen en etiketten'}
 ];
 const $=id=>document.getElementById(id);
-const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const state=()=>window.FAVVGetLocalState?.()||{};
 const records=()=>Array.isArray(state().inspectionRecords)?state().inspectionRecords:[];
 const categoryName=id=>CATEGORIES.find(x=>x.id===id)?.name||id||'Overig';
