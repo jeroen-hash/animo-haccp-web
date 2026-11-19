@@ -31,3 +31,29 @@ test("traceability register export includes origin, ingredient lots and freezing
     assert.ok(source.includes(term), "Missing traceability export field: " + term);
   }
 });
+
+test("product batches can link to an existing accepted goods receipt and its stock lots", () => {
+  assert.match(html, /id="labelReceiptSelect"/);
+  assert.match(html, /sourceReceiptId:selectedReceipt\?\.id\|\|null/);
+  assert.match(html, /sourceReceiptLinks:selectedReceipt\?\.stockBatchLinks\|\|\[\]/);
+  assert.match(html, /stockBatchLinks:\[\]/);
+  assert.match(html, /goodsReceiptId:receipt\.id/);
+});
+
+test("product batch closures are retained and audited instead of hard-deleted", () => {
+  assert.match(html, /productLabelAudit:\[\]/);
+  assert.match(html, /function recordProductLabelAudit\(/);
+  assert.match(html, /recordProductLabelAudit\('created',record/);
+  assert.match(html, /record\.status='void'/);
+  assert.match(html, /recordProductLabelAudit\('closed',record/);
+  assert.doesNotMatch(html, /state\.productLabels=\(state\.productLabels\|\|\[\]\)\.filter\(x=>x\.id!==del\.dataset\.labelDelete\)/);
+});
+
+test("traceability export contains linked stock lots and the audit history", () => {
+  const start = html.indexOf("function printProductTraceabilityRegister()");
+  const end = html.indexOf("function printProductLabel(", start);
+  const source = html.slice(start, end);
+  for (const term of ["sourceReceiptLinks", "stockBatchId", "Wijzigings- en afsluitingshistoriek", "productLabelAudit", "actorName"]) {
+    assert.ok(source.includes(term), "Missing traceability evidence: " + term);
+  }
+});
