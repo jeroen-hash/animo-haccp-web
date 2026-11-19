@@ -53,7 +53,7 @@ async function save(e){
 function renderLinkedRecords(){const box=$('inspectionLinkedRecords');if(!box)return;const groups=[{name:'Temperatuurmetingen',count:(state().temperatures||[]).length,page:'temperatures'},{name:'Reinigingsregistraties',count:(state().cleaning||[]).length,page:'cleaning'},{name:'Goederenontvangsten',count:(state().goodsReceipts||[]).length,page:'goods-receipts'},{name:'Ongediertecontroles',count:(state().pestLogs||[]).length,page:'pest-control'},{name:'Voorraadartikelen',count:(state().stock||[]).length,page:'stock'},{name:'Temperatuuracties',count:(state().temperatureActions||[]).length,page:'actions'}];box.innerHTML='<div class="grid">'+groups.map(g=>'<div class="card c4" style="padding:12px"><strong>'+esc(g.name)+'</strong><div class="metric">'+g.count+'</div><button class="btn secondary small" type="button" data-ir-goto="'+g.page+'">Open onderdeel</button></div>').join('')+'</div>';box.querySelectorAll('[data-ir-goto]').forEach(b=>b.addEventListener('click',()=>{const target=document.querySelector('[data-page="'+b.dataset.irGoto+'"]');if(target)target.click();else alert('Open '+b.dataset.irGoto+' via het hoofdmenu.')}))}
 function renderCoverage(){
  const box=$('inspectionCoverage');if(!box)return;
- const s=state(),all=records();
+ const s=state(),all=records(),applicability=s.inspectionApplicability&&typeof s.inspectionApplicability==='object'?s.inspectionApplicability:{};
  const count=(key)=>Array.isArray(s[key])?s[key].length:0;
  const specs=[
   {id:'temperatures',name:'Temperatuurregistraties',hint:'Koel- en vriestemperaturen en andere relevante temperatuurcontroles',evidence:count('temperatures'),keys:[]},
@@ -75,18 +75,21 @@ function renderCoverage(){
   const related=all.filter(r=>x.keys.includes(r.category));
   const open=related.reduce((n,r)=>n+(r.status==='open'?1:0)+(r.checks||[]).filter(c=>c.status==='open').length,0);
   const hasNa=related.length>0&&related.every(r=>r.status==='na'||(r.checks||[]).length>0&&(r.checks||[]).every(c=>c.status==='na'));
-  const status=open?'attention':hasNa?'na':x.evidence>0?'covered':'missing';
-  return {...x,open,status};
+  const choice=applicability[x.id]||{};
+  const status=choice.status==='na'&&choice.reason?'na':open?'attention':x.evidence>0?'covered':'missing';
+  return {...x,open,status,choice};
  });
  const totals={covered:rows.filter(x=>x.status==='covered').length,attention:rows.filter(x=>x.status==='attention').length,missing:rows.filter(x=>x.status==='missing').length,na:rows.filter(x=>x.status==='na').length};
  const label={covered:'Registratie gevonden · controleer inhoud',attention:'Opvolging nodig',missing:'Nog geen bewijs gevonden',na:'Gemotiveerd niet van toepassing'};
- box.innerHTML='<div class="grid">'+
+ box.innerHTML='<p class="muted">Geef per aandachtspunt aan of het voor jouw zaak van toepassing is. Kies NVT alleen met een concrete reden. Deze instelling is bewaard bij de testzaak.</p><div class="grid">'+
  '<div class="card c3" style="padding:12px"><strong>Bewijs aanwezig</strong><div class="metric">'+totals.covered+'</div></div>'+
  '<div class="card c3" style="padding:12px"><strong>Opvolging nodig</strong><div class="metric">'+totals.attention+'</div></div>'+
  '<div class="card c3" style="padding:12px"><strong>Geen bewijs gevonden</strong><div class="metric">'+totals.missing+'</div></div>'+
  '<div class="card c3" style="padding:12px"><strong>Niet van toepassing</strong><div class="metric">'+totals.na+'</div></div></div>'+
- '<div class="items" style="margin-top:12px">'+rows.map(x=>'<div class="item" style="align-items:flex-start;gap:12px"><div style="flex:1;min-width:0"><strong>'+esc(x.name)+'</strong><div class="item-sub">'+esc(x.hint)+'</div><div class="item-sub">'+x.evidence+' bestaande registratie(s) gevonden'+(x.open?' · '+x.open+' open controlepunt(en)':'')+'</div></div><span class="pill '+(x.status==='attention'?'warning':'')+'">'+label[x.status]+'</span></div>').join('')+'</div>'+
- '<p class="source-note">Automatische indicatie op basis van gegevens die ANIMO kan terugvinden. “Geen bewijs gevonden” betekent niet automatisch dat je wettelijk niet in orde bent. Beoordeel per activiteit welke punten van toepassing zijn en voeg ontbrekend bewijs toe. Een NVT-status telt alleen als de registratie dit motiveert.</p>';
+ '<div class="items" style="margin-top:12px">'+rows.map(x=>'<div class="item" style="align-items:flex-start;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:220px"><strong>'+esc(x.name)+'</strong><div class="item-sub">'+esc(x.hint)+'</div><div class="item-sub">'+x.evidence+' bestaande registratie(s) gevonden'+(x.open?' · '+x.open+' open controlepunt(en)':'')+'</div><div class="item-sub">'+(x.choice.reason?'Reden NVT: '+esc(x.choice.reason):'')+'</div></div><div style="display:grid;gap:6px;min-width:190px"><select data-applicability="'+x.id+'"><option value="">Toepasselijkheid kiezen…</option><option value="applicable" '+(x.choice.status==='applicable'?'selected':'')+'>Van toepassing</option><option value="na" '+(x.choice.status==='na'?'selected':'')+'>Niet van toepassing</option></select><input data-applicability-reason="'+x.id+'" placeholder="Reden verplicht bij NVT" value="'+esc(x.choice.reason||'')+'" style="'+(x.choice.status==='na'?'':'display:none')+'"><button class="btn secondary small" type="button" data-applicability-save="'+x.id+'">Toepassing bewaren</button><span class="pill '+(x.status==='attention'?'warning':'')+'">'+label[x.status]+'</span></div></div>').join('')+'</div>'+
+ box.querySelectorAll('[data-applicability]').forEach(el=>el.addEventListener('change',()=>{const reason=box.querySelector('[data-applicability-reason="'+el.dataset.applicability+'"]');if(reason)reason.style.display=el.value==='na'?'':'none'}));
+ box.querySelectorAll('[data-applicability-save]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.applicabilitySave,select=box.querySelector('[data-applicability="'+id+'"]'),reason=box.querySelector('[data-applicability-reason="'+id+'"]');if(!select.value){alert('Kies eerst of dit onderdeel van toepassing is.');return}try{window.FAVVSetInspectionApplicability(id,{status:select.value,reason:reason?.value||''});renderCoverage();alert('Toepasselijkheid bewaard.')}catch(err){alert(err.message)}}));
+ box.insertAdjacentHTML('beforeend','<p class="source-note">Automatische indicatie op basis van gegevens die ANIMO kan terugvinden. “Geen bewijs gevonden” betekent niet automatisch dat je wettelijk niet in orde bent. Beoordeel per activiteit welke punten van toepassing zijn en voeg ontbrekend bewijs toe. Een NVT-status telt alleen als de registratie dit motiveert.</p>';
 }
 function renderList(){
  const box=$('inspectionRecordList');if(!box)return;const filter=$('irFilter')?.value||'',list=records().filter(r=>!filter||r.category===filter).sort((a,b)=>new Date(b.date)-new Date(a.date));
