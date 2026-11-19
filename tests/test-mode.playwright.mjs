@@ -40,7 +40,7 @@ try {
   console.log('[PASS] gewone login met e-mailadres en wachtwoord zichtbaar');
   console.log('[PASS] tijdelijke rolkeuze verwijderd');
   console.log('[PASS] wachtwoordherstel en nieuwe-klantregistratie beschikbaar');
-  console.log('[PASS] testapp gebruikt uitsluitend het afgesproken Supabase-testproject');
+  console.log('[PASS] testapp gebruikt uitsluitend het afgesproken test-Supabase-project');
   console.log('[PASS] geen JavaScript-fouten bij laden');
 } catch (error) {
   failures.push(error);
