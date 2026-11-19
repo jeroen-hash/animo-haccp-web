@@ -143,14 +143,6 @@ jobs:
           console.log('Inline scripts syntax checked:', checked);
           NODE
 
-      - name: SSH-hostsleutels controleren voor STRATO
-        if: steps.guard.outputs.present == 'true'
-        env:
-          SFTP_HOST: ${{ secrets.STRATO_SFTP_HOST }}
-        run: |
-          set -euo pipefail
-          ssh-keyscan -T 15 -p 22 "$SFTP_HOST" 2>/dev/null | ssh-keygen -lf - -E sha256
-
       - name: Uploaden naar uitsluitend /test
         if: steps.guard.outputs.present == 'true'
         env:
@@ -167,7 +159,7 @@ jobs:
           target: "/test"
           strip_components: 2
           overwrite: true
-          fingerprint: "SHA256:1gx2w8Rtv3wCgi7Jh8myf/KVd72cRQbow03UP8P095Q"
+          fingerprint: "SHA256:J4oM+B2g7zZWAI3DolXR1e4vdIMrGO301kEN14/slsQ"
           timeout: 60s
           command_timeout: 10m
 
