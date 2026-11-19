@@ -33,3 +33,13 @@ test("all modules have dedicated structured fields and the daily report captures
   assert.match(html, /haccpRecordsBody\(r\.haccpRecords\|\|\[\]\)/);
   assert.match(html, /function printHaccpRecords\(\)/);
 });
+
+test("HACCP interface uses a focused professional overview instead of eight open forms", () => {
+  assert.match(html, /class="haccp-page-head"/);
+  assert.match(html, /class="haccp-module-grid"/);
+  assert.match(html, /data-haccp-open=/);
+  assert.match(html, /data-haccp-back/);
+  assert.match(html, /class="haccp-overview"/);
+  assert.match(html, /class="haccp-detail"/);
+  assert.doesNotMatch(html, /<div class="card c6" style="margin-bottom:16px"><h3>\+module\.title/);
+});
