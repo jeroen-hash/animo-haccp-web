@@ -126,4 +126,4 @@ window.FAVVInspectionReportHtml=function(months){
 document.addEventListener('click',e=>{if(e.target.closest('[data-page="inspection-records"],[data-goto="inspection-records"]'))setTimeout(render,0)});
 document.addEventListener('DOMContentLoaded',render);if(document.readyState!=='loading')render();
 
-// Testdeploy-trigger: FAVV-inspectiedossier publiceren naar uitsluitend /test.
+// Testdeploy-trigger: FAVV-inspectiedossier opnieuw publiceren naar uitsluitend /test.
