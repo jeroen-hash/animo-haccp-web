@@ -5,9 +5,9 @@ import { readFileSync } from "node:fs";
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 
 test("product batches capture source and ingredient lot traceability", () => {
-  assert.match(html, /id="labelSourceRef" required/);
-  assert.match(html, /id="labelIngredientLots" rows="3" required/);
-  assert.match(html, /sourceRef,ingredientLots,frozenAt/);
+  assert.match(html, /id="labelSourceRef" maxlength="180"/);
+  assert.match(html, /id="labelIngredientLots" rows="3" maxlength="1200"/);
+  assert.match(html, /sourceReceiptId:selectedReceipt\?\.id\|\|null,sourceReceiptSupplier:selectedReceipt\?\.supplier\|\|\x27\x27,sourceReceiptInvoice:selectedReceipt\?\.invoiceNumber\|\|\x27\x27,sourceReceiptDate:selectedReceipt\?\.receivedAt\|\|\x27\x27,sourceReceiptLinks:selectedReceipt\?\.stockBatchLinks\|\|\[\],ingredientLots,frozenAt/);
   assert.match(html, /Vul de herkomst en gebruikte grondstoffen\/lotnummers in/);
 });
 
