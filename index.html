@@ -2507,10 +2507,11 @@ function renderHaccpModules(){
  const root=$('haccpModuleCards');if(!root)return;
  const all=Array.isArray(state.haccpRecords)?state.haccpRecords:[];
  const total=all.length,todayCount=all.filter(r=>localDay(r.createdAt)===localDay()).length;
+ const latest=all.slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0];
  const module=HACCP_MODULES.find(x=>x.id===activeHaccpModule);
- const overview='<div class="haccp-overview"><div class="haccp-stat"><span>HACCP-onderdelen</span><strong>08</strong></div><div class="haccp-stat"><span>Totaal registraties</span><strong>'+total+'</strong></div><div class="haccp-stat"><span>Vandaag toegevoegd</span><strong>'+todayCount+'</strong></div></div>';
+ const overview='<div class="haccp-overview"><div class="haccp-stat"><span>Beheeronderdelen</span><strong>08</strong><small>In één centrale werkruimte</small></div><div class="haccp-stat"><span>Geregistreerde items</span><strong>'+total+'</strong><small>Bewaar bewijs van controles en opvolging</small></div><div class="haccp-stat"><span>Vandaag toegevoegd</span><strong>'+todayCount+'</strong><small>'+(todayCount?'Nieuwe registraties vandaag':'Nog geen nieuwe registraties vandaag')+'</small></div></div>';
  if(!module){
-  root.innerHTML=overview+'<div class="haccp-section-title"><div><h2>Beheeronderdelen</h2><p>Selecteer een onderdeel om registraties toe te voegen en historiek te bekijken.</p></div></div><div class="haccp-module-grid">'+HACCP_MODULES.map(m=>{const count=all.filter(r=>r.category===m.id).length;return '<button type="button" class="haccp-module-tile" data-haccp-open="'+m.id+'"><div class="haccp-module-top"><span class="haccp-module-icon">'+HACCP_MODULE_ICONS[m.id]+'</span><span class="haccp-count">'+count+' registraties</span></div><strong>'+m.title+'</strong><p>'+m.desc+'</p><span class="haccp-module-link">Onderdeel openen <span>→</span></span></button>'}).join('')+'</div>';
+  root.innerHTML=overview+'<div class="haccp-section-title"><div><span class="haccp-section-kicker">WERKRUIMTE</span><h2>Autocontrole-onderdelen</h2><p>Kies een onderdeel om controles te registreren, eerdere registraties te raadplegen en informatie actueel te houden.</p></div><span class="haccp-last-activity">'+(latest?'Laatste registratie · '+esc(formatBrusselsDateTime(latest.createdAt)):'Nog geen registraties')+'</span></div><div class="haccp-module-grid">'+HACCP_MODULES.map((m,index)=>{const records=all.filter(r=>r.category===m.id),count=records.length,last=records.slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0];return '<button type="button" class="haccp-module-tile" data-haccp-open="'+m.id+'"><div class="haccp-module-top"><span class="haccp-module-icon">'+HACCP_MODULE_ICONS[m.id]+'</span><span class="haccp-count '+(count?'is-active':'')+'">'+(count?count+' registraties':'Nog niet gestart')+'</span></div><span class="haccp-module-number">ONDERDEEL '+String(index+1).padStart(2,'0')+'</span><strong>'+m.title.replace(/^\\d+\\.\\s*/,'')+'</strong><p>'+m.desc+'</p><span class="haccp-module-meta">'+(last?'Laatst bijgewerkt '+esc(formatBrusselsDateTime(last.createdAt)):'Klaar om te gebruiken')+'</span><span class="haccp-module-link">Onderdeel openen <span>→</span></span></button>'}).join('')+'</div><div class="haccp-footnote"><span class="haccp-footnote-mark">i</span><p><strong>Werk zorgvuldig en volledig.</strong> Registreer controles op het moment dat ze plaatsvinden. Leg afwijkingen en genomen maatregelen vast en volg steeds de procedures van je eigen autocontrolegids.</p></div>';
   return;
  }
  const rows=all.filter(r=>r.category===module.id).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
@@ -2520,7 +2521,7 @@ function renderHaccpModules(){
   else control='<input id="'+fieldId+'" name="'+esc(name)+'" type="'+type+'" '+(type==='number'?'step="0.1" placeholder="0,0"':'')+'>';
   return '<div class="field"><label for="'+fieldId+'">'+esc(label)+(index===0?' *':'')+'</label>'+control+'</div>';
  }).join('');
- root.innerHTML=overview+'<div class="haccp-detail"><div class="haccp-detail-head"><div><h2>'+module.title+'</h2><p>'+module.desc+'</p></div><button type="button" class="haccp-back" data-haccp-back>← Overzicht</button></div><div class="haccp-detail-body"><div class="haccp-form-title">Nieuwe registratie</div><form data-haccp-form="'+module.id+'"><div class="haccp-fields">'+fields+'</div><div class="haccp-form-actions"><button class="btn secondary" type="reset">Velden wissen</button><button class="btn" type="submit">Registratie bewaren</button></div></form><div class="haccp-records"><div class="haccp-records-head"><h3>Registratiehistoriek</h3><span class="haccp-count">'+rows.length+' totaal</span></div>'+(rows.length?rows.map(r=>'<div class="haccp-record"><div><strong>'+esc(r.title||module.title)+'</strong><small>'+esc(formatBrusselsDateTime(r.createdAt))+' · '+esc(r.createdBy||'Gebruiker')+'</small><div class="haccp-record-detail">'+Object.entries(r.fields||{}).filter(([k,v])=>String(v||'').trim()).slice(0,5).map(([k,v])=>'<strong>'+esc(k)+':</strong> '+esc(v)).join(' &nbsp;·&nbsp; ')+'</div></div><div class="actions"><button class="btn secondary small" type="button" data-haccp-edit="'+esc(r.id)+'">Bewerken</button><button class="btn danger small" type="button" data-haccp-delete="'+esc(r.id)+'">Verwijderen</button></div></div>').join(''):'<div class="empty">Er zijn nog geen registraties in dit onderdeel. Voeg hierboven de eerste registratie toe.</div>')+'</div></div></div>';
+ root.innerHTML=overview+'<div class="haccp-detail"><div class="haccp-detail-head"><div><span class="haccp-section-kicker">HACCP-ONDERDEEL</span><h2>'+module.title+'</h2><p>'+module.desc+'</p><span class="haccp-detail-meta">'+rows.length+' opgeslagen registratie'+(rows.length===1?'':'s')+'</span></div><button type="button" class="haccp-back" data-haccp-back>← Alle onderdelen</button></div><div class="haccp-detail-body"><div class="haccp-form-title"><span>Nieuwe registratie</span><small>Velden met een * zijn verplicht</small></div><form data-haccp-form="'+module.id+'"><div class="haccp-fields">'+fields+'</div><div class="haccp-form-actions"><button class="btn secondary" type="reset">Velden wissen</button><button class="btn" type="submit">Registratie bewaren</button></div></form><div class="haccp-records"><div class="haccp-records-head"><div><h3>Registratiehistoriek</h3><p>Overzicht van eerder bewaarde registraties binnen dit onderdeel.</p></div><span class="haccp-count">'+rows.length+' totaal</span></div>'+(rows.length?rows.map(r=>'<div class="haccp-record"><div><strong>'+esc(r.title||module.title)+'</strong><small>'+esc(formatBrusselsDateTime(r.createdAt))+' · '+esc(r.createdBy||'Gebruiker')+'</small><div class="haccp-record-detail">'+Object.entries(r.fields||{}).filter(([k,v])=>String(v||'').trim()).slice(0,5).map(([k,v])=>'<strong>'+esc(k)+':</strong> '+esc(v)).join(' &nbsp;·&nbsp; ')+'</div></div><div class="actions"><button class="btn secondary small" type="button" data-haccp-edit="'+esc(r.id)+'">Bewerken</button><button class="btn danger small" type="button" data-haccp-delete="'+esc(r.id)+'">Verwijderen</button></div></div>').join(''):'<div class="empty">Er zijn nog geen registraties in dit onderdeel. Bewaar hierboven de eerste registratie om een historiek op te bouwen.</div>')+'</div></div></div>';
 }
 document.addEventListener('submit',e=>{
  const form=e.target.closest('form[data-haccp-form]');if(!form)return;
@@ -2780,6 +2781,66 @@ setInterval(()=>{
 
 @media(max-width:900px){.mobile-nav{display:flex!important;align-items:stretch;justify-content:flex-start;gap:0;overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:env(safe-area-inset-bottom)}.mobile-nav::-webkit-scrollbar{display:none}.mobile-nav button{flex:0 0 76px;min-width:76px;max-width:76px;white-space:normal;line-height:1.15;scroll-snap-align:start}.mobile-nav{scroll-snap-type:x proximity}}
 .pest-plan-surface{position:relative;min-height:540px;width:100%;overflow:hidden;border:2px solid #9eb5a5;border-radius:14px;background-color:#fbfdfb;background-image:linear-gradient(#dce8df 1px,transparent 1px),linear-gradient(90deg,#dce8df 1px,transparent 1px);background-size:24px 24px;touch-action:none;user-select:none}.pest-plan-surface.placing{border:3px solid #147a46;cursor:crosshair}.pest-plan-surface.drawing{border:3px solid #2563eb;cursor:crosshair}.pest-plan-artwork{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;pointer-events:none}.pest-plan-empty{text-align:center;color:#637168;padding:20px;font-weight:800;pointer-events:none}.pest-plan-empty small{font-weight:500}.floorplan-toolbar{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin-bottom:14px}.floorplan-toolbar .btn{min-height:42px}.pest-plan-rooms,.pest-plan-markers{position:absolute;inset:0;pointer-events:none}.pest-room-shape{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}.pest-room-shape polygon{fill:rgba(208,229,214,.72);stroke:#547b67;stroke-width:3;vector-effect:non-scaling-stroke}.pest-room-shape text{font-size:22px;font-weight:800;fill:#244a34;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}.pest-map-marker{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;display:flex;align-items:center;gap:4px;border:2px solid #fff;border-radius:999px;padding:4px 8px;background:#103e2a;color:#fff;font-size:12px;font-weight:900;box-shadow:0 2px 8px #0005;white-space:nowrap}.pest-map-marker span{max-width:110px;overflow:hidden;text-overflow:ellipsis}.pest-plan-surface.placing:after{content:'Tik op de plattegrond om het punt te plaatsen';position:absolute;left:10px;right:10px;bottom:10px;text-align:center;background:#103e2a;color:#fff;padding:9px;border-radius:9px;font-size:12px;pointer-events:none}.pest-plan-surface.drawing:after{content:'Sleep om een ruimte te tekenen';position:absolute;left:10px;right:10px;bottom:10px;text-align:center;background:#1d4ed8;color:#fff;padding:9px;border-radius:9px;font-size:12px;pointer-events:none}.pest-plan-drawing{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5;overflow:visible}.pest-plan-drawing polyline{fill:none;stroke:#2563eb;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:10 7;vector-effect:non-scaling-stroke}@media(max-width:700px){.pest-plan-surface{min-height:430px}.pest-plan-surface .pest-map-marker{font-size:10px;padding:3px 6px}.pest-plan-surface .pest-map-marker span{max-width:70px}}@media print{body *{visibility:hidden!important}#pest-control,#pest-control *{visibility:visible!important}#pest-control{display:block!important;position:absolute;left:0;top:0;width:100%}#pest-control .page-head button,#pest-control form,#pest-control .toolbar,#pest-control #pestMarkerList,#pest-control #pestRoomList,#pest-control #pestRoomDraw{display:none!important}#pest-control .pest-plan-surface{min-height:650px;break-inside:avoid}.pest-map-marker,.pest-plan-room{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+
+/* Premium HACCP workspace refinement */
+.haccp-page-head{align-items:center;flex-direction:row;padding:8px 0 18px;border-bottom:1px solid #e8eee9;margin-bottom:22px}
+.haccp-page-head h1{font-size:29px;letter-spacing:-1px;font-weight:850}
+.haccp-page-head .btn{white-space:nowrap}
+.haccp-intro{padding:21px 24px;border-color:#dce9df;background:linear-gradient(115deg,#f4faf6 0%,#fff 72%);box-shadow:0 5px 18px rgba(24,65,43,.035)}
+.haccp-intro-mark{border-radius:14px;width:52px;height:52px;flex-basis:52px;font-size:19px;letter-spacing:-1px}
+.haccp-overview{gap:14px;margin:0 0 27px}
+.haccp-stat{position:relative;min-height:106px;padding:17px 19px 14px;border-color:#e3eae5;border-radius:14px;box-shadow:0 3px 12px rgba(20,55,35,.025)}
+.haccp-stat span{font-size:10px;letter-spacing:.9px}
+.haccp-stat strong{font-size:28px;margin-top:8px}
+.haccp-stat small{display:block;color:#89958d;font-size:10px;margin-top:4px;line-height:1.35}
+.haccp-section-title{align-items:flex-end;margin-bottom:15px}
+.haccp-section-kicker{display:block;color:#16804a;font-size:9px;letter-spacing:1.3px;font-weight:900;margin-bottom:5px}
+.haccp-section-title h2{font-size:20px;letter-spacing:-.35px;font-weight:850}
+.haccp-section-title p{font-size:12px;line-height:1.55;margin-top:5px}
+.haccp-last-activity{font-size:10px;color:#829087;background:#f6f8f6;border:1px solid #e9eeea;border-radius:20px;padding:7px 11px;white-space:nowrap}
+.haccp-module-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.haccp-module-tile{min-height:205px;padding:18px 18px 15px;border-radius:14px;border-color:#e3eae5;box-shadow:0 4px 14px rgba(20,55,35,.035);position:relative;overflow:hidden}
+.haccp-module-tile:focus-visible{outline:3px solid #8bc6a0;outline-offset:2px}
+.haccp-module-tile:hover{transform:translateY(-3px);border-color:#9bc9aa;box-shadow:0 12px 26px rgba(20,55,35,.09)}
+.haccp-module-top{margin-bottom:12px}
+.haccp-module-icon{width:40px;height:40px;border-radius:12px;background:#eff7f1;color:#176b40}
+.haccp-count{font-size:9px;letter-spacing:.1px;padding:6px 9px;border:1px solid #edf0ed;background:#f8faf8;color:#7b887f}
+.haccp-count.is-active{background:#edf7f0;border-color:#dceee1;color:#176b40}
+.haccp-module-number{font-size:9px;letter-spacing:1px;font-weight:900;color:#96a39a;margin-bottom:5px}
+.haccp-module-tile>strong{font-size:14px;line-height:1.35;letter-spacing:-.15px;margin-bottom:6px}
+.haccp-module-tile p{font-size:11px;line-height:1.55;color:#748178;margin-bottom:10px}
+.haccp-module-meta{font-size:9px;color:#8b978f;padding-top:8px;border-top:1px solid #f0f3f1}
+.haccp-module-link{font-size:10px;margin-top:10px}
+.haccp-footnote{display:flex;align-items:flex-start;gap:10px;margin-top:19px;padding:13px 15px;background:#f8faf8;border:1px solid #e9efea;border-radius:12px}
+.haccp-footnote-mark{width:20px;height:20px;flex:0 0 20px;border-radius:50%;display:grid;place-items:center;background:#e8f2eb;color:#27754a;font-size:11px;font-weight:900}
+.haccp-footnote p{margin:0;color:#77847b;font-size:10px;line-height:1.55}
+.haccp-footnote strong{color:#435b4b}
+.haccp-detail{border-color:#e2eae4;border-radius:15px;box-shadow:0 6px 22px rgba(20,55,35,.045)}
+.haccp-detail-head{align-items:center;background:#f7faf7;padding:22px 25px}
+.haccp-detail-head h2{font-size:21px;letter-spacing:-.45px;font-weight:850}
+.haccp-detail-head p{font-size:12px}
+.haccp-detail-meta{display:inline-block;margin-top:9px;font-size:10px;color:#668071}
+.haccp-back{font-size:11px;padding:10px 13px;white-space:nowrap}
+.haccp-detail-body{padding:23px 25px}
+.haccp-form-title{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:10px}
+.haccp-form-title small{font-size:10px;font-weight:500;color:#87938a}
+.haccp-fields{column-gap:20px;row-gap:0}
+.haccp-fields .field label{font-weight:750}
+.haccp-fields .field input,.haccp-fields .field select,.haccp-fields .field textarea{background:#fff;transition:border-color .15s,box-shadow .15s}
+.haccp-fields .field input:focus,.haccp-fields .field select:focus,.haccp-fields .field textarea:focus{border-color:#66a77d;box-shadow:0 0 0 3px rgba(50,132,78,.1);outline:none}
+.haccp-form-actions{padding-top:16px}
+.haccp-records{margin-top:28px;padding-top:23px}
+.haccp-records-head{align-items:flex-end}
+.haccp-records-head h3{font-size:15px;font-weight:850}
+.haccp-records-head p{font-size:10px;color:#89958d;margin:4px 0 0}
+.haccp-record{padding:14px 15px;border-color:#e8eee9;border-radius:12px;background:#fff}
+.haccp-record:hover{border-color:#d4e4d9;background:#fcfdfc}
+.haccp-record strong{font-size:12px}
+.haccp-record-detail{font-size:10px;line-height:1.65}
+@media(max-width:1100px){.haccp-module-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.haccp-page-head{align-items:stretch;flex-direction:column;gap:12px}.haccp-page-head h1{font-size:24px}.haccp-page-head .btn{width:100%}.haccp-overview{grid-template-columns:1fr;gap:8px}.haccp-stat{min-height:0;padding:12px 14px}.haccp-stat strong{font-size:22px;margin-top:4px}.haccp-stat small{font-size:9px}.haccp-section-title{align-items:flex-start;flex-direction:column}.haccp-last-activity{white-space:normal}.haccp-module-grid{grid-template-columns:1fr 1fr;gap:9px}.haccp-module-tile{min-height:190px;padding:12px}.haccp-module-tile>strong{font-size:12px}.haccp-module-tile p{font-size:10px}.haccp-module-meta{font-size:8px}.haccp-detail-head,.haccp-detail-body{padding:16px}.haccp-detail-head{align-items:flex-start;flex-direction:column}.haccp-form-title{align-items:flex-start;gap:5px;flex-direction:column}.haccp-fields{grid-template-columns:1fr}.haccp-record{grid-template-columns:1fr}.haccp-form-actions{justify-content:stretch}.haccp-form-actions .btn{flex:1}}
+@media(max-width:380px){.haccp-module-grid{grid-template-columns:1fr}.haccp-module-tile{min-height:0}}
+
 </style>
 <div id="animo-ai-widget">
 <section id="animo-ai-panel" role="dialog" aria-label="ANIMO AI-chat" aria-modal="false">
