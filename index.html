@@ -2056,7 +2056,10 @@ function applyPriceVisibility(){const manager=currentUser?.role==='manager'&&!cl
 function renderSupplierFilter(){const select=$('stockSupplierFilter'),current=select.value||'all',suppliers=[...new Set(state.stock.map(x=>(x.supplier||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'nl'));select.innerHTML='<option value="all">Alle leveranciers</option><option value="none">Geen leverancier</option>'+suppliers.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');select.value=[...select.options].some(o=>o.value===current)?current:'all'}
 
 function productLabelUrl(x){
- const target=new URL(location.href);target.search='';target.hash='';target.searchParams.set('label',x.id);return target.toString();
+ const target=new URL('product.html',location.href);
+ const values={p:x.id,n:x.name,m:x.madeAt,e:x.expiryDate,s:x.storage,r:x.responsible,b:x.batchId,o:x.notes||''};
+ Object.entries(values).forEach(([key,value])=>{if(value)target.searchParams.set(key,String(value))});
+ return target.toString();
 }
 function handleProductLabelDeepLink(){
  const params=new URLSearchParams(location.search),labelId=params.get('label');
