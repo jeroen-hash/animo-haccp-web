@@ -119,6 +119,7 @@ jobs:
           let checked = 0;
           for (const match of scripts) {
             const attrs = match[1] || '';
+            if (/\\bsrc\\s*=/i.test(attrs)) continue;
             const type = (attrs.match(/\btype=["']([^"']+)["']/i) || [])[1] || '';
             if (type && !/^(text\/javascript|application\/javascript|module)$/i.test(type)) continue;
             const source = match[2] || '';
