@@ -18,7 +18,7 @@ function removeFinancialFields(value: unknown): unknown {
       const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, "");
       const financialField =
         normalizedKey === "total" ||
-        /(price|cost|margin|profit|revenue|turnover|linetotal|invoicetotal|grandtotal|subtotal|tax|vat|discount|payment|payable|receivable|billing|subscription|fee|currency|amounttotal|amountdue|amountpaid|amountremaining)/.test(normalizedKey);
+        /(price|cost|margin|profit|revenue|turnover|linetotal|invoicetotal|grandtotal|subtotal|tax|vat|discount|payment|payable|receivable|billing|subscription|fee|currency|amounttotal|amountdue|amountpaid|amountremaining|taxinclusive|taxexclusive|grossamount|netamount|lineamount|taxamount|discountamount)/.test(normalizedKey);
 
       if (!financialField) {
         output[key] = removeFinancialFields(nested);
